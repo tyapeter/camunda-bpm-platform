@@ -29,6 +29,15 @@
     <userTask id="approveInvoice" camunda:formKey="embedded:app:forms/approve-invoice.html" camunda:dueDate="${dateTime().plusWeeks(1).toDate()}" camunda:candidateGroups="${approverGroups}" name="Approve Invoice">
       <documentation>Approve the invoice (or not).</documentation>
       <extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="approverGroups">
+            <camunda:script scriptFormat="groovy">
+              approverGroupsResult.collect { group ->
+                group.getValue()
+              }
+            </camunda:script>
+          </camunda:inputParameter>
+        </camunda:inputOutput>
         <camunda:taskListener event="create">
           <camunda:script scriptFormat="javascript"><![CDATA[if(!!task.getVariable('approver')) {
   task.setAssignee(approver);
@@ -80,7 +89,7 @@ If data is missing, provide it.]]></documentation>
       <conditionExpression xsi:type="tFormalExpression">${clarified}</conditionExpression>
     </sequenceFlow>
     <dataStoreReference id="DataStoreReference_1" name="Financial Accounting System" dataStoreRef="FinancialAccountingSystem"/>
-    <businessRuleTask id="assignApprover" camunda:decisionRef="invoice-assign-approver" camunda:resultVariable="approverGroups" name="Assign Approver Group">
+    <businessRuleTask id="assignApprover" camunda:decisionRef="invoice-assign-approver" camunda:resultVariable="approverGroupsResult" name="Assign Approver Group">
       <incoming>SequenceFlow_1</incoming>
       <outgoing>sequenceFlow_178</outgoing>
     </businessRuleTask>
