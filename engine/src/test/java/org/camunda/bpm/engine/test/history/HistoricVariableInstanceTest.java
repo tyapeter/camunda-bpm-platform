@@ -646,7 +646,7 @@ public class HistoricVariableInstanceTest extends PluggableProcessEngineTestCase
    */
   @Deployment
   @SuppressWarnings("unchecked")
-  public void FAILING_testImplicitVariableObjectValueUpdate() {
+  public void testImplicitVariableObjectValueUpdate() {
     ProcessInstance instance = runtimeService.startProcessInstanceByKey("serviceTaskProcess",
         Variables.createVariables()
           .putValue("listVar", new ArrayList<String>())
@@ -665,7 +665,12 @@ public class HistoricVariableInstanceTest extends PluggableProcessEngineTestCase
     assertNotNull(historicList);
     assertEquals(1, historicList.size());
     assertEquals(UpdateValueDelegate.NEW_ELEMENT, historicList.get(0));
+
+    // TODO: test historic details
   }
+  // TODO: test overwrite object value and then update the old value
+  // TODO: implicit update should also work when variable is moved somewhere else (e.g. due to tree compaction/expansion)
+  // TODO: should fire no history if variable is set on process start and start event is asnycBefore
 
   protected boolean isFullHistoryEnabled() {
     return processEngineConfiguration.getHistoryLevel().equals(HistoryLevel.HISTORY_LEVEL_FULL);

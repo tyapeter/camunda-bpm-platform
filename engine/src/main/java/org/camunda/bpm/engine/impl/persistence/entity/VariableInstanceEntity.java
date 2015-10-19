@@ -16,6 +16,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.camunda.bpm.engine.delegate.VariableScope;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseExecutionEntity;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -195,7 +196,7 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     this.byteArrayField.setByteArrayId(byteArrayValueId);
   }
 
-  public ByteArrayEntity getByteArrayValue() {
+  public byte[] getByteArrayValue() {
     return byteArrayField.getByteArrayValue();
   }
 
@@ -392,7 +393,7 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     return typedValueField.getErrorMessage();
   }
 
-  public String getVariableScope() {
+  public String getVariableScopeId() {
     if (taskId != null) {
       return taskId;
     }
@@ -402,6 +403,24 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
     }
 
     return caseExecutionId;
+  }
+
+  protected VariableScope getVariableScope() {
+
+    // TODO: caching
+    if (taskId != null) {
+      return Context.getCommandContext().getTaskManager().findTaskById(taskId);
+    }
+    else if (executionId != null) {
+      return Context.getCommandContext().getExecutionManager().findExecutionById(executionId);
+    }
+    else if (caseExecutionId != null) {
+      return Context.getCommandContext().getCaseExecutionManager().findCaseExecutionById(caseExecutionId);
+    }
+    else {
+      return null;
+    }
+
   }
 
   //sequence counter ///////////////////////////////////////////////////////////

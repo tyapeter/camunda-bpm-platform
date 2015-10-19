@@ -118,7 +118,7 @@ public class TypedValueField implements DbEntityLifecycleAware, CommandContextLi
   }
 
   @SuppressWarnings("unchecked")
-  protected boolean isMutableValue(TypedValue value) {
+  public boolean isMutableValue(TypedValue value) {
     return((TypedValueSerializer<TypedValue>) serializer).isMutableValue(value);
   }
 
@@ -137,15 +137,17 @@ public class TypedValueField implements DbEntityLifecycleAware, CommandContextLi
 
   protected void updateFields() {
     if (cachedValue != null &&isMutableValue(cachedValue)) {
-      byte[] byteArray = ByteArrayValueSerializer.getBytes(valueFields);
+      byte[] byteArray = valueFields.getByteArrayValue();
 
       writeValue(cachedValue);
 
-      byte[] byteArrayAfter = ByteArrayValueSerializer.getBytes(valueFields);
+      byte[] byteArrayAfter = valueFields.getByteArrayValue();
 
       if (Arrays.equals(byteArray, byteArrayAfter)) {
-        // avoids an UPDATE statement when the byte array has not changed, cf ByteArrayEntity#getPersistentState
-        ByteArrayValueSerializer.setBytes(valueFields, byteArray);
+        // avoids an UPDATE statement when the byte array has not changed,
+        // cf ByteArrayEntity#getPersistentState and the fact that #equals on byte[] works
+        // with object identity
+        valueFields.setByteArrayValue(byteArray);
       }
     }
   }
