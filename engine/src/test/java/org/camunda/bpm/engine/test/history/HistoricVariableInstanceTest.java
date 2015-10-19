@@ -666,8 +666,32 @@ public class HistoricVariableInstanceTest extends PluggableProcessEngineTestCase
     assertEquals(1, historicList.size());
     assertEquals(UpdateValueDelegate.NEW_ELEMENT, historicList.get(0));
 
-    // TODO: test historic details
+    if (isFullHistoryEnabled()) {
+      List<HistoricDetail> historicDetails = historyService
+          .createHistoricDetailQuery()
+          .variableUpdates()
+          .variableInstanceId(historicVariableInstance.getId())
+          .orderPartiallyByOccurrence().asc()
+          .list();
+
+      assertEquals(2, historicDetails.size());
+
+      HistoricVariableUpdate update1 = (HistoricVariableUpdate) historicDetails.get(0);
+      HistoricVariableUpdate update2 = (HistoricVariableUpdate) historicDetails.get(1);
+
+      List<String> value1 = (List<String>) update1.getValue();
+
+      assertNotNull(value1);
+      assertTrue(value1.isEmpty());
+
+      List<String> value2 = (List<String>) update2.getValue();
+
+      assertNotNull(value2);
+      assertEquals(1, value2.size());
+      assertEquals(UpdateValueDelegate.NEW_ELEMENT, value2.get(0));
+    }
   }
+  // TODO: kann der variable-scope der VariableInstance null geworden sein? denn dann kann man die Implementierung knicken
   // TODO: test overwrite object value and then update the old value
   // TODO: implicit update should also work when variable is moved somewhere else (e.g. due to tree compaction/expansion)
   // TODO: should fire no history if variable is set on process start and start event is asnycBefore

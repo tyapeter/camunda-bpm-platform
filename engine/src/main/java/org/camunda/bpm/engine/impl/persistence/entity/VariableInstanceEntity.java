@@ -449,6 +449,9 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
 
   @Override
   public void onImplicitValueUpdate(TypedValue updatedValue) {
+    // note: this implementation relies on the
+    //   behavior that the variable scope
+    //   of variable value can never become null
     getVariableScope().setVariableLocal(name, updatedValue);
   }
 
