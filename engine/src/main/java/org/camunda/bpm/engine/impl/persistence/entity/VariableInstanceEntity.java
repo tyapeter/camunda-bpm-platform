@@ -27,6 +27,7 @@ import org.camunda.bpm.engine.impl.db.EnginePersistenceLogger;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.persistence.entity.util.ByteArrayField;
 import org.camunda.bpm.engine.impl.persistence.entity.util.TypedValueField;
+import org.camunda.bpm.engine.impl.persistence.entity.util.TypedValueUpdateListener;
 import org.camunda.bpm.engine.impl.variable.serializer.TypedValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.ValueFields;
 import org.camunda.bpm.engine.runtime.VariableInstance;
@@ -35,7 +36,7 @@ import org.camunda.bpm.engine.variable.value.TypedValue;
 /**
  * @author Tom Baeyens
  */
-public class VariableInstanceEntity implements VariableInstance, CoreVariableInstance, ValueFields, DbEntity, DbEntityLifecycleAware, HasDbRevision, Serializable {
+public class VariableInstanceEntity implements VariableInstance, CoreVariableInstance, ValueFields, DbEntity, DbEntityLifecycleAware, TypedValueUpdateListener, HasDbRevision, Serializable {
 
   protected static final EnginePersistenceLogger LOG = ProcessEngineLogger.PERSISTENCE_LOGGER;
 
@@ -94,6 +95,7 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
 
   // Default constructor for SQL mapping
   public VariableInstanceEntity() {
+    typedValueField.addImplicitUpdateListener(this);
   }
 
   public static VariableInstanceEntity createAndInsert(String name, TypedValue value) {
@@ -407,7 +409,6 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
 
   protected VariableScope getVariableScope() {
 
-    // TODO: caching
     if (taskId != null) {
       return Context.getCommandContext().getTaskManager().findTaskById(taskId);
     }
@@ -444,6 +445,11 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
 
   public void setConcurrentLocal(boolean isConcurrentLocal) {
     this.isConcurrentLocal = isConcurrentLocal;
+  }
+
+  @Override
+  public void onImplicitValueUpdate(TypedValue updatedValue) {
+    getVariableScope().setVariableLocal(name, updatedValue);
   }
 
   @Override
@@ -493,5 +499,6 @@ public class VariableInstanceEntity implements VariableInstance, CoreVariableIns
       return false;
     return true;
   }
+
 
 }

@@ -671,6 +671,8 @@ public class HistoricVariableInstanceTest extends PluggableProcessEngineTestCase
   // TODO: test overwrite object value and then update the old value
   // TODO: implicit update should also work when variable is moved somewhere else (e.g. due to tree compaction/expansion)
   // TODO: should fire no history if variable is set on process start and start event is asnycBefore
+  // TODO: test if it was possible before to a) get a historic variable and b) update its value implicitly when
+  //   done in one transaction
 
   protected boolean isFullHistoryEnabled() {
     return processEngineConfiguration.getHistoryLevel().equals(HistoryLevel.HISTORY_LEVEL_FULL);

@@ -64,10 +64,12 @@ public class ByteArrayField {
 
   public void setByteArrayValue(byte[] bytes) {
     if (bytes != null) {
-      if (this.byteArrayValue != null) {
+      if (this.byteArrayId != null && this.byteArrayValue != null) {
         byteArrayValue.setBytes(bytes);
       }
       else {
+        deleteByteArrayValue();
+
         byteArrayValue = new ByteArrayEntity(valueFields.getName(), bytes);
         Context.
           getCommandContext()
