@@ -2,7 +2,7 @@
 <assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xmlns="urn:maven:assembly:1.1.2">
   
-  <id>was</id>
+  <id>regular</id>
   
   <formats>
     <format>war</format>
@@ -10,22 +10,10 @@
 
   <includeBaseDirectory>false</includeBaseDirectory>
   
-  <fileSets>
-    <fileSet>
-      <directory>src/main/runtime/was/webapp</directory>
-      <outputDirectory>/</outputDirectory>
-    </fileSet>      
-  </fileSets>
-
   <dependencySets>
     <dependencySet>
       <outputDirectory>/</outputDirectory>
       <unpack>true</unpack>
-      <unpackOptions>
-        <excludes>
-          <exclude>**/web.xml</exclude>
-        </excludes>
-      </unpackOptions>
       <includes>
         <include>org.camunda.bpm:camunda-engine-rest-core:war:*</include>
       </includes>

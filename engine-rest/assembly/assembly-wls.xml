@@ -27,7 +27,7 @@
         </excludes>
       </unpackOptions>
       <includes>
-        <include>org.camunda.bpm:camunda-engine-rest:war:*</include>
+        <include>org.camunda.bpm:camunda-engine-rest-core:war:*</include>
       </includes>
     </dependencySet>
   </dependencySets>

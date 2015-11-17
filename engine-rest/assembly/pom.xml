@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>camunda-engine-rest-assembly</artifactId>
+  <artifactId>camunda-engine-rest</artifactId>
   <name>camunda BPM - engine - REST - Assembly</name>
   <packaging>pom</packaging>
 
@@ -14,9 +14,16 @@
   <dependencies>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
-      <artifactId>camunda-engine-rest</artifactId>
+      <artifactId>camunda-engine-rest-core</artifactId>
       <version>${project.version}</version>
       <type>war</type>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-engine-rest-core</artifactId>
+      <version>${project.version}</version>
+      <classifier>classes</classifier>
     </dependency>
 
     <dependency>
@@ -84,8 +91,44 @@
               <workDirectory>target/assembly/work</workDirectory>
             </configuration>
           </execution>
+          
+          <execution>
+            <id>war</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly-1.xml</descriptor>
+              </descriptors>
+              <finalName>camunda-engine-rest-${project.version}</finalName>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>true</attach>
+              <outputDirectory>target/</outputDirectory>
+              <workDirectory>target/assembly/work</workDirectory>
+            </configuration>
+          </execution>
+          
+          <execution>
+            <id>classes</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>assembly-2.xml</descriptor>
+              </descriptors>
+              <finalName>camunda-engine-rest-${project.version}</finalName>
+              <attach>true</attach>
+              <outputDirectory>target/</outputDirectory>
+              <workDirectory>target/assembly/work</workDirectory>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
+      
     </plugins>
   </build>
 </project>
