@@ -3,7 +3,7 @@
   <artifactId>camunda-engine-rest</artifactId>
   <name>camunda BPM - engine - REST - Assembly</name>
   <packaging>pom</packaging>
-
+  
   <parent>
     <groupId>org.camunda.bpm</groupId>
     <artifactId>camunda-engine-rest-root</artifactId>
@@ -107,6 +107,12 @@
               <attach>true</attach>
               <outputDirectory>target/</outputDirectory>
               <workDirectory>target/assembly/work</workDirectory>
+              <archive>
+                <manifestEntries>
+                  <!-- module dependencies for deployment on AS 7  -->
+                  <Dependencies>org.camunda.bpm.camunda-engine,org.camunda.bpm.dmn.camunda-engine-dmn</Dependencies>
+                </manifestEntries>
+              </archive>
             </configuration>
           </execution>
           

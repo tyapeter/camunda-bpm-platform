@@ -224,12 +224,6 @@
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
           <failOnMissingWebXml>false</failOnMissingWebXml>
-          <archive>
-            <manifestEntries>
-              <!-- module dependencies for deployment on AS 7  -->
-              <Dependencies>org.camunda.bpm.camunda-engine,org.camunda.bpm.dmn.camunda-engine-dmn</Dependencies>
-            </manifestEntries>
-          </archive>
         </configuration>
       </plugin>
       
