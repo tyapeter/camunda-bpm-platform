@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.examples.bpmn.authorization;
+package org.camunda.bpm.engine.test.bpmn.authorization;
 
 import java.util.List;
 
