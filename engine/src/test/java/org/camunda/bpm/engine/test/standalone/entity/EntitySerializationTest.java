@@ -1,4 +1,4 @@
-package org.camunda.bpm.engine.test.serializable;
+package org.camunda.bpm.engine.test.standalone.entity;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -19,7 +19,7 @@ import org.camunda.bpm.engine.impl.pvm.process.TransitionImpl;
 import org.camunda.bpm.engine.impl.task.TaskDefinition;
 import org.camunda.bpm.engine.task.DelegationState;
 
-public class ObjectSerializableTest extends TestCase {
+public class EntitySerializationTest extends TestCase {
 
   public void testTaskEntitySerialization() throws Exception {
     TaskEntity task = new TaskEntity();
