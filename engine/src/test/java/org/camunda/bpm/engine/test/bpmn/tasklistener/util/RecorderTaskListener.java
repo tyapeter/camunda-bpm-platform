@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.examples.bpmn.tasklistener;
+package org.camunda.bpm.engine.test.bpmn.tasklistener.util;
 
 import java.io.Serializable;
 import java.util.ArrayList;

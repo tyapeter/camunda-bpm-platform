@@ -10,13 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.examples.bpmn.tasklistener;
+package org.camunda.bpm.engine.test.bpmn.tasklistener;
 
 import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
+import org.camunda.bpm.engine.test.bpmn.tasklistener.util.TaskDeleteListener;
 
 import static org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl.HISTORYLEVEL_AUDIT;
 
@@ -26,7 +27,7 @@ import static org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl.HIS
  */
 public class TaskListenerTest extends PluggableProcessEngineTestCase {
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
   public void testTaskCreateListener() {
     runtimeService.startProcessInstanceByKey("taskListenerProcess");
     Task task = taskService.createTaskQuery().singleResult();
@@ -34,7 +35,7 @@ public class TaskListenerTest extends PluggableProcessEngineTestCase {
     assertEquals("TaskCreateListener is listening!", task.getDescription());
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
   public void testTaskCompleteListener() {
     TaskDeleteListener.clear();
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("taskListenerProcess");
@@ -54,7 +55,7 @@ public class TaskListenerTest extends PluggableProcessEngineTestCase {
     assertEquals("Act", runtimeService.getVariable(processInstance.getId(), "shortName"));
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
   public void testTaskDeleteListenerByProcessDeletion() {
     TaskDeleteListener.clear();
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("taskListenerProcess");
@@ -72,7 +73,7 @@ public class TaskListenerTest extends PluggableProcessEngineTestCase {
     assertEquals("test delete task listener", TaskDeleteListener.lastDeleteReason);
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
   public void testTaskDeleteListenerByBoundaryEvent() {
     TaskDeleteListener.clear();
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("taskListenerProcess");
@@ -90,7 +91,7 @@ public class TaskListenerTest extends PluggableProcessEngineTestCase {
     assertEquals("deleted", TaskDeleteListener.lastDeleteReason);
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/tasklistener/TaskListenerTest.bpmn20.xml"})
   public void testTaskListenerWithExpression() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("taskListenerProcess");
     assertEquals(null, runtimeService.getVariable(processInstance.getId(), "greeting2"));
@@ -130,8 +131,8 @@ public class TaskListenerTest extends PluggableProcessEngineTestCase {
   }
 
   @Deployment(resources = {
-    "org/camunda/bpm/engine/test/examples/bpmn/tasklistener/TaskListenerTest.testScriptResourceListener.bpmn20.xml",
-    "org/camunda/bpm/engine/test/examples/bpmn/tasklistener/taskListener.groovy"
+    "org/camunda/bpm/engine/test/bpmn/tasklistener/TaskListenerTest.testScriptResourceListener.bpmn20.xml",
+    "org/camunda/bpm/engine/test/bpmn/tasklistener/taskListener.groovy"
   })
   public void testScriptResourceListener() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("process");
