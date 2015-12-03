@@ -1,4 +1,4 @@
-package org.camunda.bpm.engine.test.cmd;
+package org.camunda.bpm.engine.test.bpmn.async;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.ExecutionListener;

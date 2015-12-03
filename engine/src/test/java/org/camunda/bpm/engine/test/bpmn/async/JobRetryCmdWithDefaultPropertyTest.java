@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.cmd;
+package org.camunda.bpm.engine.test.bpmn.async;
 
 import org.camunda.bpm.engine.impl.test.ResourceProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.Job;
@@ -23,13 +23,13 @@ import org.camunda.bpm.engine.test.Deployment;
 public class JobRetryCmdWithDefaultPropertyTest extends ResourceProcessEngineTestCase {
 
   public JobRetryCmdWithDefaultPropertyTest() {
-    super("org/camunda/bpm/engine/test/cmd/default.job.retry.property.camunda.cfg.xml");
+    super("org/camunda/bpm/engine/test/bpmn/async/default.job.retry.property.camunda.cfg.xml");
   }
 
   /**
    * Check if property "DefaultNumberOfRetries" will be used
    */
-  @Deployment(resources = { "org/camunda/bpm/engine/test/cmd/FoxJobRetryCmdTest.testFailedTask.bpmn20.xml" })
+  @Deployment(resources = { "org/camunda/bpm/engine/test/bpmn/async/FoxJobRetryCmdTest.testFailedTask.bpmn20.xml" })
   public void testDefaultNumberOfRetryProperty() {
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("failedTask");
     assertNotNull(pi);
@@ -40,7 +40,7 @@ public class JobRetryCmdWithDefaultPropertyTest extends ResourceProcessEngineTes
     assertEquals(2, job.getRetries());
   }
 
-  @Deployment(resources = { "org/camunda/bpm/engine/test/cmd/FoxJobRetryCmdTest.testFailedServiceTask.bpmn20.xml" })
+  @Deployment(resources = { "org/camunda/bpm/engine/test/bpmn/async/FoxJobRetryCmdTest.testFailedServiceTask.bpmn20.xml" })
   public void testOverwritingPropertyWithBpmnExtension() {
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("failedServiceTask");
     assertNotNull(pi);
