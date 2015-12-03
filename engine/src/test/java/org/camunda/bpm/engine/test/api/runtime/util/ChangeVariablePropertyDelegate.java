@@ -10,25 +10,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.examples.variables;
+package org.camunda.bpm.engine.test.api.runtime.util;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
-import org.camunda.bpm.engine.test.history.SerializableVariable;
 
 /**
  * @author Daniel Meyer
  *
  */
-public class ChangeVariablesDelegate implements JavaDelegate {
+public class ChangeVariablePropertyDelegate implements JavaDelegate {
 
   public void execute(DelegateExecution execution) throws Exception {
 
-    // first set variable to some string
-    execution.setVariable("variableName", "test");
+    execution.setVariableLocal("var", new SimpleSerializableBean());
 
-    // now set to serializable
-    execution.setVariable("variableName", new SerializableVariable("foo"));
+    SimpleSerializableBean variable = (SimpleSerializableBean) execution.getVariable("var");
+    variable.setIntProperty(variable.getIntProperty() + 1);
+
+    boolean shouldExplicitlyUpdateVariable = (Boolean) execution.getVariable("shouldExplicitlyUpdateVariable");
+
+    if (shouldExplicitlyUpdateVariable) {
+      execution.setVariableLocal("var", variable);
+    }
+
   }
 
 }
