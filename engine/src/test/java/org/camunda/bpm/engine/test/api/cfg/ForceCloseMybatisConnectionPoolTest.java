@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.cfg;
+package org.camunda.bpm.engine.test.api.cfg;
 
 import org.apache.ibatis.datasource.pooled.PoolState;
 import org.apache.ibatis.datasource.pooled.PooledDataSource;
