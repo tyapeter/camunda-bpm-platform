@@ -31,15 +31,15 @@
       </conditionExpression>
     </sequenceFlow>
 
-    <userTask id="theTask1" name="Send e-mail for more information" />
+    <userTask id="theTask1" name="Task 1" />
     
     <sequenceFlow id="flow5" sourceRef="theTask1" targetRef="theEnd" />
     
-    <userTask id="theTask2" name="Check account balance" />
+    <userTask id="theTask2" name="Task 2" />
     
     <sequenceFlow id="flow6" sourceRef="theTask2" targetRef="theEnd" />
     
-    <userTask id="theTask3" name="Call customer" />
+    <userTask id="theTask3" name="Task 3" />
     
     <sequenceFlow id="flow7" sourceRef="theTask3" targetRef="theEnd" />    
     
