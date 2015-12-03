@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.metrics;
+package org.camunda.bpm.engine.test.api.mgmt.metrics;
 
 import org.camunda.bpm.engine.management.Metrics;
 import org.camunda.bpm.engine.variable.VariableMap;
@@ -21,7 +21,7 @@ import org.camunda.bpm.model.bpmn.instance.BusinessRuleTask;
 
 public class ExecutedDecisionElementsMetricsTest extends AbstractMetricsTest {
 
-  public static final String DMN_FILE = "org/camunda/bpm/engine/test/metrics/ExecutedDecisionElementsTest.dmn11.xml";
+  public static final String DMN_FILE = "org/camunda/bpm/engine/test/api/mgmt/metrics/ExecutedDecisionElementsTest.dmn11.xml";
   public static VariableMap VARIABLES = Variables.createVariables().putValue("status", "").putValue("sum", 100);
 
   @Override

@@ -1,4 +1,4 @@
-package org.camunda.bpm.engine.test.metrics;
+package org.camunda.bpm.engine.test.api.mgmt.metrics;
 
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.delegate.DelegateExecution;

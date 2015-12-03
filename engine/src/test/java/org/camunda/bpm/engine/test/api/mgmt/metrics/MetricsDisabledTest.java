@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.metrics;
+package org.camunda.bpm.engine.test.api.mgmt.metrics;
 
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.test.ResourceProcessEngineTestCase;
@@ -24,7 +24,7 @@ import org.camunda.bpm.engine.impl.test.ResourceProcessEngineTestCase;
 public class MetricsDisabledTest extends ResourceProcessEngineTestCase {
 
   public MetricsDisabledTest() {
-    super("org/camunda/bpm/engine/test/metrics/metricsDisabledTest.cfg.xml");
+    super("org/camunda/bpm/engine/test/api/mgmt/metrics/metricsDisabledTest.cfg.xml");
   }
 
   // FAILING, see https://app.camunda.com/jira/browse/CAM-4053

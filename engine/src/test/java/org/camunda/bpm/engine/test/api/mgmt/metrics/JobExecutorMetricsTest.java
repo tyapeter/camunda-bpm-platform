@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.metrics;
+package org.camunda.bpm.engine.test.api.mgmt.metrics;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -50,7 +50,7 @@ public class JobExecutorMetricsTest extends AbstractMetricsTest {
     processEngineConfiguration.setJobExecutor(jobExecutor);
   }
 
-  @Deployment(resources = "org/camunda/bpm/engine/test/metrics/asyncServiceTaskProcess.bpmn20.xml")
+  @Deployment(resources = "org/camunda/bpm/engine/test/api/mgmt/metrics/asyncServiceTaskProcess.bpmn20.xml")
   public void testJobAcquisitionMetricReporting() {
 
     // given
@@ -71,7 +71,7 @@ public class JobExecutorMetricsTest extends AbstractMetricsTest {
     assertEquals(3, acquiredJobs);
   }
 
-  @Deployment(resources = "org/camunda/bpm/engine/test/metrics/asyncServiceTaskProcess.bpmn20.xml")
+  @Deployment(resources = "org/camunda/bpm/engine/test/api/mgmt/metrics/asyncServiceTaskProcess.bpmn20.xml")
   public void testCompetingJobAcquisitionMetricReporting() {
     // given
     for (int i = 0; i < 3; i++) {
@@ -121,7 +121,7 @@ public class JobExecutorMetricsTest extends AbstractMetricsTest {
     processEngineConfiguration.getDbMetricsReporter().reportNow();
   }
 
-  @Deployment(resources = "org/camunda/bpm/engine/test/metrics/asyncServiceTaskProcess.bpmn20.xml")
+  @Deployment(resources = "org/camunda/bpm/engine/test/api/mgmt/metrics/asyncServiceTaskProcess.bpmn20.xml")
   public void testJobExecutionMetricReporting() {
     // given
     for (int i = 0; i < 3; i++) {
@@ -176,7 +176,7 @@ public class JobExecutorMetricsTest extends AbstractMetricsTest {
     assertEquals(3, exclusiveFollowupJobs);
   }
 
-  @Deployment(resources = "org/camunda/bpm/engine/test/metrics/asyncServiceTaskProcess.bpmn20.xml")
+  @Deployment(resources = "org/camunda/bpm/engine/test/api/mgmt/metrics/asyncServiceTaskProcess.bpmn20.xml")
   public void testJobRejectedExecutionMetricReporting() {
     // replace job executor with one that rejects all jobs
     RejectingJobExecutor rejectingExecutor = new RejectingJobExecutor();
