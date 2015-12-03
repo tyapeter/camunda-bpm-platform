@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.el;
+package org.camunda.bpm.engine.test.api.cfg;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
