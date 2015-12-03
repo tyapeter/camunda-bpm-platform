@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.ScriptCompilationException;
 import org.camunda.bpm.engine.ScriptEvaluationException;
 import org.camunda.bpm.engine.exception.NullValueException;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
+import org.camunda.bpm.engine.impl.util.CollectionUtil;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
@@ -631,5 +632,31 @@ public class ScriptTaskTest extends PluggableProcessEngineTestCase {
 
     assertEquals("hello", runtimeService.getVariable(pi.getId(), "existingProcessVariableName"));
     assertEquals(pi.getId(), runtimeService.getVariable(pi.getId(), "newProcessVariableName"));
+  }
+
+  @org.camunda.bpm.engine.test.Deployment
+  public void testGroovyScriptExecution() {
+    try {
+
+      processEngineConfiguration.setAutoStoreScriptVariables(true);
+      int[] inputArray = new int[] {1, 2, 3, 4, 5};
+      ProcessInstance pi = runtimeService.startProcessInstanceByKey("scriptExecution", CollectionUtil.singletonMap("inputArray", inputArray));
+
+      Integer result = (Integer) runtimeService.getVariable(pi.getId(), "sum");
+      assertEquals(15, result.intValue());
+
+    } finally {
+      processEngineConfiguration.setAutoStoreScriptVariables(false);
+    }
+  }
+
+  @org.camunda.bpm.engine.test.Deployment
+  public void testGroovySetVariableThroughExecutionInScript() {
+    ProcessInstance pi = runtimeService.startProcessInstanceByKey("setScriptVariableThroughExecution");
+
+    // Since 'def' is used, the 'scriptVar' will be script local
+    // and not automatically stored as a process variable.
+    assertNull(runtimeService.getVariable(pi.getId(), "scriptVar"));
+    assertEquals("test123", runtimeService.getVariable(pi.getId(), "myVar"));
   }
 }
