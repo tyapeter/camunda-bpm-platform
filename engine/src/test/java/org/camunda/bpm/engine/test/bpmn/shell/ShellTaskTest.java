@@ -1,4 +1,4 @@
-package org.camunda.bpm.engine.test.examples.bpmn.shell;
+package org.camunda.bpm.engine.test.bpmn.shell;
 
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
