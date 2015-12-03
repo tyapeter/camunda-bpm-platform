@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.examples.bpmn.servicetask;
+package org.camunda.bpm.engine.test.bpmn.servicetask;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +23,7 @@ import org.camunda.bpm.engine.runtime.Execution;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
+import org.camunda.bpm.engine.test.bpmn.servicetask.util.GenderBean;
 
 /**
  * @author Joram Barrez
@@ -85,7 +86,7 @@ public class JavaServiceTaskTest extends PluggableProcessEngineTestCase {
 
   public void testIllegalUseOfResultVariableName() {
     try {
-      repositoryService.createDeployment().addClasspathResource("org/camunda/bpm/engine/test/examples/bpmn/servicetask/JavaServiceTaskTest.testIllegalUseOfResultVariableName.bpmn20.xml").deploy();
+      repositoryService.createDeployment().addClasspathResource("org/camunda/bpm/engine/test/bpmn/servicetask/JavaServiceTaskTest.testIllegalUseOfResultVariableName.bpmn20.xml").deploy();
       fail();
     } catch (ProcessEngineException e) {
       assertTrue(e.getMessage().contains("resultVariable"));
