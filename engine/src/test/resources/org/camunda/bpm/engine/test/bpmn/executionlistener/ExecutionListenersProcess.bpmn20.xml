@@ -6,7 +6,7 @@
   <process id="executionListenersProcess">
   
     <extensionElements>
-      <camunda:executionListener class="org.camunda.bpm.engine.test.examples.bpmn.executionlistener.ExampleExecutionListenerOne" event="start" />
+      <camunda:executionListener class="org.camunda.bpm.engine.test.bpmn.executionlistener.ExampleExecutionListenerOne" event="start" />
     </extensionElements>
     
     <startEvent id="theStart" />
@@ -16,7 +16,7 @@
     <userTask id="firstTask" />
     <sequenceFlow sourceRef="firstTask" targetRef="secondTask">
        <extensionElements>
-        <camunda:executionListener class="org.camunda.bpm.engine.test.examples.bpmn.executionlistener.ExampleExecutionListenerTwo" />
+        <camunda:executionListener class="org.camunda.bpm.engine.test.bpmn.executionlistener.ExampleExecutionListenerTwo" />
       </extensionElements>
     </sequenceFlow>
     

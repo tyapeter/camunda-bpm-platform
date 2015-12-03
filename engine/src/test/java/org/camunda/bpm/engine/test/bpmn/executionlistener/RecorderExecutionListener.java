@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.examples.bpmn.executionlistener;
+package org.camunda.bpm.engine.test.bpmn.executionlistener;
 
 import java.io.Serializable;
 import java.util.ArrayList;

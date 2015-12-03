@@ -11,31 +11,20 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.examples.bpmn.executionlistener;
+package org.camunda.bpm.engine.test.bpmn.executionlistener;
 
-import java.io.Serializable;
+import org.camunda.bpm.engine.delegate.DelegateExecution;
+import org.camunda.bpm.engine.delegate.ExecutionListener;
 
 /**
- * Simple pojo than will be used to act as an event listener.
+ * Simple {@link ExecutionListener} that sets 2 variables on the execution.
  * 
  * @author Frederik Heremans
  */
-public class ExampleExecutionListenerPojo implements Serializable {
+public class ExampleExecutionListenerTwo implements ExecutionListener {
 
-  private static final long serialVersionUID = 1L;
-
-  private String receivedEventName;
-  
-  public void myMethod(String eventName) {
-    this.receivedEventName = eventName;
+  public void notify(DelegateExecution execution) throws Exception {
+    execution.setVariable("variableSetInExecutionListener", "secondValue");
+    execution.setVariable("eventNameReceived", execution.getEventName());
   }
-
-  public String getReceivedEventName() {
-    return receivedEventName;
-  }
-
-  public void setReceivedEventName(String receivedEventName) {
-    this.receivedEventName = receivedEventName;
-  }
-
 }

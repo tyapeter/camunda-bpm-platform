@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.examples.bpmn.executionlistener;
+package org.camunda.bpm.engine.test.bpmn.executionlistener;
 
 import static org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl.HISTORYLEVEL_AUDIT;
 import static org.hamcrest.CoreMatchers.is;
@@ -29,8 +29,8 @@ import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
-import org.camunda.bpm.engine.test.examples.bpmn.executionlistener.CurrentActivityExecutionListener.CurrentActivity;
-import org.camunda.bpm.engine.test.examples.bpmn.executionlistener.RecorderExecutionListener.RecordedEvent;
+import org.camunda.bpm.engine.test.bpmn.executionlistener.CurrentActivityExecutionListener.CurrentActivity;
+import org.camunda.bpm.engine.test.bpmn.executionlistener.RecorderExecutionListener.RecordedEvent;
 
 /**
  * @author Frederik Heremans
@@ -38,7 +38,7 @@ import org.camunda.bpm.engine.test.examples.bpmn.executionlistener.RecorderExecu
 public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
 
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenersProcess.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenersProcess.bpmn20.xml"})
   public void testExecutionListenersOnAllPossibleElements() {
 
     // Process start executionListener will have executionListener class that sets 2 variables
@@ -82,7 +82,7 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
     assertProcessEnded(processInstance.getId());
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenersStartEndEvent.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenersStartEndEvent.bpmn20.xml"})
   public void testExecutionListenersOnStartEndEvents() {
     RecorderExecutionListener.clear();
 
@@ -119,7 +119,7 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
   }
 
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenersFieldInjectionProcess.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenersFieldInjectionProcess.bpmn20.xml"})
   public void testExecutionListenerFieldInjection() {
     Map<String, Object> variables = new HashMap<String, Object>();
     variables.put("myVar", "listening!");
@@ -134,7 +134,7 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
     assertEquals("Yes, I am listening!", varSetByListener);
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenersCurrentActivity.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenersCurrentActivity.bpmn20.xml"})
   public void testExecutionListenerCurrentActivity() {
 
     CurrentActivityExecutionListener.clear();
@@ -155,7 +155,7 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
     assertEquals("End Event", currentActivities.get(2).getActivityName());
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenerTest.testOnBoundaryEvents.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenerTest.testOnBoundaryEvents.bpmn20.xml"})
   public void testOnBoundaryEvents() {
     RecorderExecutionListener.clear();
 
@@ -206,8 +206,8 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
   }
 
   @Deployment(resources = {
-    "org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenerTest.testScriptResourceListener.bpmn20.xml",
-    "org/camunda/bpm/engine/test/examples/bpmn/executionlistener/executionListener.groovy"
+    "org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenerTest.testScriptResourceListener.bpmn20.xml",
+    "org/camunda/bpm/engine/test/bpmn/executionlistener/executionListener.groovy"
   })
   public void testScriptResourceListener() {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("process");
@@ -231,7 +231,7 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
   @Deployment
   public void testExecutionListenerOnTerminateEndEvent() {
     RecorderExecutionListener.clear();
-    
+
     runtimeService.startProcessInstanceByKey("oneTaskProcess");
 
     Task task = taskService.createTaskQuery().singleResult();
@@ -246,7 +246,7 @@ public class ExecutionListenerTest extends PluggableProcessEngineTestCase {
 
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/examples/bpmn/executionlistener/ExecutionListenerTest.testOnCancellingBoundaryEvent.bpmn"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/bpmn/executionlistener/ExecutionListenerTest.testOnCancellingBoundaryEvent.bpmn"})
   public void testOnCancellingBoundaryEvents() {
     RecorderExecutionListener.clear();
 
