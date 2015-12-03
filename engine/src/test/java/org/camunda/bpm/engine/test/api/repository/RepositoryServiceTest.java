@@ -17,9 +17,14 @@ import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.RepositoryService;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.exception.NotFoundException;
 import org.camunda.bpm.engine.exception.NotValidException;
+import org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
@@ -35,6 +40,7 @@ import org.camunda.bpm.engine.repository.DecisionDefinitionQuery;
 import org.camunda.bpm.engine.repository.DeploymentBuilder;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.Job;
+import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.examples.bpmn.tasklistener.RecorderTaskListener;
 import org.camunda.bpm.engine.test.util.TestExecutionListener;
@@ -485,6 +491,67 @@ public class RepositoryServiceTest extends PluggableProcessEngineTestCase {
     } catch (NotValidException e) {
       assertTextPresent("decisionDefinitionId is null", e.getMessage());
     }
+  }
+
+  public void testDeployRevisedProcessAfterDeleteOnOtherProcessEngine() {
+
+    // Setup both process engines
+    ProcessEngine processEngine1 = new StandaloneProcessEngineConfiguration()
+      .setProcessEngineName("reboot-test-schema")
+      .setDatabaseSchemaUpdate(org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_TRUE)
+      .setJdbcUrl("jdbc:h2:mem:activiti-process-cache-test;DB_CLOSE_DELAY=1000")
+      .setJobExecutorActivate(false)
+      .buildProcessEngine();
+    RepositoryService repositoryService1 = processEngine1.getRepositoryService();
+
+    ProcessEngine processEngine2 = new StandaloneProcessEngineConfiguration()
+      .setProcessEngineName("reboot-test")
+      .setDatabaseSchemaUpdate(org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE)
+      .setJdbcUrl("jdbc:h2:mem:activiti-process-cache-test;DB_CLOSE_DELAY=1000")
+      .setJobExecutorActivate(false)
+      .buildProcessEngine();
+    RepositoryService repositoryService2 = processEngine2.getRepositoryService();
+    RuntimeService runtimeService2 = processEngine2.getRuntimeService();
+    TaskService taskService2 = processEngine2.getTaskService();
+
+    // Deploy first version of process: start->originalTask->end on first process engine
+    String deploymentId = repositoryService1.createDeployment()
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/RepositoryServiceTest.testDeployRevisedProcessAfterDeleteOnOtherProcessEngine.v1.bpmn20.xml")
+      .deploy()
+      .getId();
+
+    // Start process instance on second engine
+    String processDefinitionId = repositoryService2.createProcessDefinitionQuery().singleResult().getId();
+    runtimeService2.startProcessInstanceById(processDefinitionId);
+    Task task = taskService2.createTaskQuery().singleResult();
+    assertEquals("original task", task.getName());
+
+    // Delete the deployment on second process engine
+    repositoryService2.deleteDeployment(deploymentId, true);
+    assertEquals(0, repositoryService2.createDeploymentQuery().count());
+    assertEquals(0, runtimeService2.createProcessInstanceQuery().count());
+
+    // deploy a revised version of the process: start->revisedTask->end on first process engine
+    //
+    // Before the bugfix, this would set the cache on the first process engine,
+    // but the second process engine still has the original process definition in his cache.
+    // Since there is a deployment delete in between, the new generated process definition id is the same
+    // as in the original deployment, making the second process engine using the old cached process definition.
+    deploymentId = repositoryService1.createDeployment()
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/RepositoryServiceTest.testDeployRevisedProcessAfterDeleteOnOtherProcessEngine.v2.bpmn20.xml")
+      .deploy()
+      .getId();
+
+    // Start process instance on second process engine -> must use revised process definition
+    processDefinitionId = repositoryService2.createProcessDefinitionQuery().singleResult().getId();
+    runtimeService2.startProcessInstanceByKey("oneTaskProcess");
+    task = taskService2.createTaskQuery().singleResult();
+    assertEquals("revised task", task.getName());
+
+    // cleanup
+    repositoryService1.deleteDeployment(deploymentId, true);
+    processEngine1.close();
+    processEngine2.close();
   }
 
 }

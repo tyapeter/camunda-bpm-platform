@@ -34,8 +34,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.camunda.bpm.engine.BadUserRequestException;
+import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.ProcessEngines;
+import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.delegate.TaskListener;
 import org.camunda.bpm.engine.exception.NullValueException;
@@ -43,6 +46,9 @@ import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricDetail;
 import org.camunda.bpm.engine.history.HistoricTaskInstance;
 import org.camunda.bpm.engine.impl.RuntimeServiceImpl;
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.camunda.bpm.engine.impl.cfg.StandaloneInMemProcessEngineConfiguration;
+import org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.history.HistoryLevel;
 import org.camunda.bpm.engine.impl.persistence.entity.HistoricDetailVariableInstanceUpdateEntity;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
@@ -1840,5 +1846,97 @@ public class RuntimeServiceTest extends PluggableProcessEngineTestCase {
     assertNotNull(task);
     assertNotNull(task.getActivityType());
     assertEquals("startEvent", task.getActivityType());
+  }
+
+  //Test for a bug: when the process engine is rebooted the
+  // cache is cleaned and the deployed process definition is
+  // removed from the process cache. This led to problems because
+  // the id wasnt fetched from the DB after a redeploy.
+  public void testStartProcessInstanceByIdAfterReboot() {
+
+    // In case this test is run in a test suite, previous engines might
+    // have been initialized and cached.  First we close the
+    // existing process engines to make sure that the db is clean
+    // and that there are no existing process engines involved.
+    ProcessEngines.destroy();
+
+    // Creating the DB schema (without building a process engine)
+    ProcessEngineConfigurationImpl processEngineConfiguration = new StandaloneInMemProcessEngineConfiguration();
+    processEngineConfiguration.setProcessEngineName("reboot-test-schema");
+    processEngineConfiguration.setJdbcUrl("jdbc:h2:mem:activiti-reboot-test;DB_CLOSE_DELAY=1000");
+    ProcessEngine schemaProcessEngine = processEngineConfiguration.buildProcessEngine();
+
+    // Create process engine and deploy test process
+    ProcessEngine processEngine = new StandaloneProcessEngineConfiguration()
+      .setProcessEngineName("reboot-test")
+      .setDatabaseSchemaUpdate(ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE)
+      .setJdbcUrl("jdbc:h2:mem:activiti-reboot-test;DB_CLOSE_DELAY=1000")
+      .setJobExecutorActivate(false)
+      .buildProcessEngine();
+
+    processEngine.getRepositoryService()
+      .createDeployment()
+      .addClasspathResource("org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml")
+      .deploy();
+      // verify existence of process definition
+    List<ProcessDefinition> processDefinitions = processEngine
+      .getRepositoryService()
+      .createProcessDefinitionQuery()
+      .list();
+
+    assertEquals(1, processDefinitions.size());
+
+    // Start a new Process instance
+    ProcessInstance processInstance = processEngine.getRuntimeService().startProcessInstanceById(processDefinitions.get(0).getId());
+    String processInstanceId = processInstance.getId();
+    assertNotNull(processInstance);
+
+    // Close the process engine
+    processEngine.close();
+    assertNotNull(processEngine.getRuntimeService());
+
+    // Reboot the process engine
+    processEngine = new StandaloneProcessEngineConfiguration()
+      .setProcessEngineName("reboot-test")
+      .setDatabaseSchemaUpdate(org.camunda.bpm.engine.ProcessEngineConfiguration.DB_SCHEMA_UPDATE_FALSE)
+      .setJdbcUrl("jdbc:h2:mem:activiti-reboot-test;DB_CLOSE_DELAY=1000")
+      .setJobExecutorActivate(false)
+      .buildProcessEngine();
+
+    // Check if the existing process instance is still alive
+    processInstance = processEngine
+      .getRuntimeService()
+      .createProcessInstanceQuery()
+      .processInstanceId(processInstanceId)
+      .singleResult();
+
+    assertNotNull(processInstance);
+
+    // Complete the task.  That will end the process instance
+    TaskService taskService = processEngine.getTaskService();
+    Task task = taskService
+      .createTaskQuery()
+      .list()
+      .get(0);
+    taskService.complete(task.getId());
+
+    // Check if the process instance has really ended.  This means that the process definition has
+    // re-loaded into the process definition cache
+    processInstance = processEngine
+      .getRuntimeService()
+      .createProcessInstanceQuery()
+      .processInstanceId(processInstanceId)
+      .singleResult();
+    assertNull(processInstance);
+
+    // Extra check to see if a new process instance can be started as well
+    processInstance = processEngine.getRuntimeService().startProcessInstanceById(processDefinitions.get(0).getId());
+    assertNotNull(processInstance);
+
+    // close the process engine
+    processEngine.close();
+
+    // Cleanup schema
+    schemaProcessEngine.close();
   }
 }
