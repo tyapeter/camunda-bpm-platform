@@ -14,7 +14,9 @@
 package org.camunda.bpm.engine.test.api.repository;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -29,6 +31,7 @@ import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.exception.NotFoundException;
 import org.camunda.bpm.engine.exception.NotValidException;
 import org.camunda.bpm.engine.impl.RepositoryServiceImpl;
+import org.camunda.bpm.engine.impl.bpmn.deployer.BpmnDeployer;
 import org.camunda.bpm.engine.impl.bpmn.parser.BpmnParse;
 import org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.interceptor.Command;
@@ -60,6 +63,9 @@ import org.camunda.bpm.engine.test.util.TestExecutionListener;
  * @author Roman Smirnov
  */
 public class RepositoryServiceTest extends PluggableProcessEngineTestCase {
+
+  private static final String NAMESPACE = "xmlns='http://www.omg.org/spec/BPMN/20100524/MODEL'";
+  private static final String TARGET_NAMESPACE = "targetNamespace='" + BpmnParse.CAMUNDA_BPMN_EXTENSIONS_NS + "'";
 
   public void tearDown() throws Exception {
     CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutorTxRequired();
@@ -677,6 +683,97 @@ public class RepositoryServiceTest extends PluggableProcessEngineTestCase {
 
     repositoryService.deleteDeployment(deployment1Id);
     repositoryService.deleteDeployment(deployment2Id);
+  }
+
+  public void testGetProcessDefinitions() {
+    List<String> deploymentIds = new ArrayList<String>();
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='IDR' name='Insurance Damage Report 1' />" + "</definitions>")));
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='IDR' name='Insurance Damage Report 2' />" + "</definitions>")));
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='IDR' name='Insurance Damage Report 3' />" + "</definitions>")));
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='EN' name='Expense Note 1' />" + "</definitions>")));
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='EN' name='Expense Note 2' />" + "</definitions>")));
+
+    List<ProcessDefinition> processDefinitions = repositoryService
+      .createProcessDefinitionQuery()
+      .orderByProcessDefinitionKey().asc()
+      .orderByProcessDefinitionVersion().desc()
+      .list();
+
+    assertNotNull(processDefinitions);
+
+    assertEquals(5, processDefinitions.size());
+
+    ProcessDefinition processDefinition = processDefinitions.get(0);
+    assertEquals("EN", processDefinition.getKey());
+    assertEquals("Expense Note 2", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("EN:2"));
+    assertEquals(2, processDefinition.getVersion());
+
+    processDefinition = processDefinitions.get(1);
+    assertEquals("EN", processDefinition.getKey());
+    assertEquals("Expense Note 1", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("EN:1"));
+    assertEquals(1, processDefinition.getVersion());
+
+    processDefinition = processDefinitions.get(2);
+    assertEquals("IDR", processDefinition.getKey());
+    assertEquals("Insurance Damage Report 3", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("IDR:3"));
+    assertEquals(3, processDefinition.getVersion());
+
+    processDefinition = processDefinitions.get(3);
+    assertEquals("IDR", processDefinition.getKey());
+    assertEquals("Insurance Damage Report 2", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("IDR:2"));
+    assertEquals(2, processDefinition.getVersion());
+
+    processDefinition = processDefinitions.get(4);
+    assertEquals("IDR", processDefinition.getKey());
+    assertEquals("Insurance Damage Report 1", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("IDR:1"));
+    assertEquals(1, processDefinition.getVersion());
+
+    deleteDeployments(deploymentIds);
+  }
+
+  public void testDeployIdenticalProcessDefinitions() {
+    List<String> deploymentIds = new ArrayList<String>();
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='IDR' name='Insurance Damage Report' />" + "</definitions>")));
+    deploymentIds.add(deployProcessString(("<definitions " + NAMESPACE + " " + TARGET_NAMESPACE + ">" + "  <process id='IDR' name='Insurance Damage Report' />" + "</definitions>")));
+
+    List<ProcessDefinition> processDefinitions = repositoryService
+      .createProcessDefinitionQuery()
+      .orderByProcessDefinitionKey().asc()
+      .orderByProcessDefinitionVersion().desc()
+      .list();
+
+    assertNotNull(processDefinitions);
+    assertEquals(2, processDefinitions.size());
+
+    ProcessDefinition processDefinition = processDefinitions.get(0);
+    assertEquals("IDR", processDefinition.getKey());
+    assertEquals("Insurance Damage Report", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("IDR:2"));
+    assertEquals(2, processDefinition.getVersion());
+
+    processDefinition = processDefinitions.get(1);
+    assertEquals("IDR", processDefinition.getKey());
+    assertEquals("Insurance Damage Report", processDefinition.getName());
+    assertTrue(processDefinition.getId().startsWith("IDR:1"));
+    assertEquals(1, processDefinition.getVersion());
+
+    deleteDeployments(deploymentIds);
+  }
+
+  private String deployProcessString(String processString) {
+    String resourceName = "xmlString." + BpmnDeployer.BPMN_RESOURCE_SUFFIXES[0];
+    return repositoryService.createDeployment().addString(resourceName, processString).deploy().getId();
+  }
+
+  private void deleteDeployments(Collection<String> deploymentIds) {
+    for (String deploymentId : deploymentIds) {
+      repositoryService.deleteDeployment(deploymentId);
+    }
   }
 
 }
