@@ -14,8 +14,12 @@
 package org.camunda.bpm.engine.test.api.repository;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineException;
@@ -24,12 +28,17 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.exception.NotFoundException;
 import org.camunda.bpm.engine.exception.NotValidException;
+import org.camunda.bpm.engine.impl.RepositoryServiceImpl;
+import org.camunda.bpm.engine.impl.bpmn.parser.BpmnParse;
 import org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
 import org.camunda.bpm.engine.impl.jobexecutor.TimerActivateProcessDefinitionHandler;
 import org.camunda.bpm.engine.impl.persistence.deploy.DeploymentCache;
+import org.camunda.bpm.engine.impl.pvm.PvmActivity;
+import org.camunda.bpm.engine.impl.pvm.PvmTransition;
+import org.camunda.bpm.engine.impl.pvm.ReadOnlyProcessDefinition;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
@@ -552,6 +561,122 @@ public class RepositoryServiceTest extends PluggableProcessEngineTestCase {
     repositoryService1.deleteDeployment(deploymentId, true);
     processEngine1.close();
     processEngine2.close();
+  }
+
+  public void testDeploymentPersistence() {
+    org.camunda.bpm.engine.repository.Deployment deployment = repositoryService
+      .createDeployment()
+      .name("strings")
+      .addString("org/camunda/bpm/engine/test/test/HelloWorld.string", "hello world")
+      .addString("org/camunda/bpm/engine/test/test/TheAnswer.string", "42")
+      .deploy();
+
+    List<org.camunda.bpm.engine.repository.Deployment> deployments
+      = repositoryService.createDeploymentQuery().list();
+    assertEquals(1, deployments.size());
+    deployment = deployments.get(0);
+
+    assertEquals("strings", deployment.getName());
+    assertNotNull(deployment.getDeploymentTime());
+
+    String deploymentId = deployment.getId();
+    List<String> resourceNames = repositoryService.getDeploymentResourceNames(deploymentId);
+    Set<String> expectedResourceNames = new HashSet<String>();
+    expectedResourceNames.add("org/camunda/bpm/engine/test/test/HelloWorld.string");
+    expectedResourceNames.add("org/camunda/bpm/engine/test/test/TheAnswer.string");
+    assertEquals(expectedResourceNames, new HashSet<String>(resourceNames));
+
+    InputStream resourceStream = repositoryService.getResourceAsStream(deploymentId, "org/camunda/bpm/engine/test/test/HelloWorld.string");
+    assertTrue(Arrays.equals("hello world".getBytes(), IoUtil.readInputStream(resourceStream, "test")));
+
+    resourceStream = repositoryService.getResourceAsStream(deploymentId, "org/camunda/bpm/engine/test/test/TheAnswer.string");
+    assertTrue(Arrays.equals("42".getBytes(), IoUtil.readInputStream(resourceStream, "test")));
+
+    repositoryService.deleteDeployment(deploymentId);
+  }
+
+  public void testProcessDefinitionPersistence() {
+    String deploymentId = repositoryService
+      .createDeployment()
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processOne.bpmn20.xml")
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processTwo.bpmn20.xml")
+      .deploy()
+      .getId();
+
+    List<ProcessDefinition> processDefinitions = repositoryService
+      .createProcessDefinitionQuery()
+      .list();
+
+    assertEquals(2, processDefinitions.size());
+
+    repositoryService.deleteDeployment(deploymentId);
+  }
+
+  public void testProcessDefinitionIntrospection() {
+    String deploymentId = repositoryService
+      .createDeployment()
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processOne.bpmn20.xml")
+      .deploy()
+      .getId();
+
+    String procDefId = repositoryService.createProcessDefinitionQuery().singleResult().getId();
+    ReadOnlyProcessDefinition processDefinition = ((RepositoryServiceImpl)repositoryService).getDeployedProcessDefinition(procDefId);
+
+    assertEquals(procDefId, processDefinition.getId());
+    assertEquals("Process One", processDefinition.getName());
+    assertEquals("the first process", processDefinition.getProperty("documentation"));
+
+    PvmActivity start = processDefinition.findActivity("start");
+    assertNotNull(start);
+    assertEquals("start", start.getId());
+    assertEquals("S t a r t", start.getProperty("name"));
+    assertEquals("the start event", start.getProperty("documentation"));
+    assertEquals(Collections.EMPTY_LIST, start.getActivities());
+    List<PvmTransition> outgoingTransitions = start.getOutgoingTransitions();
+    assertEquals(1, outgoingTransitions.size());
+    assertEquals("${a == b}", outgoingTransitions.get(0).getProperty(BpmnParse.PROPERTYNAME_CONDITION_TEXT));
+
+    PvmActivity end = processDefinition.findActivity("end");
+    assertNotNull(end);
+    assertEquals("end", end.getId());
+
+    PvmTransition transition = outgoingTransitions.get(0);
+    assertEquals("flow1", transition.getId());
+    assertEquals("Flow One", transition.getProperty("name"));
+    assertEquals("The only transitions in the process", transition.getProperty("documentation"));
+    assertSame(start, transition.getSource());
+    assertSame(end, transition.getDestination());
+
+    repositoryService.deleteDeployment(deploymentId);
+  }
+
+  public void testProcessDefinitionQuery() {
+    String deployment1Id = repositoryService
+      .createDeployment()
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processOne.bpmn20.xml")
+      .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processTwo.bpmn20.xml")
+      .deploy()
+      .getId();
+
+    List<ProcessDefinition> processDefinitions = repositoryService
+      .createProcessDefinitionQuery()
+      .orderByProcessDefinitionName().asc().orderByProcessDefinitionVersion().asc()
+      .list();
+
+    assertEquals(2, processDefinitions.size());
+
+    String deployment2Id = repositoryService
+            .createDeployment()
+            .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processOne.bpmn20.xml")
+            .addClasspathResource("org/camunda/bpm/engine/test/api/repository/processTwo.bpmn20.xml")
+            .deploy()
+            .getId();
+
+    assertEquals(4, repositoryService.createProcessDefinitionQuery().orderByProcessDefinitionName().asc().count());
+    assertEquals(2, repositoryService.createProcessDefinitionQuery().latestVersion().orderByProcessDefinitionName().asc().count());
+
+    repositoryService.deleteDeployment(deployment1Id);
+    repositoryService.deleteDeployment(deployment2Id);
   }
 
 }
