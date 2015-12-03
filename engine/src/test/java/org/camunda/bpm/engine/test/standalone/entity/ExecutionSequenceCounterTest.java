@@ -10,14 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.persistence;
+package org.camunda.bpm.engine.test.standalone.entity;
 
 import java.util.List;
 
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.runtime.JobQuery;
 import org.camunda.bpm.engine.test.Deployment;
-import org.camunda.bpm.engine.test.persistence.ExecutionOrderListener.ActivitySequenceCounterMap;
+import org.camunda.bpm.engine.test.standalone.entity.ExecutionOrderListener.ActivitySequenceCounterMap;
 import org.junit.Before;
 
 /**
@@ -269,7 +269,7 @@ public class ExecutionSequenceCounterTest extends PluggableProcessEngineTestCase
     assertProcessEnded(processInstanceId);
   }
 
-  @Deployment(resources = {"org/camunda/bpm/engine/test/persistence/ExecutionSequenceCounterTest.testForkReplaceBy.bpmn20.xml"})
+  @Deployment(resources = {"org/camunda/bpm/engine/test/standalone/entity/ExecutionSequenceCounterTest.testForkReplaceBy.bpmn20.xml"})
   public void testForkReplaceByAnotherExecutionOrder() {
     // given
     String processInstanceId = runtimeService.startProcessInstanceByKey("process").getId();
