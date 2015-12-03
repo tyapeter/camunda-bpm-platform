@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.pvm;
+package org.camunda.bpm.engine.test.standalone.pvm;
 
 import java.util.ArrayList;
 
@@ -23,13 +23,13 @@ import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
 import org.camunda.bpm.engine.impl.pvm.runtime.ExecutionImpl;
 import org.camunda.bpm.engine.impl.test.PvmTestCase;
-import org.camunda.bpm.engine.test.pvm.activities.Automatic;
-import org.camunda.bpm.engine.test.pvm.activities.EmbeddedSubProcess;
-import org.camunda.bpm.engine.test.pvm.activities.End;
-import org.camunda.bpm.engine.test.pvm.activities.ParallelGateway;
-import org.camunda.bpm.engine.test.pvm.activities.WaitState;
-import org.camunda.bpm.engine.test.pvm.activities.While;
-import org.camunda.bpm.engine.test.pvm.verification.TransitionInstanceVerifyer;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.Automatic;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.EmbeddedSubProcess;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.End;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.ParallelGateway;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.WaitState;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.While;
+import org.camunda.bpm.engine.test.standalone.pvm.verification.TransitionInstanceVerifyer;
 
 /**
  * @author Daniel Meyer

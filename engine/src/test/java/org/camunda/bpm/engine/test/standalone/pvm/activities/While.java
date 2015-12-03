@@ -11,9 +11,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.pvm.activities;
-
-import java.util.List;
+package org.camunda.bpm.engine.test.standalone.pvm.activities;
 
 import org.camunda.bpm.engine.impl.pvm.PvmTransition;
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityBehavior;
@@ -23,14 +21,38 @@ import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution;
 /**
  * @author Tom Baeyens
  */
-public class Automatic implements ActivityBehavior {
+public class While implements ActivityBehavior {
+
+  String variableName;
+  int from;
+  int to;
+
+  public While(String variableName, int from, int to) {
+    this.variableName = variableName;
+    this.from = from;
+    this.to = to;
+  }
 
   public void execute(ActivityExecution execution) throws Exception {
-    List<PvmTransition> outgoingTransitions = execution.getActivity().getOutgoingTransitions();
-    if(outgoingTransitions.isEmpty()) {
-      execution.end(true);
+    PvmTransition more = execution.getActivity().findOutgoingTransition("more");
+    PvmTransition done = execution.getActivity().findOutgoingTransition("done");
+
+    Integer value = (Integer) execution.getVariable(variableName);
+
+    if (value==null) {
+      execution.setVariable(variableName, from);
+      execution.leaveActivityViaTransition(more);
+
     } else {
-      execution.leaveActivityViaTransition(outgoingTransitions.get(0));
+      value = value+1;
+
+      if (value<to) {
+        execution.setVariable(variableName, value);
+        execution.leaveActivityViaTransition(more);
+
+      } else {
+        execution.leaveActivityViaTransition(done);
+      }
     }
   }
 

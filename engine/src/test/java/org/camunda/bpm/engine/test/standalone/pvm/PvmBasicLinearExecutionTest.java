@@ -1,4 +1,4 @@
-package org.camunda.bpm.engine.test.pvm;
+package org.camunda.bpm.engine.test.standalone.pvm;
 import java.util.ArrayList;
 
 import org.camunda.bpm.engine.impl.pvm.ProcessDefinitionBuilder;
@@ -6,18 +6,18 @@ import org.camunda.bpm.engine.impl.pvm.PvmExecution;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessDefinition;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessInstance;
 import org.camunda.bpm.engine.impl.test.PvmTestCase;
-import org.camunda.bpm.engine.test.pvm.activities.Automatic;
-import org.camunda.bpm.engine.test.pvm.activities.End;
-import org.camunda.bpm.engine.test.pvm.activities.WaitState;
-import org.camunda.bpm.engine.test.pvm.activities.While;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.Automatic;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.End;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.WaitState;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.While;
 
 
 /* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,10 +46,10 @@ public class PvmBasicLinearExecutionTest extends PvmTestCase {
         .behavior(new End())
       .endActivity()
     .buildProcessDefinition();
-    
+
     PvmProcessInstance processInstance = processDefinition.createProcessInstance();
     processInstance.start();
-    
+
     assertEquals(new ArrayList<String>(), processInstance.findActiveActivityIds());
     assertTrue(processInstance.isEnded());
   }
@@ -74,10 +74,10 @@ public class PvmBasicLinearExecutionTest extends PvmTestCase {
         .behavior(new End())
       .endActivity()
     .buildProcessDefinition();
-    
+
     PvmProcessInstance processInstance = processDefinition.createProcessInstance();
     processInstance.start();
-    
+
     assertEquals(new ArrayList<String>(), processInstance.findActiveActivityIds());
     assertTrue(processInstance.isEnded());
   }
@@ -102,13 +102,13 @@ public class PvmBasicLinearExecutionTest extends PvmTestCase {
         .behavior(new End())
       .endActivity()
     .buildProcessDefinition();
-    
+
     PvmProcessInstance processInstance = processDefinition.createProcessInstance();
     processInstance.start();
-    
+
     PvmExecution activityInstance = processInstance.findExecution("two");
     assertNotNull(activityInstance);
-    
+
     activityInstance.signal(null, null);
 
     assertEquals(new ArrayList<String>(), processInstance.findActiveActivityIds());
@@ -147,10 +147,10 @@ public class PvmBasicLinearExecutionTest extends PvmTestCase {
         .behavior(new End())
       .endActivity()
     .buildProcessDefinition();
-    
+
     PvmProcessInstance processInstance = processDefinition.createProcessInstance();
     processInstance.start();
-    
+
     PvmExecution activityInstance = processInstance.findExecution("one");
     assertNotNull(activityInstance);
     activityInstance.signal(null, null);
@@ -202,10 +202,10 @@ public class PvmBasicLinearExecutionTest extends PvmTestCase {
         .behavior(new End())
       .endActivity()
     .buildProcessDefinition();
-    
+
     PvmProcessInstance processInstance = processDefinition.createProcessInstance();
     processInstance.start();
-    
+
     assertEquals(new ArrayList<String>(), processInstance.findActiveActivityIds());
     assertTrue(processInstance.isEnded());
   }

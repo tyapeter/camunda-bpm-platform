@@ -11,25 +11,27 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.pvm.activities;
+package org.camunda.bpm.engine.test.standalone.pvm.activities;
+
+import java.util.List;
 
 import org.camunda.bpm.engine.impl.pvm.PvmTransition;
+import org.camunda.bpm.engine.impl.pvm.delegate.ActivityBehavior;
 import org.camunda.bpm.engine.impl.pvm.delegate.ActivityExecution;
-import org.camunda.bpm.engine.impl.pvm.delegate.SignallableActivityBehavior;
 
 
 /**
  * @author Tom Baeyens
  */
-public class WaitState implements SignallableActivityBehavior {
+public class Automatic implements ActivityBehavior {
 
   public void execute(ActivityExecution execution) throws Exception {
-    "some debug point".toString();
-
+    List<PvmTransition> outgoingTransitions = execution.getActivity().getOutgoingTransitions();
+    if(outgoingTransitions.isEmpty()) {
+      execution.end(true);
+    } else {
+      execution.leaveActivityViaTransition(outgoingTransitions.get(0));
+    }
   }
 
-  public void signal(ActivityExecution execution, String signalName, Object signalData) throws Exception {
-    PvmTransition transition = execution.getActivity().getOutgoingTransitions().get(0);
-    execution.leaveActivityViaTransition(transition);
-  }
 }

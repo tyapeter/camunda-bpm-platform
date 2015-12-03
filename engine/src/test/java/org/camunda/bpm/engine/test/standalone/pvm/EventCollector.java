@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.test.pvm;
+package org.camunda.bpm.engine.test.standalone.pvm;
 
 import java.util.ArrayList;
 import java.util.List;

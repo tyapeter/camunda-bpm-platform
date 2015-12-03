@@ -10,48 +10,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.camunda.bpm.engine.test.standalone.pvm;
 
-package org.camunda.bpm.engine.test.pvm;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.camunda.bpm.engine.impl.pvm.ProcessDefinitionBuilder;
+import org.camunda.bpm.engine.impl.pvm.PvmExecution;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessDefinition;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessInstance;
 import org.camunda.bpm.engine.impl.test.PvmTestCase;
-import org.camunda.bpm.engine.test.pvm.activities.Automatic;
-import org.camunda.bpm.engine.test.pvm.activities.WaitState;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.WaitState;
+import org.junit.Test;
 
 
 /**
  * @author Tom Baeyens
  */
-public class PvmProcessInstanceEndTest extends PvmTestCase {
+public class PvmVariablesTest extends PvmTestCase {
 
-  public void testSimpleProcessInstanceEnd() {
-    EventCollector eventCollector = new EventCollector();
-    
+  @Test
+  public void testVariables() {
     PvmProcessDefinition processDefinition = new ProcessDefinitionBuilder()
-      .executionListener(org.camunda.bpm.engine.impl.pvm.PvmEvent.EVENTNAME_START, eventCollector)
-      .executionListener(org.camunda.bpm.engine.impl.pvm.PvmEvent.EVENTNAME_END, eventCollector)
-      .createActivity("start")
+      .createActivity("a")
         .initial()
-        .behavior(new Automatic())
-        .transition("wait")
-      .endActivity()
-      .createActivity("wait")
         .behavior(new WaitState())
-        .executionListener(org.camunda.bpm.engine.impl.pvm.PvmEvent.EVENTNAME_START, eventCollector)
-        .executionListener(org.camunda.bpm.engine.impl.pvm.PvmEvent.EVENTNAME_END, eventCollector)
       .endActivity()
     .buildProcessDefinition();
-    
+      
     PvmProcessInstance processInstance = processDefinition.createProcessInstance();
+    processInstance.setVariable("amount", 500L);
+    processInstance.setVariable("msg", "hello world");
     processInstance.start();
 
-    System.err.println(eventCollector);
-    
-    processInstance.deleteCascade("test");
+    assertEquals(500L, processInstance.getVariable("amount"));
+    assertEquals("hello world", processInstance.getVariable("msg"));
 
-    System.err.println();
-    System.err.println(eventCollector);
+    PvmExecution activityInstance = processInstance.findExecution("a");
+    assertEquals(500L, activityInstance.getVariable("amount"));
+    assertEquals("hello world", activityInstance.getVariable("msg"));
+    
+    Map<String, Object> expectedVariables = new HashMap<String, Object>();
+    expectedVariables.put("amount", 500L);
+    expectedVariables.put("msg", "hello world");
+
+    assertEquals(expectedVariables, activityInstance.getVariables());
+    assertEquals(expectedVariables, processInstance.getVariables());
   }
 }

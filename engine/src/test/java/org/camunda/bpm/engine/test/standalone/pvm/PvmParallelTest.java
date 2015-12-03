@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.pvm;
+package org.camunda.bpm.engine.test.standalone.pvm;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,10 +20,10 @@ import org.camunda.bpm.engine.impl.pvm.PvmExecution;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessDefinition;
 import org.camunda.bpm.engine.impl.pvm.PvmProcessInstance;
 import org.camunda.bpm.engine.impl.test.PvmTestCase;
-import org.camunda.bpm.engine.test.pvm.activities.Automatic;
-import org.camunda.bpm.engine.test.pvm.activities.End;
-import org.camunda.bpm.engine.test.pvm.activities.ParallelGateway;
-import org.camunda.bpm.engine.test.pvm.activities.WaitState;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.Automatic;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.End;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.ParallelGateway;
+import org.camunda.bpm.engine.test.standalone.pvm.activities.WaitState;
 
 
 
