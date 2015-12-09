@@ -42,10 +42,16 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
      }
      else {
        // TODO: is it safe to assume we are in a command context?
-       return Context
-         .getProcessEngineConfiguration()
-         .getFallbackSerializerFactory()
-         .getSerializer(serializerName);
+       // TODO: null check is not the proper solution;
+       if (Context.getProcessEngineConfiguration() != null) {
+         return Context
+             .getProcessEngineConfiguration()
+             .getFallbackSerializerFactory()
+             .getSerializer(serializerName);
+       }
+       else {
+         return null;
+       }
      }
   }
 
