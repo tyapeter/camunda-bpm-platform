@@ -61,4 +61,8 @@ public abstract class AbstractTypedValueSerializer<T extends TypedValue> impleme
     return false;
   }
 
+  public boolean canHandle(String serializerName) {
+    return getName().equals(serializerName);
+  }
+
 }

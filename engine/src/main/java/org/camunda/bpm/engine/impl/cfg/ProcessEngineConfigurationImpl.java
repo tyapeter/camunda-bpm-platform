@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
@@ -243,6 +244,8 @@ import org.camunda.bpm.engine.impl.variable.serializer.NullValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.ShortValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.StringValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.TypedValueSerializer;
+import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializerFactory;
+import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializerResolver;
 import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializers;
 import org.camunda.bpm.engine.impl.variable.serializer.jpa.EntityManagerSession;
 import org.camunda.bpm.engine.impl.variable.serializer.jpa.EntityManagerSessionFactory;
@@ -362,6 +365,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected List<TypedValueSerializer> customPreVariableSerializers;
   protected List<TypedValueSerializer> customPostVariableSerializers;
   protected VariableSerializers variableSerializers;
+  // TODO: should be a list?
+  protected VariableSerializerResolver variableSerializerResolver;
+  // TODO: should be part of variable serializers?!
+  // TODO: alternatively, could be a similar interface to VariableSerializers that fits the factory approach
+  protected VariableSerializerFactory fallbackSerializerFactory;
+
   protected String defaultSerializationFormat = Variables.SerializationDataFormats.JAVA.getName();
   protected String defaultCharsetName = null;
   protected Charset defaultCharset = null;
@@ -1885,6 +1894,22 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public VariableSerializers getVariableSerializers() {
     return variableSerializers;
+  }
+
+  public VariableSerializerResolver getVariableSerializerResolver() {
+    return variableSerializerResolver;
+  }
+
+  public void setVariableSerializerResolver(VariableSerializerResolver variableSerializerResolver) {
+    this.variableSerializerResolver = variableSerializerResolver;
+  }
+
+  public VariableSerializerFactory getFallbackSerializerFactory() {
+    return fallbackSerializerFactory;
+  }
+
+  public void setFallbackSerializerFactory(VariableSerializerFactory fallbackSerializerFactory) {
+    this.fallbackSerializerFactory = fallbackSerializerFactory;
   }
 
   public ProcessEngineConfigurationImpl setVariableTypes(VariableSerializers variableSerializers) {

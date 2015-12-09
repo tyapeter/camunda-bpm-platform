@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.impl.interceptor.CommandContextListener;
 import org.camunda.bpm.engine.impl.variable.serializer.TypedValueSerializer;
 import org.camunda.bpm.engine.impl.variable.serializer.ValueFields;
 import org.camunda.bpm.engine.impl.variable.serializer.ValueFieldsImpl;
+import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializerResolver;
 import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializers;
 import org.camunda.bpm.engine.variable.impl.value.UntypedValueImpl;
 import org.camunda.bpm.engine.variable.type.ValueType;
@@ -181,7 +182,10 @@ public class TypedValueField implements DbEntityLifecycleAware, CommandContextLi
 
   public static VariableSerializers getSerializers() {
     if (Context.getCommandContext() != null) {
-      return Context.getProcessEngineConfiguration().getVariableSerializers();
+      VariableSerializers variableSerializers = Context.getProcessEngineConfiguration().getVariableSerializers();
+      VariableSerializerResolver contextSpecificResolver = Context.getProcessEngineConfiguration().getVariableSerializerResolver();
+
+      return variableSerializers.join(contextSpecificResolver.resolve());
     } else {
       throw LOG.serializerOutOfContextException();
     }

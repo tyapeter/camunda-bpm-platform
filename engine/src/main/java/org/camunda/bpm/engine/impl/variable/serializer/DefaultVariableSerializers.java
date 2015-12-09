@@ -35,12 +35,24 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
   protected Map<String, TypedValueSerializer<?>> serializerMap = new HashMap<String, TypedValueSerializer<?>>();
 
   public TypedValueSerializer<?> getSerializerByName(String serializerName) {
-    return serializerMap.get(serializerName);
+     TypedValueSerializer<?> serializer = serializerMap.get(serializerName);
+
+     if (serializer != null) {
+       return serializer;
+     }
+     else {
+       // TODO: is it safe to assume we are in a command context?
+       return Context
+         .getProcessEngineConfiguration()
+         .getFallbackSerializerFactory()
+         .getSerializer(serializerName);
+     }
   }
 
   public TypedValueSerializer<?> findSerializerForValue(TypedValue value) {
 
     String defaultSerializationFormat = Context.getProcessEngineConfiguration().getDefaultSerializationFormat();
+    VariableSerializerFactory fallbackSerializerFactory = Context.getProcessEngineConfiguration().getFallbackSerializerFactory();
 
     List<TypedValueSerializer<?>> matchedSerializers = new ArrayList<TypedValueSerializer<?>>();
 
@@ -66,7 +78,14 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
     }
 
     if(matchedSerializers.size() == 0) {
-      throw new ProcessEngineException("Cannot find serializer for value '"+value+"'.");
+      TypedValueSerializer<?> serializer = fallbackSerializerFactory.getSerializer(value);
+      if (serializer != null) {
+        return serializer;
+      }
+      else {
+        throw new ProcessEngineException("Cannot find serializer for value '"+value+"'.");
+      }
+
     }
     else if(matchedSerializers.size() == 1) {
       return matchedSerializers.get(0);
@@ -122,6 +141,32 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
     serializerList.remove(serializer);
     serializerMap.remove(serializer.getName());
     return this;
+  }
+
+  public VariableSerializers join(VariableSerializers other) {
+    DefaultVariableSerializers copy = new DefaultVariableSerializers();
+
+    copy.serializerMap = new HashMap<String, TypedValueSerializer<?>>(serializerMap);
+    // TODO: we should not rely on this cast
+    copy.serializerMap.putAll(((DefaultVariableSerializers) other).serializerMap);
+
+    copy.serializerList = new ArrayList<TypedValueSerializer<?>>();
+
+    // "new" serializers override existing ones if their names match
+    for (TypedValueSerializer<?> thisSerializer : serializerList) {
+      copy.serializerList.add(serializerMap.get(thisSerializer.getName()));
+    }
+
+    // add all "new" serializers that did not exist before to the end of the list
+    // TODO: this might not be desired for Spin serializers => need control over the order
+    for (TypedValueSerializer<?> otherSerializer : ((DefaultVariableSerializers) other).serializerList) {
+      if (!serializerMap.containsKey(otherSerializer.getName())) {
+        copy.serializerList.add(otherSerializer);
+      }
+    }
+
+
+    return copy;
   }
 
 

@@ -12,11 +12,14 @@
  */
 package org.camunda.bpm.application;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.Callable;
+
 import javax.script.ScriptEngine;
 
 import org.camunda.bpm.application.impl.DefaultElResolverLookup;
@@ -26,11 +29,13 @@ import org.camunda.bpm.container.RuntimeContainerDelegate;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.delegate.TaskListener;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
-import org.camunda.bpm.engine.impl.core.model.Properties;
 import org.camunda.bpm.engine.impl.javax.el.BeanELResolver;
 import org.camunda.bpm.engine.impl.javax.el.ELResolver;
 import org.camunda.bpm.engine.impl.scripting.ExecutableScript;
 import org.camunda.bpm.engine.impl.util.ClassLoaderUtil;
+import org.camunda.bpm.engine.impl.variable.serializer.DefaultVariableSerializers;
+import org.camunda.bpm.engine.impl.variable.serializer.TypedValueSerializer;
+import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializers;
 import org.camunda.bpm.engine.repository.DeploymentBuilder;
 
 
@@ -46,7 +51,7 @@ public abstract class AbstractProcessApplication implements ProcessApplicationIn
   protected BeanELResolver processApplicationBeanElResolver;
   protected ProcessApplicationScriptEnvironment processApplicationScriptEnvironment;
 
-  protected Properties properties = new Properties();
+  protected VariableSerializers variableSerializers;
 
   protected boolean isDeployed = false;
 
@@ -136,11 +141,6 @@ public abstract class AbstractProcessApplication implements ProcessApplicationIn
     return Collections.<String, String>emptyMap();
   }
 
-  //TODO: interface; package of properties class
-  public Properties getPropertiesTyped() {
-    return properties;
-  }
-
   public ELResolver getElResolver() {
     if(processApplicationElResolver == null) {
       synchronized (this) {
@@ -211,6 +211,24 @@ public abstract class AbstractProcessApplication implements ProcessApplicationIn
       }
     }
     return processApplicationScriptEnvironment;
+  }
+
+  public VariableSerializers getVariableSerializers() {
+    // TODO: should be initialized on application startup which saves synchronization
+//    if (variableSerializers == null) {
+//      synchronized (this) {
+//        if (variableSerializers == null) {
+//          // TODO: should this be exchangeable?
+//          variableSerializers = new DefaultVariableSerializers();
+//        }
+//      }
+//    }
+
+    return variableSerializers;
+  }
+
+  public void setVariableSerializers(VariableSerializers variableSerializers) {
+    this.variableSerializers = variableSerializers;
   }
 
 }

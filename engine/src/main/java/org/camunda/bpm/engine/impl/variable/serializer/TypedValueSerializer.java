@@ -90,4 +90,10 @@ public interface TypedValueSerializer<T extends TypedValue> {
    */
   boolean isMutableValue(T typedValue);
 
+  /**
+   * Returns true if this serializer is also able to "jump in" for other serializers
+   */
+  // TODO: proper javadoc
+  boolean canHandle(String serializerName);
+
 }

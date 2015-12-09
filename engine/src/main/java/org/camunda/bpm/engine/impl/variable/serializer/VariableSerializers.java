@@ -55,4 +55,6 @@ public interface VariableSerializers {
 
   public int getSerializerIndexByName(String serializerName);
 
+  public VariableSerializers join(VariableSerializers other);
+
 }
