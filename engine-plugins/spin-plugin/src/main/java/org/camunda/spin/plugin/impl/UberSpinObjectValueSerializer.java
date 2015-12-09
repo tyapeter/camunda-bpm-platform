@@ -21,60 +21,49 @@ import java.io.OutputStreamWriter;
 
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.util.IoUtil;
-import org.camunda.bpm.engine.impl.variable.serializer.AbstractSerializableValueSerializer;
-import org.camunda.bpm.engine.impl.variable.serializer.ValueFields;
-import org.camunda.bpm.engine.variable.type.SerializableValueType;
-import org.camunda.spin.Spin;
-import org.camunda.spin.plugin.variable.value.SpinValue;
-import org.camunda.spin.plugin.variable.value.impl.SpinValueImpl;
+import org.camunda.bpm.engine.impl.variable.serializer.AbstractObjectValueSerializer;
 import org.camunda.spin.spi.DataFormat;
+import org.camunda.spin.spi.DataFormatMapper;
+import org.camunda.spin.spi.DataFormatReader;
+import org.camunda.spin.spi.DataFormatWriter;
 
 /**
- * @author Roman Smirnov
+ * @author Thorben Lindhauer
  *
  */
-public abstract class SpinValueSerializer extends AbstractSerializableValueSerializer<SpinValue> {
+public class UberSpinObjectValueSerializer extends AbstractObjectValueSerializer {
 
-  protected DataFormat<?> dataFormat;
   protected String name;
 
-  public SpinValueSerializer(SerializableValueType type, DataFormat<?> dataFormat, String name) {
-    super(type, dataFormat.getName());
-    this.dataFormat = dataFormat;
-    this.name = name;
+  public UberSpinObjectValueSerializer() {
+    super(name)
+    this.name = "spin";
   }
 
   public String getName() {
     return name;
   }
 
-  protected void writeToValueFields(SpinValue value, ValueFields valueFields, byte[] serializedValue) {
-    valueFields.setByteArrayValue(serializedValue);
+  protected boolean isSerializationTextBased() {
+    // for the moment we assume that all spin data formats are text based.
+    return true;
   }
 
-  protected void updateTypedValue(SpinValue value, String serializedStringValue) {
-    SpinValueImpl spinValue = (SpinValueImpl) value;
-    spinValue.setValueSerialized(serializedStringValue);
-    spinValue.setSerializationDataFormat(serializationDataFormat);
-  }
-
-  protected boolean canSerializeValue(Object value) {
-    if (value instanceof Spin<?>) {
-      Spin<?> wrapper = (Spin<?>) value;
-      return wrapper.getDataFormatName().equals(serializationDataFormat);
-    }
-
-    return false;
+  protected String getTypeNameForDeserialized(Object deserializedObject) {
+    return dataFormat.getMapper().getCanonicalTypeName(deserializedObject);
   }
 
   protected byte[] serializeToByteArray(Object deserializedObject) throws Exception {
+    DataFormatMapper mapper = dataFormat.getMapper();
+    DataFormatWriter writer = dataFormat.getWriter();
+
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     OutputStreamWriter outWriter = new OutputStreamWriter(out, Context.getProcessEngineConfiguration().getDefaultCharset());
     BufferedWriter bufferedWriter = new BufferedWriter(outWriter);
 
     try {
-      Spin<?> wrapper = (Spin<?>) deserializedObject;
-      wrapper.writeToWriter(bufferedWriter);
+      Object mappedObject = mapper.mapJavaToInternal(deserializedObject);
+      writer.writeToWriter(bufferedWriter, mappedObject);
       return out.toByteArray();
     }
     finally {
@@ -84,25 +73,27 @@ public abstract class SpinValueSerializer extends AbstractSerializableValueSeria
     }
   }
 
-  protected Object deserializeFromByteArray(byte[] object, ValueFields valueFields) throws Exception {
-    ByteArrayInputStream bais = new ByteArrayInputStream(object);
+  protected Object deserializeFromByteArray(byte[] bytes, String objectTypeName) throws Exception {
+    DataFormatMapper mapper = dataFormat.getMapper();
+    DataFormatReader reader = dataFormat.getReader();
+
+    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
     InputStreamReader inReader = new InputStreamReader(bais, Context.getProcessEngineConfiguration().getDefaultCharset());
     BufferedReader bufferedReader = new BufferedReader(inReader);
 
     try {
-      Object wrapper = dataFormat.getReader().readInput(bufferedReader);
-      return dataFormat.createWrapperInstance(wrapper);
+      Object mappedObject = reader.readInput(bufferedReader);
+      return mapper.mapInternalToJava(mappedObject, objectTypeName);
     }
     finally{
       IoUtil.closeSilently(bais);
       IoUtil.closeSilently(inReader);
       IoUtil.closeSilently(bufferedReader);
     }
-
   }
 
-  protected boolean isSerializationTextBased() {
-    return true;
+  protected boolean canSerializeValue(Object value) {
+    return dataFormat.getMapper().canMap(value);
   }
 
 }

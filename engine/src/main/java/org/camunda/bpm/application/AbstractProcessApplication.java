@@ -26,6 +26,7 @@ import org.camunda.bpm.container.RuntimeContainerDelegate;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.delegate.TaskListener;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
+import org.camunda.bpm.engine.impl.core.model.Properties;
 import org.camunda.bpm.engine.impl.javax.el.BeanELResolver;
 import org.camunda.bpm.engine.impl.javax.el.ELResolver;
 import org.camunda.bpm.engine.impl.scripting.ExecutableScript;
@@ -44,6 +45,8 @@ public abstract class AbstractProcessApplication implements ProcessApplicationIn
   protected ELResolver processApplicationElResolver;
   protected BeanELResolver processApplicationBeanElResolver;
   protected ProcessApplicationScriptEnvironment processApplicationScriptEnvironment;
+
+  protected Properties properties = new Properties();
 
   protected boolean isDeployed = false;
 
@@ -131,6 +134,11 @@ public abstract class AbstractProcessApplication implements ProcessApplicationIn
 
   public Map<String, String> getProperties() {
     return Collections.<String, String>emptyMap();
+  }
+
+  //TODO: interface; package of properties class
+  public Properties getPropertiesTyped() {
+    return properties;
   }
 
   public ELResolver getElResolver() {
