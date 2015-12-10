@@ -40,7 +40,7 @@ import org.junit.runner.RunWith;
  *
  */
 @RunWith(Arquillian.class)
-public class PaDataFormatTest extends AbstractFoxPlatformIntegrationTest  {
+public class PaDataFormatProviderTest extends AbstractFoxPlatformIntegrationTest {
 
   @Deployment
   public static WebArchive createDeployment() {

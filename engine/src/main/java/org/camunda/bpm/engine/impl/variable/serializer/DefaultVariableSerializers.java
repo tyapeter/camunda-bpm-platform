@@ -161,7 +161,7 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
 
     // "new" serializers override existing ones if their names match
     for (TypedValueSerializer<?> thisSerializer : serializerList) {
-      copy.serializerList.add(serializerMap.get(thisSerializer.getName()));
+      copy.serializerList.add(copy.serializerMap.get(thisSerializer.getName()));
     }
 
     // add all "new" serializers that did not exist before to the end of the list
