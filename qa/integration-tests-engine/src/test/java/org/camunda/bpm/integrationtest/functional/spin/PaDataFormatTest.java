@@ -14,10 +14,7 @@ package org.camunda.bpm.integrationtest.functional.spin;
 
 import static org.camunda.bpm.engine.variable.Variables.serializedObjectValue;
 
-import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.context.ProcessApplicationContextUtil;
-import org.camunda.bpm.engine.impl.interceptor.Command;
-import org.camunda.bpm.engine.impl.interceptor.CommandContext;
+import org.camunda.bpm.application.ProcessApplicationContext;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.engine.variable.value.ObjectValue;
@@ -26,9 +23,13 @@ import org.camunda.bpm.integrationtest.functional.spin.dataformat.FooDataFormat;
 import org.camunda.bpm.integrationtest.functional.spin.dataformat.FooDataFormatProvider;
 import org.camunda.bpm.integrationtest.functional.spin.dataformat.FooSpin;
 import org.camunda.bpm.integrationtest.util.AbstractFoxPlatformIntegrationTest;
+import org.camunda.bpm.integrationtest.util.DeploymentHelper;
+import org.camunda.bpm.integrationtest.util.TestContainer;
 import org.camunda.spin.spi.DataFormatProvider;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,13 +44,22 @@ public class PaDataFormatTest extends AbstractFoxPlatformIntegrationTest  {
 
   @Deployment
   public static WebArchive createDeployment() {
-    return initWebArchiveDeployment()
+    WebArchive webArchive = ShrinkWrap.create(WebArchive.class, "PaDataFormatTest.war")
+        .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
+        .addAsLibraries(DeploymentHelper.getEngineCdi())
+        .addAsResource("META-INF/processes.xml")
+        .addClass(AbstractFoxPlatformIntegrationTest.class)
+        .addClass(TestContainer.class)
         .addAsResource("org/camunda/bpm/integrationtest/oneTaskProcess.bpmn")
         .addClass(Foo.class)
         .addClass(FooDataFormat.class)
         .addClass(FooDataFormatProvider.class)
         .addClass(FooSpin.class)
-        .addAsServiceProvider(DataFormatProvider.class, FooDataFormatProvider.class);
+        .addAsServiceProvider(DataFormatProvider.class, FooDataFormatProvider.class)
+        .addClass(ReferenceStoringProcessApplication.class);
+
+    TestContainer.addContainerSpecificResourcesForNonPa(webArchive);
+    return webArchive;
   }
 
   @Test
@@ -61,23 +71,13 @@ public class PaDataFormatTest extends AbstractFoxPlatformIntegrationTest  {
               .serializationDataFormat(FooDataFormat.NAME)
               .objectTypeName(Foo.class.getName())));
 
-    final String deployment = repositoryService.createDeploymentQuery().singleResult().getId();
-
     ObjectValue objectValue = null;
-
-    objectValue = processEngineConfiguration.getCommandExecutorTxRequired().execute(new Command<ObjectValue>() {
-
-      @Override
-      public ObjectValue execute(CommandContext commandContext) {
-        try {
-          Context.setCurrentProcessApplication(ProcessApplicationContextUtil.getTargetProcessApplication(deployment));
-          return runtimeService.getVariableTyped(pi.getId(), "serializedObject", true);
-        } finally {
-          Context.removeCurrentProcessApplication();
-        }
-      }
-
-    });
+    try {
+      ProcessApplicationContext.setCurrentProcessApplication(ReferenceStoringProcessApplication.INSTANCE);
+      objectValue = runtimeService.getVariableTyped(pi.getId(), "serializedObject", true);
+    } finally {
+      ProcessApplicationContext.clear();
+    }
 
     Object value = objectValue.getValue();
     Assert.assertNotNull(value);

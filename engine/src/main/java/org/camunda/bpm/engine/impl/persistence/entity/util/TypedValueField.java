@@ -185,7 +185,13 @@ public class TypedValueField implements DbEntityLifecycleAware, CommandContextLi
       VariableSerializers variableSerializers = Context.getProcessEngineConfiguration().getVariableSerializers();
       VariableSerializerResolver contextSpecificResolver = Context.getProcessEngineConfiguration().getVariableSerializerResolver();
 
-      return variableSerializers.join(contextSpecificResolver.resolve());
+      // TODO: not so cool
+      if (contextSpecificResolver != null) {
+        return variableSerializers.join(contextSpecificResolver.resolve());
+      }
+      else {
+        return variableSerializers;
+      }
     } else {
       throw LOG.serializerOutOfContextException();
     }
