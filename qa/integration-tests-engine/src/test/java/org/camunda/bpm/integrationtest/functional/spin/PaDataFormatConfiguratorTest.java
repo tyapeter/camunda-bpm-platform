@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.Date;
 
 import org.camunda.bpm.application.ProcessApplicationContext;
+import org.camunda.bpm.engine.history.HistoricVariableInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.variable.Variables;
@@ -153,5 +154,19 @@ public class PaDataFormatConfiguratorTest extends AbstractFoxPlatformIntegration
     JsonNode expectedJsonTree = objectMapper.readTree(expectedSerializedValue);
     // JsonNode#equals makes a deep comparison
     Assert.assertEquals(expectedJsonTree, actualJsonTree);
+
+    // and it is also correct in the history
+    HistoricVariableInstance historicObjectValue = historyService
+        .createHistoricVariableInstanceQuery()
+        .processInstanceId(pi.getId())
+        .variableName(ImplicitObjectValueUpdateDelegate.VARIABLE_NAME)
+        .disableCustomObjectDeserialization()
+        .singleResult();
+
+    serializedValue = ((ObjectValue) historicObjectValue.getTypedValue()).getValueSerialized();
+    actualJsonTree = objectMapper.readTree(serializedValue);
+    Assert.assertEquals(expectedJsonTree, actualJsonTree);
   }
+
+  // TODO: another test for implicit update of a task variable required?
 }

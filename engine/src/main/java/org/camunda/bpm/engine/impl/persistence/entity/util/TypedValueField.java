@@ -30,6 +30,7 @@ import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializerResolve
 import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializers;
 import org.camunda.bpm.engine.variable.impl.value.UntypedValueImpl;
 import org.camunda.bpm.engine.variable.type.ValueType;
+import org.camunda.bpm.engine.variable.value.ObjectValue;
 import org.camunda.bpm.engine.variable.value.SerializableValue;
 import org.camunda.bpm.engine.variable.value.TypedValue;
 
