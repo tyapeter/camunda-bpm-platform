@@ -174,7 +174,7 @@ public class TypedValueField implements DbEntityLifecycleAware, CommandContextLi
 
   protected void ensureSerializerInitialized() {
     if (serializerName != null && serializer == null) {
-      serializer = getSerializers().getSerializerByName(serializerName);
+      serializer = getSerializers().getSerializerByName(serializerName, true);
       if (serializer == null) {
         throw LOG.serializerNotDefinedException(this);
       }

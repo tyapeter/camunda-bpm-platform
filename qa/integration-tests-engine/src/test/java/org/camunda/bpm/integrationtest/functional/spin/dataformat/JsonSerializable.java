@@ -21,6 +21,8 @@ import java.util.Date;
  */
 public class JsonSerializable {
 
+  public static final long ONE_DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
+
   private Date dateProperty;
 
   public JsonSerializable() {

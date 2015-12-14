@@ -77,6 +77,9 @@ public class SpinPaSerializerResolver implements VariableSerializerResolver {
     for (DataFormat<?> dataFormat : availableDataFormats) {
       serializers.add(new SpinObjectValueSerializer("spin://"+dataFormat.getName(), dataFormat));
     }
+
+    // TODO: this should not use DateFormats.json but should use paDataFormats to determine a json or xml
+    // serializer
     if(DataFormats.json() != null) {
       serializers.add(new JsonValueSerializer());
     }

@@ -38,7 +38,7 @@ public interface VariableSerializers {
    * @return the serializer for the given serializerName name.
    * Returns null if no type was found with the name.
    */
-  public TypedValueSerializer<?> getSerializerByName(String serializerName);
+  public TypedValueSerializer<?> getSerializerByName(String serializerName, boolean useFallbackSerializer);
 
   public VariableSerializers addSerializer(TypedValueSerializer<?> serializer);
 
@@ -56,5 +56,7 @@ public interface VariableSerializers {
   public int getSerializerIndexByName(String serializerName);
 
   public VariableSerializers join(VariableSerializers other);
+
+  public TypedValueSerializer<?> getFallbackSerializer(String serializerName);
 
 }

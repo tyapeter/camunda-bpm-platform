@@ -1519,7 +1519,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     }
     if(jpaEntityManagerFactory!=null) {
       sessionFactories.put(EntityManagerSession.class, new EntityManagerSessionFactory(jpaEntityManagerFactory, jpaHandleTransaction, jpaCloseEntityManager));
-      JPAVariableSerializer jpaType = (JPAVariableSerializer) variableSerializers.getSerializerByName(JPAVariableSerializer.NAME);
+      JPAVariableSerializer jpaType = (JPAVariableSerializer) variableSerializers.getSerializerByName(JPAVariableSerializer.NAME, false);
       // Add JPA-type
       if(jpaType == null) {
         // We try adding the variable right after byte serializer, if available

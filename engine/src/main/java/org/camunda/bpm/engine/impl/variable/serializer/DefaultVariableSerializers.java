@@ -34,20 +34,15 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
   protected List<TypedValueSerializer<?>> serializerList = new ArrayList<TypedValueSerializer<?>>();
   protected Map<String, TypedValueSerializer<?>> serializerMap = new HashMap<String, TypedValueSerializer<?>>();
 
-  public TypedValueSerializer<?> getSerializerByName(String serializerName) {
+  public TypedValueSerializer<?> getSerializerByName(String serializerName, boolean useFallbackSerializer) {
      TypedValueSerializer<?> serializer = serializerMap.get(serializerName);
 
      if (serializer != null) {
        return serializer;
      }
      else {
-       // TODO: is it safe to assume we are in a command context?
-       // TODO: null check is not the proper solution;
-       if (Context.getProcessEngineConfiguration() != null) {
-         return Context
-             .getProcessEngineConfiguration()
-             .getFallbackSerializerFactory()
-             .getSerializer(serializerName);
+       if (useFallbackSerializer) {
+         return getFallbackSerializer(serializerName);
        }
        else {
          return null;
@@ -58,7 +53,6 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
   public TypedValueSerializer<?> findSerializerForValue(TypedValue value) {
 
     String defaultSerializationFormat = Context.getProcessEngineConfiguration().getDefaultSerializationFormat();
-    VariableSerializerFactory fallbackSerializerFactory = Context.getProcessEngineConfiguration().getFallbackSerializerFactory();
 
     List<TypedValueSerializer<?>> matchedSerializers = new ArrayList<TypedValueSerializer<?>>();
 
@@ -84,8 +78,7 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
     }
 
     if(matchedSerializers.size() == 0) {
-      // TODO: null check for fallback factory
-      TypedValueSerializer<?> serializer = fallbackSerializerFactory.getSerializer(value);
+      TypedValueSerializer<?> serializer = getFallbackSerializer(value);
       if (serializer != null) {
         return serializer;
       }
@@ -155,7 +148,7 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
 
     // "new" serializers override existing ones if their names match
     for (TypedValueSerializer<?> thisSerializer : serializerList) {
-      TypedValueSerializer<?> serializer = other.getSerializerByName(thisSerializer.getName());
+      TypedValueSerializer<?> serializer = other.getSerializerByName(thisSerializer.getName(), false);
 
       if (serializer == null) {
         serializer = thisSerializer;
@@ -174,6 +167,28 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
 
 
     return copy;
+  }
+
+  public TypedValueSerializer<?> getFallbackSerializer(String serializerName) {
+    VariableSerializerFactory fallbackSerializerFactory = Context.getProcessEngineConfiguration().getFallbackSerializerFactory();
+
+    if (fallbackSerializerFactory != null) {
+      return fallbackSerializerFactory.getSerializer(serializerName);
+    }
+    else {
+      return null;
+    }
+  }
+
+  public TypedValueSerializer<?> getFallbackSerializer(TypedValue value) {
+    VariableSerializerFactory fallbackSerializerFactory = Context.getProcessEngineConfiguration().getFallbackSerializerFactory();
+
+    if (fallbackSerializerFactory != null) {
+      return fallbackSerializerFactory.getSerializer(value);
+    }
+    else {
+      return null;
+    }
   }
 
 

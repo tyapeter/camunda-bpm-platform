@@ -12,23 +12,14 @@
  */
 package org.camunda.bpm.integrationtest.functional.spin;
 
-import org.camunda.bpm.application.PostDeploy;
 import org.camunda.bpm.application.ProcessApplication;
 import org.camunda.bpm.application.impl.ServletProcessApplication;
 
 /**
- * {@link ServletProcessApplication} is fine on all containers as the tests
- * don't require Java EE features
- *
  * @author Thorben Lindhauer
+ *
  */
-@ProcessApplication
-public class ReferenceStoringProcessApplication extends ServletProcessApplication {
+@ProcessApplication(name = "pa1")
+public class ProcessApplication1 extends ServletProcessApplication {
 
-  public static ReferenceStoringProcessApplication INSTANCE = null;
-
-  @PostDeploy
-  public void postDeploy() {
-    INSTANCE = this;
-  }
 }

@@ -12,6 +12,8 @@
  */
 package org.camunda.bpm.engine.impl.interceptor;
 
+import java.util.concurrent.Callable;
+
 import org.camunda.bpm.application.ProcessApplicationReference;
 import org.camunda.bpm.application.impl.ProcessApplicationContextImpl;
 import org.camunda.bpm.application.impl.ProcessApplicationIdentifier;
@@ -33,16 +35,24 @@ public class ProcessApplicationContextInterceptor extends CommandInterceptor {
   }
 
   @Override
-  public <T> T execute(Command<T> command) {
+  public <T> T execute(final Command<T> command) {
     ProcessApplicationIdentifier processApplicationIdentifier = ProcessApplicationContextImpl.get();
 
     if (processApplicationIdentifier != null) {
-      ProcessApplicationReference reference = getPaReference(processApplicationIdentifier);
+      ProcessApplicationContextImpl.clear();
       try {
-        Context.setCurrentProcessApplication(reference);
-        return next.execute(command);
-      } finally {
-        Context.removeCurrentProcessApplication();
+        ProcessApplicationReference reference = getPaReference(processApplicationIdentifier);
+        return Context.executeWithinProcessApplication(new Callable<T>() {
+
+          public T call() throws Exception {
+            return next.execute(command);
+          }
+        },
+        reference);
+
+      }
+      finally {
+        ProcessApplicationContextImpl.set(processApplicationIdentifier);
       }
     }
     else {

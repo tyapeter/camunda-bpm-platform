@@ -28,7 +28,6 @@ import org.camunda.bpm.integrationtest.functional.spin.dataformat.JsonSerializab
 import org.camunda.bpm.integrationtest.util.AbstractFoxPlatformIntegrationTest;
 import org.camunda.bpm.integrationtest.util.DeploymentHelper;
 import org.camunda.bpm.integrationtest.util.TestContainer;
-import org.camunda.spin.spi.DataFormatConfigurator;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -49,11 +48,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RunWith(Arquillian.class)
 public class PaDataFormatConfiguratorTest extends AbstractFoxPlatformIntegrationTest {
 
-  public static final long ONE_DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
-
   @Deployment
   public static WebArchive createDeployment() {
-    return ShrinkWrap.create(WebArchive.class, "PaDataFormatTest.war")
+    WebArchive webArchive = ShrinkWrap.create(WebArchive.class, "PaDataFormatTest.war")
         .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
         .addAsLibraries(DeploymentHelper.getEngineCdi())
         .addAsResource("META-INF/processes.xml")
@@ -62,17 +59,21 @@ public class PaDataFormatConfiguratorTest extends AbstractFoxPlatformIntegration
         .addClass(ReferenceStoringProcessApplication.class)
         .addAsResource("org/camunda/bpm/integrationtest/oneTaskProcess.bpmn")
         .addAsResource("org/camunda/bpm/integrationtest/functional/spin/implicitUpdate.bpmn")
-        .addClass(JsonDataFormatConfigurator.class)
         .addClass(JsonSerializable.class)
         .addClass(ImplicitObjectValueUpdateDelegate.class)
-        .addAsServiceProvider(DataFormatConfigurator.class, JsonDataFormatConfigurator.class)
-        .addAsLibraries(DeploymentHelper.getSpinJacksonJsonDataFormat());
+        .addClass(SpinShrinkWrapUtil.class);
+
+    SpinShrinkWrapUtil.addJsonConfigurator(webArchive);
+    SpinShrinkWrapUtil.addSpinJacksonJsonDataFormat(webArchive);
+
+    return webArchive;
+
   }
 
   @Test
   public void testBuiltinFormatApplies() throws JsonProcessingException, IOException {
 
-    Date date = new Date(ONE_DAY_IN_MILLIS * 10); // 10th of January 1970
+    Date date = new Date(JsonSerializable.ONE_DAY_IN_MILLIS * 10); // 10th of January 1970
     JsonSerializable jsonSerializable = new JsonSerializable(date);
 
     final ProcessInstance pi = runtimeService.startProcessInstanceByKey("testProcess");
@@ -100,7 +101,7 @@ public class PaDataFormatConfiguratorTest extends AbstractFoxPlatformIntegration
 
   @Test
   public void testBuiltinFormatDoesNotApply() throws JsonProcessingException, IOException {
-    Date date = new Date(ONE_DAY_IN_MILLIS * 10); // 10th of January 1970
+    Date date = new Date(JsonSerializable.ONE_DAY_IN_MILLIS * 10); // 10th of January 1970
     JsonSerializable jsonSerializable = new JsonSerializable(date);
 
     final ProcessInstance pi = runtimeService.startProcessInstanceByKey("testProcess");
@@ -123,7 +124,7 @@ public class PaDataFormatConfiguratorTest extends AbstractFoxPlatformIntegration
 
   @Test
   public void testImplicitObjectValueUpdate() throws JsonProcessingException, IOException {
-    Date date = new Date(ONE_DAY_IN_MILLIS * 10); // 10th of January 1970
+    Date date = new Date(JsonSerializable.ONE_DAY_IN_MILLIS * 10); // 10th of January 1970
     JsonSerializable jsonSerializable = new JsonSerializable(date);
 
     ProcessInstance pi = runtimeService.startProcessInstanceByKey("implicitUpdate");
