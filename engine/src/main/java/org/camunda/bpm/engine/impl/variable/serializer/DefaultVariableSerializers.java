@@ -153,22 +153,22 @@ public class DefaultVariableSerializers implements Serializable, VariableSeriali
   public VariableSerializers join(VariableSerializers other) {
     DefaultVariableSerializers copy = new DefaultVariableSerializers();
 
-    copy.serializerMap = new HashMap<String, TypedValueSerializer<?>>(serializerMap);
-    // TODO: we should not rely on this cast
-    copy.serializerMap.putAll(((DefaultVariableSerializers) other).serializerMap);
-
-    copy.serializerList = new ArrayList<TypedValueSerializer<?>>();
-
     // "new" serializers override existing ones if their names match
     for (TypedValueSerializer<?> thisSerializer : serializerList) {
-      copy.serializerList.add(copy.serializerMap.get(thisSerializer.getName()));
+      TypedValueSerializer<?> serializer = other.getSerializerByName(thisSerializer.getName());
+
+      if (serializer == null) {
+        serializer = thisSerializer;
+      }
+
+      copy.addSerializer(serializer);
     }
 
     // add all "new" serializers that did not exist before to the end of the list
-    // TODO: this might not be desired for Spin serializers => need control over the order
+    // TODO: get rid of the cast
     for (TypedValueSerializer<?> otherSerializer : ((DefaultVariableSerializers) other).serializerList) {
-      if (!serializerMap.containsKey(otherSerializer.getName())) {
-        copy.serializerList.add(otherSerializer);
+      if (!copy.serializerMap.containsKey(otherSerializer.getName())) {
+        copy.addSerializer(otherSerializer);
       }
     }
 

@@ -36,12 +36,10 @@ public class ProcessApplicationContextTest extends PluggableProcessEngineTestCas
   public void setUp() {
     pa = new TestApplicationWithoutEngine();
     pa.deploy();
-
   }
 
   public void tearDown() {
     pa.undeploy();
-
   }
 
   public void testSetPAContextByName() throws ProcessApplicationUnavailableException {
