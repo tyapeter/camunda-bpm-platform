@@ -12,9 +12,10 @@
  */
 package org.camunda.bpm.engine.impl.interceptor;
 
-import org.camunda.bpm.application.ProcessApplicationContext;
-import org.camunda.bpm.application.ProcessApplicationContext.ProcessApplicationIdentifier;
 import org.camunda.bpm.application.ProcessApplicationReference;
+import org.camunda.bpm.application.impl.ProcessApplicationContextImpl;
+import org.camunda.bpm.application.impl.ProcessApplicationIdentifier;
+import org.camunda.bpm.container.RuntimeContainerDelegate;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -33,7 +34,7 @@ public class ProcessApplicationContextInterceptor extends CommandInterceptor {
 
   @Override
   public <T> T execute(Command<T> command) {
-    ProcessApplicationIdentifier processApplicationIdentifier = ProcessApplicationContext.get();
+    ProcessApplicationIdentifier processApplicationIdentifier = ProcessApplicationContextImpl.get();
 
     if (processApplicationIdentifier != null) {
       ProcessApplicationReference reference = getPaReference(processApplicationIdentifier);
@@ -54,12 +55,11 @@ public class ProcessApplicationContextInterceptor extends CommandInterceptor {
       return processApplicationIdentifier.getReference();
     }
     else if (processApplicationIdentifier.getProcessApplication() != null) {
-      // TODO: ok to call this multiple times (i.e. this might return a different reference object)?
       return processApplicationIdentifier.getProcessApplication().getReference();
     }
     else if (processApplicationIdentifier.getName() != null) {
-      // TODO: implement
-      throw new ProcessEngineException("resolving PA from name is not yet implemented");
+       RuntimeContainerDelegate runtimeContainerDelegate = RuntimeContainerDelegate.INSTANCE.get();
+       return runtimeContainerDelegate.getDeployedProcessApplication(processApplicationIdentifier.getName());
     }
     else {
       throw new ProcessEngineException("Cannot resolve Process Application");

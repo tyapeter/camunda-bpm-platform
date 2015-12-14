@@ -12,62 +12,62 @@
  */
 package org.camunda.bpm.application;
 
+import java.util.concurrent.Callable;
+
+import org.camunda.bpm.application.impl.ProcessApplicationContextImpl;
+import org.camunda.bpm.application.impl.ProcessApplicationIdentifier;
+
 /**
  * @author Thorben Lindhauer
  *
  */
 public class ProcessApplicationContext {
 
-  protected static ThreadLocal<ProcessApplicationIdentifier> currentProcessApplication =
-      new ThreadLocal<ProcessApplicationContext.ProcessApplicationIdentifier>();
+  // TODO: javadoc
 
   public static void setCurrentProcessApplication(String name) {
-    ProcessApplicationIdentifier identifier = new ProcessApplicationIdentifier();
-    identifier.name = name;
-    currentProcessApplication.set(identifier);
+    ProcessApplicationContextImpl.set(new ProcessApplicationIdentifier(name));
   }
 
   public static void setCurrentProcessApplication(ProcessApplicationReference reference) {
-    ProcessApplicationIdentifier identifier = new ProcessApplicationIdentifier();
-    identifier.reference = reference;
-    currentProcessApplication.set(identifier);
+    ProcessApplicationContextImpl.set(new ProcessApplicationIdentifier(reference));
   }
 
   public static void setCurrentProcessApplication(ProcessApplicationInterface processApplication) {
-    ProcessApplicationIdentifier identifier = new ProcessApplicationIdentifier();
-    identifier.processApplication = processApplication;
-    currentProcessApplication.set(identifier);
+    ProcessApplicationContextImpl.set(new ProcessApplicationIdentifier(processApplication));
   }
 
   public static void clear() {
-    currentProcessApplication.remove();
+    ProcessApplicationContextImpl.clear();
   }
 
-  // TODO: this should not be public API
-  // => thread-local could be moved to impl class
-  public static ProcessApplicationIdentifier get() {
-    return currentProcessApplication.get();
+  public static <T> T executeInProcessApplication(Callable<T> callable, String name) throws Exception {
+    try {
+      setCurrentProcessApplication(name);
+      return callable.call();
+    }
+    finally {
+      clear();
+    }
   }
 
-  // TODO: methods that take a callable and a process application identifier
-
-  // TODO: this should not be public API either
-  public static class ProcessApplicationIdentifier {
-
-    protected String name;
-    protected ProcessApplicationReference reference;
-    protected ProcessApplicationInterface processApplication;
-
-    public String getName() {
-      return name;
+  public static <T> T executeInProcessApplication(Callable<T> callable, ProcessApplicationReference reference) throws Exception {
+    try {
+      setCurrentProcessApplication(reference);
+      return callable.call();
     }
-
-    public ProcessApplicationReference getReference() {
-      return reference;
+    finally {
+      clear();
     }
+  }
 
-    public ProcessApplicationInterface getProcessApplication() {
-      return processApplication;
+  public static <T> T executeInProcessApplication(Callable<T> callable, ProcessApplicationInterface processApplication) throws Exception {
+    try {
+      setCurrentProcessApplication(processApplication);
+      return callable.call();
+    }
+    finally {
+      clear();
     }
   }
 }

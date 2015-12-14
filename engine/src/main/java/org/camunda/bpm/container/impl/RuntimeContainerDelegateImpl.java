@@ -23,6 +23,7 @@ import org.camunda.bpm.ProcessApplicationService;
 import org.camunda.bpm.ProcessEngineService;
 import org.camunda.bpm.application.AbstractProcessApplication;
 import org.camunda.bpm.application.ProcessApplicationInfo;
+import org.camunda.bpm.application.ProcessApplicationReference;
 import org.camunda.bpm.container.ExecutorService;
 import org.camunda.bpm.container.RuntimeContainerDelegate;
 import org.camunda.bpm.container.impl.deployment.Attachments;
@@ -175,8 +176,20 @@ public class RuntimeContainerDelegateImpl implements RuntimeContainerDelegate, P
 
     if(processApplicationService == null) {
       return null;
-    } else {
+    }
+    else {
       return processApplicationService.getProcessApplicationInfo();
+    }
+  }
+
+  public ProcessApplicationReference getDeployedProcessApplication(String processApplicationName) {
+    JmxManagedProcessApplication processApplicationService = serviceContainer.getServiceValue(ServiceTypes.PROCESS_APPLICATION, processApplicationName);
+
+    if(processApplicationService == null) {
+      return null;
+    }
+    else {
+      return processApplicationService.getProcessApplicationReference();
     }
   }
 
