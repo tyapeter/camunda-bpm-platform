@@ -18,12 +18,9 @@ import java.util.Set;
 
 import org.camunda.bpm.application.AbstractProcessApplication;
 import org.camunda.bpm.application.ProcessApplicationInterface;
-import org.camunda.bpm.application.ProcessApplicationReference;
-import org.camunda.bpm.application.ProcessApplicationUnavailableException;
-import org.camunda.bpm.engine.impl.context.Context;
+import org.camunda.bpm.container.impl.plugin.BpmPlatformPlugin;
 import org.camunda.bpm.engine.impl.variable.serializer.DefaultVariableSerializers;
 import org.camunda.bpm.engine.impl.variable.serializer.TypedValueSerializer;
-import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializerResolver;
 import org.camunda.bpm.engine.impl.variable.serializer.VariableSerializers;
 import org.camunda.spin.DataFormats;
 import org.camunda.spin.spi.DataFormat;
@@ -32,38 +29,27 @@ import org.camunda.spin.spi.DataFormat;
  * @author Thorben Lindhauer
  *
  */
-public class SpinPaSerializerResolver implements VariableSerializerResolver {
+public class SpinBpmPlatformPlugin implements BpmPlatformPlugin {
 
-  public VariableSerializers resolve() {
-    ProcessApplicationReference currentProcessApplication = Context.getCurrentProcessApplication();
+  public void postProcessApplicationDeploy(ProcessApplicationInterface processApplication) {
+    ProcessApplicationInterface rawPa = processApplication.getRawObject();
+    if (rawPa instanceof AbstractProcessApplication) {
+      initializeVariableSerializers((AbstractProcessApplication) rawPa);
+    }
+    else {
+      // TODO: log in this case?
+    }
+  }
 
-    // TODO: initialization requires synchronization or must be done on PA startup (but this is probably not possible;
-    // hen-egg-problem between engine plugin and PA?)
-    // something like a ProcessApplicationPlugin would be nice
-    if (currentProcessApplication != null) {
-      try {
-        ProcessApplicationInterface rawPa = currentProcessApplication.getProcessApplication().getRawObject();
-        if (rawPa instanceof AbstractProcessApplication) {
-          AbstractProcessApplication abstractRawPa = (AbstractProcessApplication) rawPa;
-          VariableSerializers paVariableSerializers = abstractRawPa.getVariableSerializers();
+  protected void initializeVariableSerializers(AbstractProcessApplication abstractProcessApplication) {
+    VariableSerializers paVariableSerializers = abstractProcessApplication.getVariableSerializers();
 
-          if (paVariableSerializers == null) {
-            paVariableSerializers = new DefaultVariableSerializers();
-            abstractRawPa.setVariableSerializers(paVariableSerializers);
-            for (TypedValueSerializer<?> serializer : lookupSpinSerializers(abstractRawPa.getProcessApplicationClassloader())) {
-              paVariableSerializers.addSerializer(serializer);
-            }
-          }
-
-          return paVariableSerializers;
-        }
-      } catch (ProcessApplicationUnavailableException e) {
-        // TODO: deal with exception properly
-        throw new RuntimeException(e);
-      }
+    paVariableSerializers = new DefaultVariableSerializers();
+    for (TypedValueSerializer<?> serializer : lookupSpinSerializers(abstractProcessApplication.getProcessApplicationClassloader())) {
+      paVariableSerializers.addSerializer(serializer);
     }
 
-    return new DefaultVariableSerializers();
+    abstractProcessApplication.setVariableSerializers(paVariableSerializers);
   }
 
   //TODO: consolidate with code in SpinProcessEnginePlugin

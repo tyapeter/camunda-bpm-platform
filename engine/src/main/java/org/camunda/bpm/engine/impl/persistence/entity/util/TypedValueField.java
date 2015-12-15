@@ -17,6 +17,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.camunda.bpm.application.AbstractProcessApplication;
+import org.camunda.bpm.application.ProcessApplicationInterface;
+import org.camunda.bpm.application.ProcessApplicationReference;
+import org.camunda.bpm.application.ProcessApplicationUnavailableException;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntityLifecycleAware;
@@ -184,17 +188,39 @@ public class TypedValueField implements DbEntityLifecycleAware, CommandContextLi
   public static VariableSerializers getSerializers() {
     if (Context.getCommandContext() != null) {
       VariableSerializers variableSerializers = Context.getProcessEngineConfiguration().getVariableSerializers();
-      VariableSerializerResolver contextSpecificResolver = Context.getProcessEngineConfiguration().getVariableSerializerResolver();
+      VariableSerializers paSerializers = getCurrentPaSerializers();
 
-      // TODO: not so cool
-      if (contextSpecificResolver != null) {
-        return variableSerializers.join(contextSpecificResolver.resolve());
+      if (paSerializers != null) {
+        return variableSerializers.join(paSerializers);
       }
       else {
         return variableSerializers;
       }
     } else {
       throw LOG.serializerOutOfContextException();
+    }
+  }
+
+  protected static VariableSerializers getCurrentPaSerializers() {
+    if (Context.getCurrentProcessApplication() != null) {
+      ProcessApplicationReference processApplicationReference = Context.getCurrentProcessApplication();
+      try {
+        ProcessApplicationInterface processApplicationInterface = processApplicationReference.getProcessApplication();
+
+        ProcessApplicationInterface rawPa = processApplicationInterface.getRawObject();
+        if (rawPa instanceof AbstractProcessApplication) {
+          return ((AbstractProcessApplication) rawPa).getVariableSerializers();
+        }
+        else {
+          return null;
+        }
+      } catch (ProcessApplicationUnavailableException e) {
+        // TODO: log error or throw exception
+        return null;
+      }
+    }
+    else {
+      return null;
     }
   }
 

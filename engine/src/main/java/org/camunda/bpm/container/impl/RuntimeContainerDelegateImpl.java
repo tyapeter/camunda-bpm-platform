@@ -60,6 +60,7 @@ public class RuntimeContainerDelegateImpl implements RuntimeContainerDelegate, P
   protected MBeanServiceContainer serviceContainer = new MBeanServiceContainer();
 
   public final static String SERVICE_NAME_EXECUTOR = "executor-service";
+  public final static String SERVICE_NAME_PLATFORM_PLUGINS = "bpm-platform-plugins";
 
   // runtime container delegate implementation ///////////////////////////////////////////////
 

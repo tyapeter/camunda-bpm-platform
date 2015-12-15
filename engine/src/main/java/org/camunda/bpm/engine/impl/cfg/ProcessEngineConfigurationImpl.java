@@ -365,8 +365,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected List<TypedValueSerializer> customPreVariableSerializers;
   protected List<TypedValueSerializer> customPostVariableSerializers;
   protected VariableSerializers variableSerializers;
-  // TODO: should be a list?
-  protected VariableSerializerResolver variableSerializerResolver;
   // TODO: should be part of variable serializers?!
   // TODO: alternatively, could be a similar interface to VariableSerializers that fits the factory approach
   protected VariableSerializerFactory fallbackSerializerFactory;
@@ -1894,14 +1892,6 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public VariableSerializers getVariableSerializers() {
     return variableSerializers;
-  }
-
-  public VariableSerializerResolver getVariableSerializerResolver() {
-    return variableSerializerResolver;
-  }
-
-  public void setVariableSerializerResolver(VariableSerializerResolver variableSerializerResolver) {
-    this.variableSerializerResolver = variableSerializerResolver;
   }
 
   public VariableSerializerFactory getFallbackSerializerFactory() {

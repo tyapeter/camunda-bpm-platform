@@ -48,16 +48,11 @@ public class SpinProcessEnginePlugin extends AbstractProcessEnginePlugin {
     registerScriptResolver(processEngineConfiguration);
     registerSerializers(processEngineConfiguration);
     registerValueTypes(processEngineConfiguration);
-    registerVariableSerializerResolver(processEngineConfiguration);
     registerFallbackSerializer(processEngineConfiguration);
   }
 
   protected void registerFallbackSerializer(ProcessEngineConfigurationImpl processEngineConfiguration) {
     processEngineConfiguration.setFallbackSerializerFactory(new SpinFallbackSerializerFactory());
-  }
-
-  protected void registerVariableSerializerResolver(ProcessEngineConfigurationImpl processEngineConfiguration) {
-    processEngineConfiguration.setVariableSerializerResolver(new SpinPaSerializerResolver());
   }
 
   protected void registerSerializers(ProcessEngineConfigurationImpl processEngineConfiguration) {
