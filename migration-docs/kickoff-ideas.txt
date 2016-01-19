@@ -1,0 +1,9 @@
+Features of Migration API:
+* Migration plan definition:
+  * activity instance mappings from old to new version (1:1, n:1, 1:n, m:n)
+  * variable instance mappings
+  * Mapping conditions
+    * select process instances for select by variables, activity instance state
+    * select activity instances/mappings for migration by activity id, variable values
+  * Cross-process-definition mappings (e.g. map an embedded sub process to a call activity)
+* Dry-Run/Testing facilities
