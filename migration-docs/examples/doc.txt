@@ -1,0 +1,218 @@
+Example 1:
+
+* A hat TaskListener/ExecutionListener
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities().from("V1_A").to("V2_A")
+  .create()
+  .apply();
+
+Verhalten:
+
+Vorher:
+* Executions
+* Task
+
+Nachher:
+* Executionbaum referenziert V2
+  * Aktivitätsinstanz-ID bleibt gleich
+* Task referenziert V2 und V2_A; Task-Id bleibt gleich (Begründung/Annahme: zwei 1:1-gemappte Tasks sind semantisch das gleich; sonst kann man Modification-API benutzen)
+* sonstiger Task-State (z.B. Assignee) bleibt gleich
+* Migration löst Tasklistener nicht aus; Ab Migration werden nur noch die Listener aus V2 aufgerufen
+
+===================================
+
+Example 1 - Variablen migrieren:
+
+* Prozessinstanzvariable X
+* Taskvariable Y auf A
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities().from("V1_A").to("V2_A")
+  .create()
+  .apply();
+
+Vorher - Nachher wie oben
+Variablen werden beibehalten; da keine Executions/Tasks gelöscht werden, funktioniert das hier
+
+===================================
+
+Example 1 - Variablen migrieren mit Transformation(Umbennung, Wertänderung, neue Variable hinzufügen):
+
+* Prozessinstanzvariable W => Y
+* Taskvariable X auf A => Z
+* neue Variable U hinzufügen
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities().from("V1_A").to("V2_A")
+  .mappingListener(new MapMyVariablesListener())
+  .create()
+  .apply();
+
+interface MapVariablesListener {
+
+  // VariableScope reicht hier vermutlich nicht aus, wenn man die IDs bewahren möchte
+  // man muss Variablen im richtigen Scope setzen können
+  // man muss hier wissen auf welche Aktivitäten sich die Scopes beziehen
+  void onMapppedActivityInstance(VariableScope source, VariableScope target);
+
+  void onMappedTask(VariableScope source, VariableScope target);
+}
+
+Vorher:
+* Executionbaum
+* Taskinstanz
+* W referenziert Prozessinstanz
+* X referenziert Taskinstanz
+
+Nachher:
+* Taskinstanz und Executionbaum wie oben
+* Variablenwert nicht verändert: Variablen-IDs bleiben gleich
+* Variablenwert verändert: Variablen-IDs bleiben gleich
+* Variablenname verändert: neue Variablen-ID
+* neue Variableninstanz bekommt neue ID
+* neue Variableninstanz wird im richtigen Scope erzeugt
+
+======================
+
+Example 2:
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities().from("V1_A").to("V2_B", "V2_C")
+  .create()
+  .apply();
+
+Verhalten:
+
+Vorher:
+* Executionstate
+* 1 Task für A
+
+Nachher:
+
+* Executionbaumzustand: Prozessinstanz, 2 concurrent Kinder
+  * Prozessinstanz-Aktivitäts-ID zurücksetzen
+  * CC-Executions für B und C erzeugen im Zustand, dass sie in dne Aktivitäten stehen (z.B. müssen gültige Aktiviätsinstanz-IDs erzeugt werden)
+* 2 User Tasks für B und C
+  * die Tasks werden neu erzeugt, denn sie bedeuten nicht semantisch dasselbe wie die Taskinstanz von A
+  * Attribute (z.B. assignee) werden neu ausgewertet
+
+=======================
+
+Example 2 - Variablen migrieren:
+
+* Prozessinstanzvariable X
+* Taskvariable Y auf A
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities().from("V1_A").to("V2_B", "V2_C")
+  .create()
+  .apply();
+
+* Vorher - Nachher wie oben
+* Prozessinstanzvariable X wird behalten (??????)
+* Task-Variable Y wird verworfen, da kein 1:1-Mapping zu einem anderen Task
+Variablen werden beibehalten; da keine Executions/Tasks gelöscht werden, funktioniert das hier
+
+=======================
+
+Example 3:
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities().from("V1_A", "V1_B").to("V2_C")
+  .create()
+  .apply();
+
+Vorher:
+* Executionstate
+* 2 Tasks für B, C
+
+Nachher:
+
+* Executionbaum: Prozessinstanz steht auf C mit neuer Aktivitätsinstanz-ID
+* 1 User Task für C:
+  * wurde neu erzeugt
+  * mit Auswertung der Task-Attribute
+  * Tasks für A und B wurden gelöscht (ohne Listeneraufrufe)
+
+
+
+
+Example 4:
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .mapActivities()
+    .from("V1_A").to("V2_B").condition(new MyMigrationInstructionCondition())
+    .from("V1_A").to("V2_C").condition(new MyMigrationInstructionCondition())
+  .create()
+  .apply();
+
+Example 5:
+
+interface MappingInstructionCondition {
+
+  boolean applies(ProcessInstance, ActivityInstanceId, ProcessEngine);
+}
+
+Implementation note:
+* man sollte Bedingungen auswerten bevor man irgendwelche Instruktionen ausführt
+
+API:
+
+repositoryService
+  .createMigrationPlan("V1", "V2")
+  .condition(new MyMigrationPlanCondition())
+  .mapActivities().from("V1_A").to("V2_C")
+  .create()
+  .apply();
+
+interface MappingPlanCondition() {
+
+  // Use Cases: Aktivitätsinstanzzustand, Business Key, Variablen...
+  // wenn man die ganze Engine API hat, hat man maximale Flexibilität
+  boolean applies(ProzessInstance, ProcessEngine);
+}
+
+=============================
+
+API-Struktur:
+Migration Plan:
+  * Proc-Def-Id -> Proc-Def-Id
+  * Condition Callback
+  * Variable Mapping Callback
+  * Migration Instructions:
+    * Activity Ids -> Activity Ids
+    * Condition Callback
+    * Variable Mapping Callback
+
+Algorithmus:
+0: Ermittle, welche Instruktionen anwendbar sind
+1: Sind die Execution-Bäume gleich?
+  Ja: gehe zu 2a
+  Nein:
+    Executions von Quellaktivitätsinstanzen zerstören und entfernen (ohne Listener etc.)
+    Executions für Zielaktivitätsinstanzen erzeugen (ohne Listener)
+    Gehe zu 2b
+2a: Migrierte Tasks umhängen
+2b: Behavior#execute ausführen mit den neuen Executions
