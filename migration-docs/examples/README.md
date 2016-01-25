@@ -394,6 +394,14 @@ Migration Plan:
 * Mappingarten:
   * 1. Stufe: 1:1 (Gleichheit und Nicht-Gleichheit)
   * 2. Stufe: 1:n, n:1, m:n
+* Persistenz:
+  * 1. Stufe: Migrations Plans sind transient
+  * 2. Stufe: Migrations Pläne können gespeichert werden (Datenbank, Json Export)
+* Ausführung:
+  * 1. Stufe: Migrations Plan kann direkt auf einer Prozess Instanz ausgeführt werden
+  * 2. Stufe: Migrations Plan kann auf mehreren Prozess Instanzen non-blocking
+              ausgeführt (Jobs die batches von Instanzen migrarien)
+
 
 #### Erster minimaler Proof of concept:
 
@@ -401,5 +409,15 @@ Migration Plan:
 * Tasktypen: 1. Stufe
 * Mapping zwischen Tasktypen: 1. Stufe
 * Mappingarten: 1. Stufe
+* Persistenz: 1. Stufe
+* Ausführung: 1. Stufe
 
 Für diese Stufe könnten wir eine REST API bereitstellen, die Sebastian S. dann in Cockpit verwenden könnte um erste Überlegungen bzgl. User Interface anzustellen
+
+
+### Offene Fragen
+
+* History/Reporting:
+  * Wann wurden welche Instanzen migriert?
+  * Behalten Instanzen ihre History?
+  * Wie werden Fehler während der Batch Migration reportet und behandelt?
