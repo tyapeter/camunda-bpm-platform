@@ -12,6 +12,9 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration.cool;
 
+import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
+import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,6 +23,7 @@ import org.camunda.bpm.engine.impl.migration.MigrationInstruction;
 import org.camunda.bpm.engine.impl.migration.MigrationPlan;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
+import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
@@ -53,7 +57,7 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
 
   protected static BpmnModelInstance SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("SubProcess")
       .startEvent()
-      .subProcess()
+      .subProcess("subProcess")
        .embeddedSubProcess()
           .startEvent()
           .userTask("userTask")
@@ -61,6 +65,21 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
       .subProcessDone()
       .endEvent()
       .done();
+
+  protected static BpmnModelInstance BOUNDARY_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("BoundarySubProcess")
+      .startEvent()
+      .subProcess("subProcess")
+       .embeddedSubProcess()
+          .startEvent()
+          .userTask("userTask")
+          .endEvent()
+      .subProcessDone()
+      .endEvent()
+      .done();
+
+  static {
+    timerBoundaryEventOn(BOUNDARY_SUBPROCESS_PROCESS, "subProcess", "userTask", "PT5M");
+  }
 
   protected static final BpmnModelInstance PARALLEL_GW_PROCESS = Bpmn.createExecutableProcess("ParallelGatewayProcess")
       .startEvent()
@@ -91,10 +110,8 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
   public void testOneTaskProcessMigration() {
     String deploymentId = repositoryService.createDeployment().addClasspathResource(TEST_PROCESS_USER_TASK_V2).deploy().getId();
 
-    ProcessDefinition sourceProcessDefinition =
-        repositoryService.createProcessDefinitionQuery().processDefinitionKey("userTask").processDefinitionVersion(1).singleResult();
-    ProcessDefinition targetProcessDefinition =
-        repositoryService.createProcessDefinitionQuery().processDefinitionKey("userTask").processDefinitionVersion(2).singleResult();
+    ProcessDefinition sourceProcessDefinition = findProcessDefinition("userTask", 1);
+    ProcessDefinition targetProcessDefinition = findProcessDefinition("userTask", 2);
 
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
 
@@ -114,6 +131,37 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     assertEquals(targetProcessDefinition.getId(), updatedTask.getProcessDefinitionId());
 
     taskService.complete(updatedTask.getId());
+
+    deleteDeployments(deploymentId);
+  }
+
+  @Deployment(resources = {TEST_PROCESS_USER_TASK_V1})
+  public void testLeafActivityInstanceIdIsPreserved() {
+    String deploymentId = repositoryService.createDeployment().addClasspathResource(TEST_PROCESS_USER_TASK_V2).deploy().getId();
+
+    ProcessDefinition sourceProcessDefinition = findProcessDefinition("userTask", 1);
+    ProcessDefinition targetProcessDefinition = findProcessDefinition("userTask", 2);
+
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance sourceActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("waitState1")[0].getId();
+
+    // when
+    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
+    MigrationInstruction instruction = new MigrationInstruction("waitState1", "waitState1");
+    migrationPlan.setInstructions(Arrays.asList(instruction));
+
+    processEngineConfiguration.getCommandExecutorTxRequired()
+      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+
+    // then
+    ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    assertThat(targetActivityInstanceTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .activity("waitState1")
+        .done());
+
+    assertEquals(userTaskActivityInstanceId, targetActivityInstanceTree.getActivityInstances("waitState1")[0].getId());
 
     deleteDeployments(deploymentId);
 
@@ -152,6 +200,37 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     deleteDeployments(deployment1Id, deployment2Id);
   }
 
+  public void testBoundaryActivityInstanceTree() {
+    String deployment1Id = repositoryService.createDeployment().addModelInstance("foo.bpmn", BOUNDARY_PROCESS_V1).deploy().getId();
+    String deployment2Id = repositoryService.createDeployment().addDeploymentResources(deployment1Id).deploy().getId();
+
+    ProcessDefinition sourceProcessDefinition = findProcessDefinition("BoundaryProcess", 1);
+    ProcessDefinition targetProcessDefinition = findProcessDefinition("BoundaryProcess", 2);
+
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance sourceActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("userTask")[0].getId();
+
+    // when
+    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
+    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
+    migrationPlan.setInstructions(Arrays.asList(instruction));
+
+    processEngineConfiguration.getCommandExecutorTxRequired()
+      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+
+    // then
+    ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    assertThat(targetActivityInstanceTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .activity("userTask")
+        .done());
+
+    assertEquals(userTaskActivityInstanceId, targetActivityInstanceTree.getActivityInstances("userTask")[0].getId());
+
+    deleteDeployments(deployment1Id, deployment2Id);
+  }
+
   public void testSubProcessUserTaskMigration() {
     String deployment1Id = repositoryService.createDeployment().addModelInstance("foo.bpmn", SUBPROCESS_PROCESS).deploy().getId();
     String deployment2Id = repositoryService.createDeployment().addDeploymentResources(deployment1Id).deploy().getId();
@@ -177,6 +256,72 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     assertEquals(targetProcessDefinition.getId(), updatedTask.getProcessDefinitionId());
 
     taskService.complete(updatedTask.getId());
+
+    deleteDeployments(deployment1Id, deployment2Id);
+  }
+
+  @Deployment(resources = {TEST_PROCESS_USER_TASK_V1})
+  public void testSubProcessActivityInstanceTree() {
+    String deployment1Id = repositoryService.createDeployment().addModelInstance("foo.bpmn", SUBPROCESS_PROCESS).deploy().getId();
+    String deployment2Id = repositoryService.createDeployment().addDeploymentResources(deployment1Id).deploy().getId();
+
+    ProcessDefinition sourceProcessDefinition = findProcessDefinition("SubProcess", 1);
+    ProcessDefinition targetProcessDefinition = findProcessDefinition("SubProcess", 2);
+
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance sourceActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("userTask")[0].getId();
+
+    // when
+    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
+    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
+    migrationPlan.setInstructions(Arrays.asList(instruction));
+
+    processEngineConfiguration.getCommandExecutorTxRequired()
+      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+
+    // then
+    ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    assertThat(targetActivityInstanceTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .beginScope("subProcess")
+            .activity("userTask")
+        .done());
+
+    assertEquals(userTaskActivityInstanceId, targetActivityInstanceTree.getActivityInstances("userTask")[0].getId());
+
+    deleteDeployments(deployment1Id, deployment2Id);
+
+  }
+
+  public void testBoundarySubProcessActivityInstanceTree() {
+    String deployment1Id = repositoryService.createDeployment().addModelInstance("foo.bpmn", BOUNDARY_SUBPROCESS_PROCESS).deploy().getId();
+    String deployment2Id = repositoryService.createDeployment().addDeploymentResources(deployment1Id).deploy().getId();
+
+    ProcessDefinition sourceProcessDefinition = findProcessDefinition("BoundarySubProcess", 1);
+    ProcessDefinition targetProcessDefinition = findProcessDefinition("BoundarySubProcess", 2);
+
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance sourceActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("userTask")[0].getId();
+
+    // when
+    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
+    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
+    migrationPlan.setInstructions(Arrays.asList(instruction));
+
+    processEngineConfiguration.getCommandExecutorTxRequired()
+      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+
+    // then
+    ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
+    assertThat(targetActivityInstanceTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .beginScope("subProcess")
+            .activity("userTask")
+        .done());
+
+    assertEquals(userTaskActivityInstanceId, targetActivityInstanceTree.getActivityInstances("userTask")[0].getId());
 
     deleteDeployments(deployment1Id, deployment2Id);
   }
@@ -248,6 +393,7 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
   // TODO:
   // + assert activity instance tree and preservation of activity instance ids
   // + test concurrency
+  // + test infrastructure
 
   protected void deleteDeployments(String... deploymentIds) {
     for (String deploymentId : deploymentIds) {

@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
+import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
@@ -85,6 +86,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       child.deleteCascade(null);
     }
     processInstance.setActivity(null);
+    processInstance.setActivityInstanceId(null);
 
 
     // 3. update process definition IDs
@@ -139,10 +141,16 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       for (PvmActivity activityToInstantiate : activitiesToInstantiate) {
         ancestorExecution = ancestorExecution.createExecution();
         ancestorExecution.setActive(false);
-        ancestorExecution.setActivityId(activityToInstantiate.getId());
+        ancestorExecution.setActivity(activityToInstantiate);
         ancestorExecution.initialize();
-        ancestorExecution.initializeTimerDeclarations();
+        ancestorExecution.enterActivityInstance();  // TODO: this also initializes timer declarations (which is good)
+                                                    //   and executes io mappings (which we are not sure about if we want this),
+                                                    //   so maybe we have to change this
         ancestorExecution.setActivityId(null);
+
+        if (activityToInstantiate.getActivityBehavior() instanceof CompositeActivityBehavior) {
+          ancestorExecution.getParent().setActivityInstanceId(ancestorExecution.getActivityInstanceId());
+        }
       }
 
       ancestorExecution.setActivityId(targetActivityId);
@@ -151,25 +159,11 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       // attach entities (e.g. tasks)
       detachedInstance.userTask.setExecution(ancestorExecution);
       ancestorExecution.addTask(detachedInstance.userTask);
+      ancestorExecution.setActivityInstanceId(detachedInstance.activityInstanceId);
     }
 
     return null;
   }
-//
-//  protected List<PvmActivity> collectFlowScopes(final ActivityImpl sourceActivity, final ScopeImpl targetScope) {
-//    ActivityStackCollector stackCollector = new ActivityStackCollector();
-//    FlowScopeWalker walker = new FlowScopeWalker(sourceActivity.isScope() ? sourceActivity : sourceActivity.getFlowScope());
-//    walker.addPreVisitor(stackCollector);
-//
-//    // walk until a scope is reached for which executions exist
-//    walker.walkWhile(new WalkCondition<ScopeImpl>() {
-//      public boolean isFulfilled(ScopeImpl element) {
-//        return element == targetScope;
-//      }
-//    });
-//
-//    return stackCollector.getActivityStack();
-//  }
 
   protected List<PvmActivity> collectFlowScopes(final ActivityImpl sourceActivity, final ActivityExecutionTreeMapping mapping) {
     ActivityStackCollector stackCollector = new ActivityStackCollector();
