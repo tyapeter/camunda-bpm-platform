@@ -80,7 +80,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     }
 
     // 2. delete all executions but process instance
-    for (PvmExecutionImpl child : processInstance.getExecutions()) {
+    for (PvmExecutionImpl child : new ArrayList<PvmExecutionImpl>(processInstance.getExecutions())) {
       // TODO: we should not use deleteCascade because this call end execution listeners etc.
       child.deleteCascade(null);
     }
@@ -134,6 +134,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
         ancestorExecution.setActive(false);
         ancestorExecution.setActivityId(activityToInstantiate.getId());
         ancestorExecution.initialize();
+        ancestorExecution.initializeTimerDeclarations();
         ancestorExecution.setActivityId(null);
       }
 

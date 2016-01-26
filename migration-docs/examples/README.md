@@ -421,3 +421,12 @@ Für diese Stufe könnten wir eine REST API bereitstellen, die Sebastian S. dann
   * Wann wurden welche Instanzen migriert?
   * Behalten Instanzen ihre History?
   * Wie werden Fehler während der Batch Migration reportet und behandelt?
+  * Start- und End-Zeiten für historische Aktivitätsinstanzen, die nicht 1:1 gemappt werden
+* Executionbaummigration:
+  * Sollen Listener aufgerufen werden, wenn Scopes neu erzeugt oder zerstört werden?
+  * Was ist das Default-Verhalten für Variablen? (automatische Migration oder Löschen)
+  * Wann sollten Boundary-Event-Entitäten bewahrt werden? (z.B. bei 1:1-Mapping und Gleichheit der Aktivitäten)
+  * dasselbe für Incidents und Job-Retries
+  * Wie geht man am besten vor um maximal viele Executions zu bewahren?
+Validation:
+  * Wann ist ein Migrationsplan legal? (z.B: nicht valide, wenn manche Quellaktivitäten nicht gemappt sind)
