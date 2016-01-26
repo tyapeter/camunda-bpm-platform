@@ -129,6 +129,13 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
         ancestorExecution = executions.iterator().next();
       }
 
+      if (!ancestorExecution.getNonEventScopeExecutions().isEmpty()
+          || (ancestorExecution.getActivityId() != null && !ancestorExecution.isEnded())) { // TODO: what do we need #isEnded for?
+                                                                                            // we got it from the modification code.
+                                                                                            // Let's find out why that is needed
+        ancestorExecution = (ExecutionEntity) ancestorExecution.createConcurrentExecution();
+      }
+
       for (PvmActivity activityToInstantiate : activitiesToInstantiate) {
         ancestorExecution = ancestorExecution.createExecution();
         ancestorExecution.setActive(false);

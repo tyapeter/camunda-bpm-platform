@@ -13,6 +13,7 @@
 package org.camunda.bpm.engine.test.api.runtime.migration.cool;
 
 import java.util.Arrays;
+import java.util.List;
 
 import org.camunda.bpm.engine.impl.migration.MigrateProcessInstanceCmd;
 import org.camunda.bpm.engine.impl.migration.MigrationInstruction;
@@ -58,6 +59,16 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
           .userTask("userTask")
           .endEvent()
       .subProcessDone()
+      .endEvent()
+      .done();
+
+  protected static final BpmnModelInstance PARALLEL_GW_PROCESS = Bpmn.createExecutableProcess("ParallelGatewayProcess")
+      .startEvent()
+      .parallelGateway()
+      .userTask("userTask1")
+      .endEvent()
+      .moveToLastGateway()
+      .userTask("userTask2")
       .endEvent()
       .done();
 
@@ -195,6 +206,41 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     assertEquals(targetProcessDefinition.getId(), updatedTask.getProcessDefinitionId());
 
     taskService.complete(updatedTask.getId());
+
+    deleteDeployments(deployment1Id, deployment2Id);
+  }
+
+  public void testConcurrentUserTasksMigration() {
+    String deployment1Id = repositoryService.createDeployment().addModelInstance("foo.bpmn", PARALLEL_GW_PROCESS).deploy().getId();
+    String deployment2Id = repositoryService.createDeployment().addDeploymentResources(deployment1Id).deploy().getId();
+
+    ProcessDefinition sourceProcessDefinition = findProcessDefinition("ParallelGatewayProcess", 1);
+    ProcessDefinition targetProcessDefinition = findProcessDefinition("ParallelGatewayProcess", 2);
+
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
+
+    // when
+    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
+    MigrationInstruction instruction1 = new MigrationInstruction("userTask1", "userTask1");
+    MigrationInstruction instruction2 = new MigrationInstruction("userTask2", "userTask2");
+    migrationPlan.setInstructions(Arrays.asList(instruction1, instruction2));
+
+    processEngineConfiguration.getCommandExecutorTxRequired()
+      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+
+    // then
+    ProcessInstance updatedInstance = runtimeService.createProcessInstanceQuery().singleResult();
+    assertEquals(targetProcessDefinition.getId(), updatedInstance.getProcessDefinitionId());
+
+    List<Task> updatedTasks = taskService.createTaskQuery().list();
+    assertEquals(2, updatedTasks.size());
+    assertEquals(targetProcessDefinition.getId(), updatedTasks.get(0).getProcessDefinitionId());
+    assertEquals(targetProcessDefinition.getId(), updatedTasks.get(1).getProcessDefinitionId());
+
+    taskService.complete(updatedTasks.get(0).getId());
+    taskService.complete(updatedTasks.get(1).getId());
+
+    assertProcessEnded(processInstance.getId());
 
     deleteDeployments(deployment1Id, deployment2Id);
   }
