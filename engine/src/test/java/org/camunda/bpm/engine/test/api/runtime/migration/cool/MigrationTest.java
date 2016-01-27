@@ -19,9 +19,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.bpm.engine.impl.migration.MigrateProcessInstanceCmd;
-import org.camunda.bpm.engine.impl.migration.MigrationInstruction;
-import org.camunda.bpm.engine.impl.migration.MigrationPlan;
+import org.camunda.bpm.engine.impl.migration.MigrationInstructionImpl;
+import org.camunda.bpm.engine.impl.migration.MigrationPlanImpl;
 import org.camunda.bpm.engine.impl.test.PluggableProcessEngineTestCase;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.Job;
@@ -116,12 +117,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("waitState1", "waitState1");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("waitState1", "waitState1")
+      .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ProcessInstance updatedInstance = runtimeService.createProcessInstanceQuery().singleResult();
@@ -147,12 +148,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("waitState1")[0].getId();
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("waitState1", "waitState1");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("waitState1", "waitState1")
+        .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+      List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+      runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
@@ -177,12 +178,13 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+        .build();
+
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ProcessInstance updatedInstance = runtimeService.createProcessInstanceQuery().singleResult();
@@ -212,12 +214,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("userTask")[0].getId();
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+        .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
@@ -241,12 +243,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+        .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ProcessInstance updatedInstance = runtimeService.createProcessInstanceQuery().singleResult();
@@ -273,12 +275,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("userTask")[0].getId();
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+        .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
@@ -306,12 +308,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     String userTaskActivityInstanceId = sourceActivityInstanceTree.getActivityInstances("userTask")[0].getId();
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("userTask", "userTask");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+      .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ActivityInstance targetActivityInstanceTree = runtimeService.getActivityInstance(processInstance.getId());
@@ -336,12 +338,12 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction = new MigrationInstruction("waitState1", "userTask");
-    migrationPlan.setInstructions(Arrays.asList(instruction));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("waitState1", "userTask")
+      .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ProcessInstance updatedInstance = runtimeService.createProcessInstanceQuery().singleResult();
@@ -365,13 +367,13 @@ public class MigrationTest extends PluggableProcessEngineTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceById(sourceProcessDefinition.getId());
 
     // when
-    MigrationPlan migrationPlan = new MigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId());
-    MigrationInstruction instruction1 = new MigrationInstruction("userTask1", "userTask1");
-    MigrationInstruction instruction2 = new MigrationInstruction("userTask2", "userTask2");
-    migrationPlan.setInstructions(Arrays.asList(instruction1, instruction2));
+    MigrationPlan migration = runtimeService.createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
 
-    processEngineConfiguration.getCommandExecutorTxRequired()
-      .execute(new MigrateProcessInstanceCmd(migrationPlan, processInstance.getId()));
+    List<String> processInstanceIds = Arrays.asList(processInstance.getId());
+    runtimeService.executeMigrationPlan(migration, processInstanceIds);
 
     // then
     ProcessInstance updatedInstance = runtimeService.createProcessInstanceQuery().singleResult();

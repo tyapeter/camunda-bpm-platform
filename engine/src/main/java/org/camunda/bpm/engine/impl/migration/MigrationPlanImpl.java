@@ -12,22 +12,27 @@
  */
 package org.camunda.bpm.engine.impl.migration;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.camunda.bpm.engine.migration.MigrationInstruction;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class MigrationPlan {
+public class MigrationPlanImpl implements MigrationPlan {
 
   protected String sourceProcessDefinitionId;
   protected String targetProcessDefinitionId;
 
   protected List<MigrationInstruction> instructions;
 
-  public MigrationPlan(String sourceProcessDefinitionId, String targetProcessDefinitionId) {
+  public MigrationPlanImpl(String sourceProcessDefinitionId, String targetProcessDefinitionId) {
     this.sourceProcessDefinitionId = sourceProcessDefinitionId;
     this.targetProcessDefinitionId = targetProcessDefinitionId;
+    this.instructions = new ArrayList<MigrationInstruction>();
   }
 
   public String getSourceProcessDefinitionId() {
@@ -53,6 +58,5 @@ public class MigrationPlan {
   public void setInstructions(List<MigrationInstruction> instructions) {
     this.instructions = instructions;
   }
-
 
 }

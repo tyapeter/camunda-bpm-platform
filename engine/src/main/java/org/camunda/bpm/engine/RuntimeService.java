@@ -19,6 +19,7 @@ import java.util.Map;
 import org.camunda.bpm.engine.authorization.Permissions;
 import org.camunda.bpm.engine.authorization.Resources;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -1655,4 +1656,10 @@ public interface RuntimeService {
    * @return the created process instance
    */
   ProcessInstantiationBuilder createProcessInstanceByKey(String processDefinitionKey);
+
+  MigrationPlanBuilder createMigrationPlan(String sourceProcessDefinitionId, String targetProcessDefinitionId);
+
+//  MigrationPlanBuilder extendMigrationPlan(MigrationPlan migrationPlan);
+
+  void executeMigrationPlan(MigrationPlan migrationPlan, List<String> processInstanceIds);
 }

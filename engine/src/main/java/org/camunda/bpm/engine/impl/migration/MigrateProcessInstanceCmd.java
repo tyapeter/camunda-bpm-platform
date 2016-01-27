@@ -33,6 +33,8 @@ import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 import org.camunda.bpm.engine.impl.tree.ActivityStackCollector;
 import org.camunda.bpm.engine.impl.tree.FlowScopeWalker;
 import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
+import org.camunda.bpm.engine.migration.MigrationInstruction;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
 /**
@@ -42,16 +44,22 @@ import org.camunda.bpm.engine.runtime.ActivityInstance;
 public class MigrateProcessInstanceCmd implements Command<Void> {
 
   protected MigrationPlan migrationPlan;
-  protected String processInstanceId;
+  protected List<String> processInstanceIds;
 
 
-  public MigrateProcessInstanceCmd(MigrationPlan migrationPlan, String processInstanceId) {
+  public MigrateProcessInstanceCmd(MigrationPlan migrationPlan, List<String> processInstanceIds) {
     this.migrationPlan = migrationPlan;
-    this.processInstanceId = processInstanceId;
+    this.processInstanceIds = processInstanceIds;
   }
 
-  @Override
   public Void execute(CommandContext commandContext) {
+    for (String processInstanceId : processInstanceIds) {
+      migrateProcessInstance(commandContext, processInstanceId);
+    }
+    return null;
+  }
+
+  public Void migrateProcessInstance(CommandContext commandContext, String processInstanceId) {
     ProcessDefinitionEntity targetProcessDefinition = Context.getProcessEngineConfiguration()
         .getDeploymentCache().findDeployedProcessDefinitionById(migrationPlan.getTargetProcessDefinitionId());
 
@@ -63,7 +71,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     // 1. detach activity instances and involved entities
     for (MigrationInstruction instruction : migrationPlan.getInstructions()) {
       ActivityInstance[] instancesForSourceActivity =
-          activityInstanceTree.getActivityInstances(instruction.getSourceActivityId());
+          activityInstanceTree.getActivityInstances(instruction.getSourceActivityIds().get(0));
 
 
       for (ActivityInstance instance : instancesForSourceActivity) {
@@ -99,7 +107,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     // 4. build execution tree
     for (int i = 0; i < detachedInstances.size(); i++) {
       DetachedActivityInstance detachedInstance = detachedInstances.get(i);
-      String targetActivityId = detachedInstance.instruction.getTargetActivityId();
+      String targetActivityId = detachedInstance.instruction.getTargetActivityIds().get(0);
       ActivityImpl targetActivity = targetProcessDefinition.findActivity(targetActivityId);
 
       ActivityExecutionTreeMapping mapping = null;

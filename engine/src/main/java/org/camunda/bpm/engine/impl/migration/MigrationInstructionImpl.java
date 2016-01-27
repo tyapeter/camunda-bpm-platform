@@ -12,36 +12,32 @@
  */
 package org.camunda.bpm.engine.impl.migration;
 
+import java.util.List;
+
+import org.camunda.bpm.engine.migration.MigrationInstruction;
+
 /**
  * @author Thorben Lindhauer
  *
  */
-public class MigrationInstruction {
+public class MigrationInstructionImpl implements MigrationInstruction {
 
-  protected String sourceActivityId;
-  protected String targetActivityId;
+  protected List<String> sourceActivityIds;
+  protected List<String> targetActivityIds;
 
 
 
-  public MigrationInstruction(String sourceActivityId, String targetActivityId) {
-    this.sourceActivityId = sourceActivityId;
-    this.targetActivityId = targetActivityId;
+  public MigrationInstructionImpl(List<String> sourceActivityIds, List<String> targetActivityIds) {
+    this.sourceActivityIds = sourceActivityIds;
+    this.targetActivityIds = targetActivityIds;
   }
 
-  public String getSourceActivityId() {
-    return sourceActivityId;
+  public List<String> getSourceActivityIds() {
+    return sourceActivityIds;
   }
 
-  public void setSourceActivityId(String sourceActivityId) {
-    this.sourceActivityId = sourceActivityId;
-  }
-
-  public String getTargetActivityId() {
-    return targetActivityId;
-  }
-
-  public void setTargetActivityId(String targetActivityId) {
-    this.targetActivityId = targetActivityId;
+  public List<String> getTargetActivityIds() {
+    return targetActivityIds;
   }
 
 
