@@ -39,6 +39,8 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
     for (ActivityImpl sourceActivity : sourceScope.getActivities()) {
       for (ActivityImpl targetActivity : targetScope.getActivities()) {
         if (areEqualScopes(sourceActivity, targetActivity)) {
+          instructions.add(new MigrationInstructionImpl(
+              Arrays.asList(sourceActivity.getId()), Arrays.asList(targetActivity.getId())));
           instructions.addAll(generateInstructionsInScope(sourceActivity, targetActivity));
         }
         else if (areEqualActivities(sourceActivity, targetActivity)) {

@@ -53,8 +53,10 @@ public class DefaultMigrationPlanValidator implements MigrationPlanValidator {
     final ActivityImpl targetActivity = targetProcessDefinition.findActivity(targetActivityIds.get(0));
     EnsureUtil.ensureNotNull(BadUserRequestException.class, errorMessage, "targetActivity", targetActivity);
 
-    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
-    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
+    if (sourceActivity.getActivities().isEmpty()) {
+      EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
+      EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
+    }
 
     FlowScopeWalker flowScopeWalker = new FlowScopeWalker(sourceActivity);
     flowScopeWalker.addPostVisitor(new TreeVisitor<ScopeImpl>() {

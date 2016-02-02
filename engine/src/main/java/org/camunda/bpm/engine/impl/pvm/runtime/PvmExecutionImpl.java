@@ -759,6 +759,10 @@ public abstract class PvmExecutionImpl extends CoreExecution implements Activity
         skipCustomListeners, skipIoMappings);
   }
 
+  public PvmExecutionImpl createScopesConcurrent(List<PvmActivity> activityStack) {
+
+  }
+
   /**
    * Instantiates the given activity stack. Uses this execution to execute the
    * highest activity in the stack.
