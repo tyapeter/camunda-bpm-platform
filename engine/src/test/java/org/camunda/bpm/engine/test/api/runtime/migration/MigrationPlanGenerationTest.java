@@ -15,13 +15,9 @@ package org.camunda.bpm.engine.test.api.runtime.migration;
 import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.migrate;
 
-import java.util.List;
-
-import org.camunda.bpm.engine.migration.MigrationInstruction;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -86,6 +82,102 @@ public class MigrationPlanGenerationTest {
         migrate("userTask").to("userTask")
       );
 
+  }
+
+  @Test
+  public void testMapEqualActivitiesToSubProcessScope() {
+    // given
+    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+
+    // when
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    // then
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("userTask").to("userTask")
+      );
+  }
+
+  @Test
+  public void testMapEqualActivitiesToNestedSubProcessScope() {
+    // given
+    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
+    testHelper.deploy("nestedSubProcessProcess.bpmn20.xml", ProcessModels.NEW_NESTED_SUBPROCESS_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+
+    // when
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    // then
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("userTask").to("userTask")
+      );
+  }
+
+  @Test
+  public void testMapEqualActivitiesToSurroundingSubProcessScope() {
+    // given
+    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
+    testHelper.deploy("surroundingSubProcessProcess.bpmn20.xml", ProcessModels.NEW_SURROUNDING_SUBPROCESS_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SurroundingSubProcess", 1);
+
+    // when
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    // then
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("userTask").to("userTask")
+      );
+  }
+
+  @Test
+  public void testMapEqualActivitiesToDeeplyNestedSubProcessScope() {
+    // given
+    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    testHelper.deploy("nestedSubProcessProcess.bpmn20.xml", ProcessModels.NEW_NESTED_SUBPROCESS_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+
+    // when
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    // then
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasEmptyInstructions();
   }
 
 }

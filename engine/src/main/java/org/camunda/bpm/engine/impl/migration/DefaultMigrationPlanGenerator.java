@@ -31,10 +31,10 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
 
   @Override
   public List<MigrationInstruction> generate(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
-    return generateInstructionsInScope(sourceProcessDefinition, targetProcessDefinition);
+    return generateInstructionsInScope(sourceProcessDefinition, targetProcessDefinition, 1);
   }
 
-  protected List<MigrationInstruction> generateInstructionsInScope(ScopeImpl sourceScope, ScopeImpl targetScope) {
+  protected List<MigrationInstruction> generateInstructionsInScope(ScopeImpl sourceScope, ScopeImpl targetScope, int allowedScopeDepth) {
     List<MigrationInstruction> instructions = new ArrayList<MigrationInstruction>();
 
     for (ActivityImpl sourceActivity : sourceScope.getActivities()) {
@@ -42,11 +42,14 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
         if (areEqualScopes(sourceActivity, targetActivity)) {
           instructions.add(new MigrationInstructionImpl(
             Collections.singletonList(sourceActivity.getId()), Collections.singletonList(targetActivity.getId())));
-          instructions.addAll(generateInstructionsInScope(sourceActivity, targetActivity));
+          instructions.addAll(generateInstructionsInScope(sourceActivity, targetActivity, allowedScopeDepth));
         }
         else if (areEqualActivities(sourceActivity, targetActivity)) {
           instructions.add(new MigrationInstructionImpl(
             Collections.singletonList(sourceActivity.getId()), Collections.singletonList(targetActivity.getId())));
+        }
+        else if (allowedScopeDepth > 0 && isScope(targetActivity)) {
+          instructions.addAll(generateInstructionsInScope(sourceScope, targetActivity, allowedScopeDepth - 1));
         }
       }
     }
@@ -56,7 +59,7 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
 
   protected boolean areEqualScopes(ScopeImpl sourceScope, ScopeImpl targetScope) {
 
-    boolean areScopes = !sourceScope.getActivities().isEmpty() && !targetScope.getActivities().isEmpty();
+    boolean areScopes = isScope(sourceScope) && isScope(targetScope);
     boolean matchingIds = sourceScope.getId().equals(targetScope.getId());
     boolean matchingTypes = (sourceScope == sourceScope.getProcessDefinition() && targetScope == targetScope.getProcessDefinition())
         || (sourceScope.getActivityBehavior().getClass() == targetScope.getActivityBehavior().getClass());
@@ -71,6 +74,10 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
         && targetActivity.getActivityBehavior() instanceof UserTaskActivityBehavior;
 
     return matchingIds && matchingTypes;
+  }
+
+  protected boolean isScope(ScopeImpl scope) {
+    return !scope.getActivities().isEmpty();
   }
 
 }

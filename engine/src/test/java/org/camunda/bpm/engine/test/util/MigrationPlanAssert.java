@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.test.util;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
@@ -90,6 +91,15 @@ public class MigrationPlanAssert {
       }
       fail(builder.toString());
     }
+
+    return this;
+  }
+
+  public MigrationPlanAssert hasEmptyInstructions() {
+    isNotNull();
+
+    List<MigrationInstruction> instructions = actual.getInstructions();
+    assertTrue("Expected migration plan has no instructions but has: " + instructions, instructions.isEmpty());
 
     return this;
   }
