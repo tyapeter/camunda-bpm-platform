@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.impl.migration;
 import java.util.List;
 
 import org.camunda.bpm.engine.BadUserRequestException;
+import org.camunda.bpm.engine.impl.bpmn.behavior.SubProcessActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
@@ -53,10 +54,7 @@ public class DefaultMigrationPlanValidator implements MigrationPlanValidator {
     final ActivityImpl targetActivity = targetProcessDefinition.findActivity(targetActivityIds.get(0));
     EnsureUtil.ensureNotNull(BadUserRequestException.class, errorMessage, "targetActivity", targetActivity);
 
-    if (sourceActivity.getActivities().isEmpty()) {
-      EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
-      EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
-    }
+    ensureSupportedActivity(sourceActivity, targetActivity, errorMessage);
 
     FlowScopeWalker flowScopeWalker = new FlowScopeWalker(sourceActivity);
     // TODO: add validation again and implement for currently allowed cases
@@ -84,6 +82,25 @@ public class DefaultMigrationPlanValidator implements MigrationPlanValidator {
         return element.getFlowScope() == null;
       }
     });
+  }
+
+  protected void ensureSupportedActivity(ActivityImpl sourceActivity, ActivityImpl targetActivity, String errorMessage) {
+    if (sourceActivity.getActivities().isEmpty()) {
+      ensureUserTaskActivities(sourceActivity, targetActivity, errorMessage);
+    }
+    else {
+      ensureScopeActivities(sourceActivity, targetActivity, errorMessage);
+    }
+  }
+
+  protected void ensureScopeActivities(ActivityImpl sourceActivity, ActivityImpl targetActivity, String errorMessage) {
+    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), SubProcessActivityBehavior.class);
+    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), SubProcessActivityBehavior.class);
+  }
+
+  protected void ensureUserTaskActivities(ActivityImpl sourceActivity, ActivityImpl targetActivity, String errorMessage) {
+    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
+    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
   }
 
   protected boolean isProcessDefinition(ScopeImpl scope) {

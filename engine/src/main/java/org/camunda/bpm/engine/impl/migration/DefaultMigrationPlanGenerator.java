@@ -14,6 +14,7 @@ package org.camunda.bpm.engine.impl.migration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
@@ -40,12 +41,12 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
       for (ActivityImpl targetActivity : targetScope.getActivities()) {
         if (areEqualScopes(sourceActivity, targetActivity)) {
           instructions.add(new MigrationInstructionImpl(
-              Arrays.asList(sourceActivity.getId()), Arrays.asList(targetActivity.getId())));
+            Collections.singletonList(sourceActivity.getId()), Collections.singletonList(targetActivity.getId())));
           instructions.addAll(generateInstructionsInScope(sourceActivity, targetActivity));
         }
         else if (areEqualActivities(sourceActivity, targetActivity)) {
           instructions.add(new MigrationInstructionImpl(
-              Arrays.asList(sourceActivity.getId()), Arrays.asList(targetActivity.getId())));
+            Collections.singletonList(sourceActivity.getId()), Collections.singletonList(targetActivity.getId())));
         }
       }
     }

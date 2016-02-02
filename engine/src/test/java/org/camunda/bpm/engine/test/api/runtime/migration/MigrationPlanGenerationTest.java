@@ -12,6 +12,9 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.assertThat;
+import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.migrate;
+
 import java.util.List;
 
 import org.camunda.bpm.engine.migration.MigrationInstruction;
@@ -51,17 +54,12 @@ public class MigrationPlanGenerationTest {
       .build();
 
     // then
-    Assert.assertNotNull(migrationPlan);
-    Assert.assertEquals(sourceProcessDefinition.getId(), migrationPlan.getSourceProcessDefinitionId());
-    Assert.assertEquals(targetProcessDefinition.getId(), migrationPlan.getTargetProcessDefinitionId());
-
-    List<MigrationInstruction> instructions = migrationPlan.getInstructions();
-    Assert.assertNotNull(instructions);
-    Assert.assertEquals(1, instructions.size());
-    Assert.assertEquals(1, instructions.get(0).getSourceActivityIds().size());
-    Assert.assertEquals("userTask", instructions.get(0).getSourceActivityIds().get(0));
-    Assert.assertEquals(1, instructions.get(0).getTargetActivityIds().size());
-    Assert.assertEquals("userTask", instructions.get(0).getTargetActivityIds().get(0));
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("userTask").to("userTask")
+      );
   }
 
   @Test
@@ -80,18 +78,14 @@ public class MigrationPlanGenerationTest {
       .build();
 
     // then
-    Assert.assertNotNull(migrationPlan);
-    Assert.assertEquals(sourceProcessDefinition.getId(), migrationPlan.getSourceProcessDefinitionId());
-    Assert.assertEquals(targetProcessDefinition.getId(), migrationPlan.getTargetProcessDefinitionId());
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("userTask").to("userTask")
+      );
 
-    List<MigrationInstruction> instructions = migrationPlan.getInstructions();
-    Assert.assertNotNull(instructions);
-    Assert.assertEquals(2, instructions.size());
-//    Assert.assertEquals(1, instructions.get(0).getSourceActivityIds().size());
-//    Assert.assertEquals("userTask", instructions.get(0).getSourceActivityIds().get(0));
-//    Assert.assertEquals(1, instructions.get(0).getTargetActivityIds().size());
-//    Assert.assertEquals("userTask", instructions.get(0).getTargetActivityIds().get(0));
-    // TODO: properly assert instructions
   }
 
 }
