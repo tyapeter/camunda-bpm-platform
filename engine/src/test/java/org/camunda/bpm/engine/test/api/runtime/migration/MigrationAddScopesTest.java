@@ -354,7 +354,6 @@ public class MigrationAddScopesTest {
         .startBeforeActivity("subProcess")
         .startBeforeActivity("subProcess")
         .execute();
-    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
@@ -400,7 +399,6 @@ public class MigrationAddScopesTest {
   }
 
   // TODO: assert process definition id on executions
-  // TODO: test and fix preservation of activity instance IDs (leaf activities but also scopes!)
 
   // TODO: test deletion of migrated instances
   // TODO: actually assert that listeners are invoked
