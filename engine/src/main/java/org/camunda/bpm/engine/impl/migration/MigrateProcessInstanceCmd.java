@@ -13,7 +13,6 @@
 package org.camunda.bpm.engine.impl.migration;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -141,6 +140,15 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     final MigratingActivityInstance migratingInstance = migratingInstances.get(activityInstanceTree.getId());
     ScopeImpl currentActivity = migratingInstance.sourceScope;
     ExecutionEntity execution = getScopeExecution(mapping, activityInstanceTree, currentActivity);
+    if (execution.getReplacedBy() != null) {
+      // in case a concurrent execution was created/removed by a previous instruction
+      execution = execution.getReplacedBy();
+
+      if (execution.getReplacedBy() != null) {
+        // in case a concurrent execution was created/removed by a previous instruction
+        execution = execution.getReplacedBy();
+      }
+    }
 
     if (!activityInstanceTree.getId().equals(activityInstanceTree.getProcessInstanceId())) {
       final MigratingActivityInstance parentMigratingInstance = migratingInstances.get(activityInstanceTree.getParentActivityInstanceId());
@@ -164,23 +172,8 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
           ExecutionEntity targetFlowScopeExecution = createdScopeExecutions.get(targetFlowScope);
 
           if (targetFlowScopeExecution == null) {
-            ExecutionEntity newParentExecution = parentScopeExecution;
-            if (!parentScopeExecution.getNonEventScopeExecutions().isEmpty()) {
-              newParentExecution = (ExecutionEntity) parentScopeExecution.createConcurrentExecution();
-            }
-
-//            targetFlowScopeExecution = newParentExecution.createExecution();
-
-            // 4.2. set new execution to target flow scope and invoke listeners
-//            targetFlowScopeExecution.setActivity((PvmActivity) targetFlowScope);
-
-            List<PvmActivity> scopesToInstantiate = new ArrayList<PvmActivity>();
-            scopesToInstantiate.add((PvmActivity) targetFlowScope);
-            newParentExecution.createScopes(scopesToInstantiate);
-            targetFlowScopeExecution = newParentExecution.getExecutions().get(0); // TODO: this does not work for more than one scope
-
+            targetFlowScopeExecution = createMissingTargetFlowScopeExecution(parentScopeExecution, (PvmActivity) targetFlowScope);
             createdScopeExecutions.put(targetFlowScope, targetFlowScopeExecution);
-            targetFlowScopeExecution.setActivity(null);
           }
           else {
             targetFlowScopeExecution = (ExecutionEntity) targetFlowScopeExecution.createConcurrentExecution();
@@ -191,10 +184,41 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
         }
         else {
           // remove activity instance state from scope execution
+          execution.setActivity(null);
+          execution.leaveActivityInstance();
+
+          if (!execution.isScope()) {
+            ExecutionEntity parent = execution.getParent();
+
+            migratingInstance.userTask.setExecution(null);
+            execution.removeTask(migratingInstance.userTask);
+            execution.remove();
+
+            parent.tryPruneLastConcurrentChild();
+
+            execution = parent;
+          }
+
+          // 4.1 create scope execution for missing scope
+          ExecutionEntity targetFlowScopeExecution = createdScopeExecutions.get(targetFlowScope);
+
+          if (targetFlowScopeExecution == null) {
+            targetFlowScopeExecution = createMissingTargetFlowScopeExecution(execution, (PvmActivity) targetFlowScope);
+            createdScopeExecutions.put(targetFlowScope, targetFlowScopeExecution);
+          }
+          else {
+            targetFlowScopeExecution = (ExecutionEntity) targetFlowScopeExecution.createConcurrentExecution();
+          }
+
+          // 4.3 restore state removed in 4.0
+          targetFlowScopeExecution.setActivity((PvmActivity) migratingInstance.targetScope);
+          targetFlowScopeExecution.setActivityInstanceId(migratingInstance.activityInstance.getId());
+          targetFlowScopeExecution.addTask(migratingInstance.userTask);
+          migratingInstance.userTask.setExecution(targetFlowScopeExecution);
+
+
         }
       }
-
-      execution.setActivityId(migratingInstance.targetScope.getId());
     }
 
     execution.setProcessDefinition(migratingInstance.targetScope.getProcessDefinition());
@@ -203,6 +227,24 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       migrateActivityInstance(mapping, childInstance, migratingInstances, createdScopeExecutions);
     }
 
+  }
+
+  protected ExecutionEntity createMissingTargetFlowScopeExecution(ExecutionEntity parentScopeExecution, PvmActivity targetFlowScope) {
+    ExecutionEntity newParentExecution = parentScopeExecution;
+    if (!parentScopeExecution.getNonEventScopeExecutions().isEmpty() || parentScopeExecution.getActivity() != null) {
+      newParentExecution = (ExecutionEntity) parentScopeExecution.createConcurrentExecution();
+    }
+
+    // 4.2. set new execution to target flow scope and invoke listeners
+
+    List<PvmActivity> scopesToInstantiate = new ArrayList<PvmActivity>();
+    scopesToInstantiate.add(targetFlowScope);
+    newParentExecution.createScopes(scopesToInstantiate);
+    ExecutionEntity targetFlowScopeExecution = newParentExecution.getExecutions().get(0); // TODO: this does not work for more than one scope
+
+    targetFlowScopeExecution.setActivity(null);
+
+    return targetFlowScopeExecution;
   }
 
   protected ExecutionEntity getScopeExecution(ActivityExecutionTreeMapping mapping, ActivityInstance activityInstance, ScopeImpl activity) {
