@@ -31,6 +31,7 @@ import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
+import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
@@ -181,6 +182,11 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
 
           // 4.3 restore state removed in 4.0
           execution.setParent(targetFlowScopeExecution);
+
+          // if this execution does not execute a leaf activity, conserve activity instance id
+          if (migratingInstance.targetScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
+            targetFlowScopeExecution.setActivityInstanceId(migratingInstance.activityInstance.getId());
+          }
         }
         else {
           // remove activity instance state from scope execution
@@ -223,8 +229,16 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
 
     execution.setProcessDefinition(migratingInstance.targetScope.getProcessDefinition());
 
+    // Let activity instances on the same level of subprocess share the same execution context
+    // of newly created scope executions.
+    // This ensures that newly created scope executions
+    // * are reused to attach activity instances to when the activity instances share a
+    //   common ancestor path to the process instance
+    // * are not reused when activity instances are in unrelated branches of the execution tree
+    Map<ScopeImpl, ExecutionEntity> scopeExecutionContext = new HashMap<ScopeImpl, ExecutionEntity>(createdScopeExecutions);
+
     for (ActivityInstance childInstance : activityInstanceTree.getChildActivityInstances()) {
-      migrateActivityInstance(mapping, childInstance, migratingInstances, createdScopeExecutions);
+      migrateActivityInstance(mapping, childInstance, migratingInstances, scopeExecutionContext);
     }
 
   }
