@@ -759,8 +759,15 @@ public abstract class PvmExecutionImpl extends CoreExecution implements Activity
         skipCustomListeners, skipIoMappings);
   }
 
-  public PvmExecutionImpl createScopesConcurrent(List<PvmActivity> activityStack) {
+  public void createScopes(List<PvmActivity> activityStack) {
 
+    ExecutionStartContext executionStartContext = new ExecutionStartContext(false);
+
+    InstantiationStack instantiationStack = new InstantiationStack(activityStack);
+    executionStartContext.setInstantiationStack(instantiationStack);
+    setStartContext(executionStartContext);
+
+    performOperation(PvmAtomicOperation.ACTIVITY_INIT_STACK_AND_RETURN);
   }
 
   /**

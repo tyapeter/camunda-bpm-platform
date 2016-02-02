@@ -59,23 +59,24 @@ public class DefaultMigrationPlanValidator implements MigrationPlanValidator {
     }
 
     FlowScopeWalker flowScopeWalker = new FlowScopeWalker(sourceActivity);
-    flowScopeWalker.addPostVisitor(new TreeVisitor<ScopeImpl>() {
-
-      ScopeImpl currentTargetScope = targetActivity.getFlowScope();
-
-      @Override
-      public void visit(ScopeImpl currentSourceScope) {
-        // TODO: externalize the validation condition (i.e. id equality)?!
-        if (currentTargetScope == null ||
-            (!currentSourceScope.getId().equals(currentTargetScope.getId()))
-            && !(isProcessDefinition(currentSourceScope) && isProcessDefinition(currentTargetScope))) {
-          throw new BadUserRequestException(errorMessage + ": Source activity " + sourceActivity.getId() + " "
-              + "and target activity " + targetActivity.getId() + " are not contained in the same sub process");
-        }
-
-        currentTargetScope = currentTargetScope.getFlowScope();
-      }
-    });
+    // TODO: add validation again and implement for currently allowed cases
+//    flowScopeWalker.addPostVisitor(new TreeVisitor<ScopeImpl>() {
+//
+//      ScopeImpl currentTargetScope = targetActivity.getFlowScope();
+//
+//      @Override
+//      public void visit(ScopeImpl currentSourceScope) {
+//        // TODO: externalize the validation condition (i.e. id equality)?!
+//        if (currentTargetScope == null ||
+//            (!currentSourceScope.getId().equals(currentTargetScope.getId()))
+//            && !(isProcessDefinition(currentSourceScope) && isProcessDefinition(currentTargetScope))) {
+//          throw new BadUserRequestException(errorMessage + ": Source activity " + sourceActivity.getId() + " "
+//              + "and target activity " + targetActivity.getId() + " are not contained in the same sub process");
+//        }
+//
+//        currentTargetScope = currentTargetScope.getFlowScope();
+//      }
+//    });
     flowScopeWalker.walkUntil(new WalkCondition<ScopeImpl>() {
 
       @Override
