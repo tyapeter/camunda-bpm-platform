@@ -18,6 +18,7 @@ import org.camunda.bpm.model.bpmn.instance.Activity;
 import org.camunda.bpm.model.bpmn.instance.BoundaryEvent;
 import org.camunda.bpm.model.bpmn.instance.Message;
 import org.camunda.bpm.model.bpmn.instance.MessageEventDefinition;
+import org.camunda.bpm.model.bpmn.instance.UserTask;
 
 /**
  * @author Thorben Lindhauer
@@ -89,45 +90,28 @@ public class ProcessModels {
       .endEvent()
       .done();
 
-  public static final BpmnModelInstance SCOPE_TASK_PROCESS = ONE_TASK_PROCESS.clone();
+  public static final BpmnModelInstance SCOPE_TASK_PROCESS = ONE_TASK_PROCESS.clone()
+      .<UserTask>getModelElementById("userTask").builder()
+      .boundaryEvent().message("Message")
+      .done();
 
-  static {
-    addMessageBoundaryEvent(SCOPE_TASK_PROCESS, "userTask", "Message");
-  }
+  public static final BpmnModelInstance SCOPE_TASK_SUBPROCESS_PROCESS = SUBPROCESS_PROCESS.clone()
+      .<UserTask>getModelElementById("userTask").builder()
+      .boundaryEvent().message("Message")
+      .done();
 
-  public static final BpmnModelInstance SCOPE_TASK_SUBPROCESS_PROCESS = SUBPROCESS_PROCESS.clone();
+  public static final BpmnModelInstance PARALLEL_SCOPE_TASKS = PARALLEL_GATEWAY_PROCESS.clone()
+      .<UserTask>getModelElementById("userTask1").builder()
+      .boundaryEvent().message("Message")
+      .moveToActivity("userTask2")
+      .boundaryEvent().message("Message")
+      .done();
 
-  static {
-    addMessageBoundaryEvent(SCOPE_TASK_SUBPROCESS_PROCESS, "userTask", "Message");
-  }
-
-  public static final BpmnModelInstance PARALLEL_SCOPE_TASKS = PARALLEL_GATEWAY_PROCESS.clone();
-
-  static {
-    addMessageBoundaryEvent(PARALLEL_SCOPE_TASKS, "userTask1", "Message");
-    addMessageBoundaryEvent(PARALLEL_SCOPE_TASKS, "userTask2", "Message");
-  }
-
-public static final BpmnModelInstance PARALLEL_SCOPE_TASKS_SUB_PROCESS = PARALLEL_GATEWAY_SUBPROCESS_PROCESS.clone();
-
-  static {
-    addMessageBoundaryEvent(PARALLEL_SCOPE_TASKS_SUB_PROCESS, "userTask1", "Message");
-    addMessageBoundaryEvent(PARALLEL_SCOPE_TASKS_SUB_PROCESS, "userTask2", "Message");
-  }
-
-  protected static void addMessageBoundaryEvent(BpmnModelInstance modelInstance, String taskId, String messageName) {
-    Activity task = modelInstance.getModelElementById(taskId);
-    BoundaryEvent event = modelInstance.newInstance(BoundaryEvent.class);
-    event.setAttachedTo(task);
-    task.getParentElement().addChildElement(event);
-
-    MessageEventDefinition eventDefinition = modelInstance.newInstance(MessageEventDefinition.class);
-    event.getEventDefinitions().add(eventDefinition);
-
-    Message message = modelInstance.newInstance(Message.class);
-    modelInstance.getDefinitions().addChildElement(message);
-    message.setName(messageName);
-    eventDefinition.setMessage(message);
-  }
+public static final BpmnModelInstance PARALLEL_SCOPE_TASKS_SUB_PROCESS = PARALLEL_GATEWAY_SUBPROCESS_PROCESS.clone()
+      .<UserTask>getModelElementById("userTask1").builder()
+      .boundaryEvent().message("Message")
+      .moveToActivity("userTask2")
+      .boundaryEvent().message("Message")
+      .done();
 
 }
