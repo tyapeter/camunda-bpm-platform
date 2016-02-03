@@ -13,7 +13,7 @@
 package org.camunda.bpm.engine.impl.migration;
 
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
-import org.camunda.bpm.engine.migration.MigrationInstruction;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 
 /**
  * @author Thorben Lindhauer
@@ -21,8 +21,8 @@ import org.camunda.bpm.engine.migration.MigrationInstruction;
  */
 public interface MigrationPlanValidator {
 
-  void validateMigrationInstruction(ProcessDefinitionImpl sourceProcessDefinition,
-      ProcessDefinitionImpl targetProcessDefinition,
-      MigrationInstruction migrationInstruction);
+  void validateMigrationPlan(ProcessDefinitionImpl sourceProcessDefinition,
+                             ProcessDefinitionImpl targetProcessDefinition,
+                             MigrationPlan migrationPlan);
 
 }

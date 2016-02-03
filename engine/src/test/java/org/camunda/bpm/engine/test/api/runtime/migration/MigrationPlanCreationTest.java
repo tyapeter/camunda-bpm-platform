@@ -140,7 +140,7 @@ public class MigrationPlanCreationTest {
         .build();
       Assert.fail("Should not succeed");
     } catch (BadUserRequestException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("sourceActivity is null"));
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("source activity does not exist"));
     }
   }
 
@@ -158,7 +158,7 @@ public class MigrationPlanCreationTest {
         .build();
       Assert.fail("Should not succeed");
     } catch (BadUserRequestException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("sourceActivityId is null"));
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("source activity id and target activity id must not be null"));
     }
   }
 
@@ -176,7 +176,7 @@ public class MigrationPlanCreationTest {
         .build();
       Assert.fail("Should not succeed");
     } catch (BadUserRequestException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("targetActivity is null"));
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("target activity does not exist"));
     }
   }
 
@@ -194,7 +194,7 @@ public class MigrationPlanCreationTest {
         .build();
       Assert.fail("Should not succeed");
     } catch (BadUserRequestException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("targetActivityId is null"));
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("source activity id and target activity id must not be null"));
     }
   }
 
@@ -206,17 +206,17 @@ public class MigrationPlanCreationTest {
     ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
     ProcessDefinition targetDefinition = testHelper.findProcessDefinition("SubProcess", 1);
 
-    try {
-      rule.getRuntimeService()
-        .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
-        .mapActivities("userTask", "userTask")
-        .build();
-      Assert.fail("Should not succeed");
-    } catch (BadUserRequestException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("Source activity userTask and"
-          + " target activity userTask are not contained in the same sub process"));
-    }
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .build();
 
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceDefinition)
+      .hasTargetProcessDefinition(targetDefinition)
+      .hasInstructions(
+        migrate("userTask").to("userTask")
+      );
   }
 
   @Test

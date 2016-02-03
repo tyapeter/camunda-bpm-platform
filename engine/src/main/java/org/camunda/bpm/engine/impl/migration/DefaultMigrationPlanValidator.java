@@ -12,19 +12,18 @@
  */
 package org.camunda.bpm.engine.impl.migration;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.camunda.bpm.engine.BadUserRequestException;
+import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.bpmn.behavior.SubProcessActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
+import org.camunda.bpm.engine.impl.pvm.delegate.ActivityBehavior;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
-import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
-import org.camunda.bpm.engine.impl.tree.FlowScopeWalker;
-import org.camunda.bpm.engine.impl.tree.TreeVisitor;
-import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
-import org.camunda.bpm.engine.impl.util.EnsureUtil;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 
 /**
  * @author Thorben Lindhauer
@@ -32,83 +31,100 @@ import org.camunda.bpm.engine.migration.MigrationInstruction;
  */
 public class DefaultMigrationPlanValidator implements MigrationPlanValidator {
 
-  public void validateMigrationInstruction(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition,
-      MigrationInstruction migrationInstruction) {
-    // TODO: the validation errors should be more informative;
-    // also, validation should not end when the first error is found
-    // but return a summary of all errors
+  public static final MigrationLogger LOG = ProcessEngineLogger.MIGRATION_LOGGER;
 
-    final String errorMessage = describeInvalidInstruction(migrationInstruction);
+  public void validateMigrationPlan(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition,
+                                    MigrationPlan migrationPlan) {
+    List<String> errorMessages = new ArrayList<String>();
 
-    List<String> sourceActivityIds = migrationInstruction.getSourceActivityIds();
-    EnsureUtil.ensureNumberOfElements(BadUserRequestException.class, errorMessage, "sourceActivityIds", sourceActivityIds, 1);
-
-    List<String> targetActivityIds = migrationInstruction.getTargetActivityIds();
-    EnsureUtil.ensureNumberOfElements(BadUserRequestException.class, errorMessage, "targetActivityIds", targetActivityIds, 1);
-
-    EnsureUtil.ensureNotNull(BadUserRequestException.class, errorMessage, "sourceActivityId", sourceActivityIds.get(0));
-    final ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(sourceActivityIds.get(0));
-    EnsureUtil.ensureNotNull(BadUserRequestException.class, errorMessage, "sourceActivity", sourceActivity);
-
-    EnsureUtil.ensureNotNull(BadUserRequestException.class, errorMessage, "targetActivityId", targetActivityIds.get(0));
-    final ActivityImpl targetActivity = targetProcessDefinition.findActivity(targetActivityIds.get(0));
-    EnsureUtil.ensureNotNull(BadUserRequestException.class, errorMessage, "targetActivity", targetActivity);
-
-    ensureSupportedActivity(sourceActivity, targetActivity, errorMessage);
-
-    FlowScopeWalker flowScopeWalker = new FlowScopeWalker(sourceActivity);
-    // TODO: add validation again and implement for currently allowed cases
-//    flowScopeWalker.addPostVisitor(new TreeVisitor<ScopeImpl>() {
-//
-//      ScopeImpl currentTargetScope = targetActivity.getFlowScope();
-//
-//      @Override
-//      public void visit(ScopeImpl currentSourceScope) {
-//        // TODO: externalize the validation condition (i.e. id equality)?!
-//        if (currentTargetScope == null ||
-//            (!currentSourceScope.getId().equals(currentTargetScope.getId()))
-//            && !(isProcessDefinition(currentSourceScope) && isProcessDefinition(currentTargetScope))) {
-//          throw new BadUserRequestException(errorMessage + ": Source activity " + sourceActivity.getId() + " "
-//              + "and target activity " + targetActivity.getId() + " are not contained in the same sub process");
-//        }
-//
-//        currentTargetScope = currentTargetScope.getFlowScope();
-//      }
-//    });
-    flowScopeWalker.walkUntil(new WalkCondition<ScopeImpl>() {
-
-      @Override
-      public boolean isFulfilled(ScopeImpl element) {
-        return element.getFlowScope() == null;
+    for (MigrationInstruction instruction : migrationPlan.getInstructions()) {
+      try {
+        validateMigrationInstruction(sourceProcessDefinition, targetProcessDefinition, instruction);
       }
-    });
+      catch (BadUserRequestException e) {
+        errorMessages.add(e.getMessage());
+      }
+    }
+
+    if (!errorMessages.isEmpty()) {
+      throw LOG.invalidMigrationPlan(migrationPlan, errorMessages);
+    }
   }
 
-  protected void ensureSupportedActivity(ActivityImpl sourceActivity, ActivityImpl targetActivity, String errorMessage) {
-    if (sourceActivity.getActivities().isEmpty()) {
-      ensureUserTaskActivities(sourceActivity, targetActivity, errorMessage);
+  public void validateMigrationInstruction(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition,
+                                           MigrationInstruction instruction) {
+
+    ensureOneToOneMapping(instruction);
+
+    String sourceActivityId = instruction.getSourceActivityIds().get(0);
+    String targetActivityId = instruction.getTargetActivityIds().get(0);
+    ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(sourceActivityId);
+    ActivityImpl targetActivity = targetProcessDefinition.findActivity(targetActivityId);
+
+    ensureMappedActivitiesExist(instruction, sourceActivity, targetActivity);
+    ensureSupportedActivity(instruction, sourceActivity, targetActivity);
+  }
+
+  protected void ensureOneToOneMapping(MigrationInstruction instruction) {
+    List<String> sourceActivityIds = instruction.getSourceActivityIds();
+    List<String> targetActivityIds = instruction.getTargetActivityIds();
+
+    if (sourceActivityIds.size() != 1 || targetActivityIds.size() != 1) {
+      throw new BadUserRequestException(describeInvalidInstruction(instruction, "only one to one mappings are supported"));
+    }
+
+    if (sourceActivityIds.get(0) == null || targetActivityIds.get(0) == null) {
+      throw new BadUserRequestException(describeInvalidInstruction(instruction, "the source activity id and target activity id must not be null"));
+    }
+  }
+
+  protected void ensureMappedActivitiesExist(MigrationInstruction instruction, ActivityImpl sourceActivity, ActivityImpl targetActivity) {
+    String errorMessage = null;
+    if (sourceActivity == null && targetActivity == null) {
+      errorMessage = "the source activity and target activity does not exist";
+    }
+    else if (sourceActivity == null) {
+      errorMessage = "the source activity does not exist";
+    }
+    else if (targetActivity == null) {
+      errorMessage = "the target activity does not exist";
+    }
+
+    if (errorMessage != null) {
+      throw new BadUserRequestException(describeInvalidInstruction(instruction, errorMessage));
+    }
+  }
+
+  protected void ensureSupportedActivity(MigrationInstruction instruction, ActivityImpl sourceActivity, ActivityImpl targetActivity) {
+    if (isScope(sourceActivity)) {
+      ensureSameActivityType(instruction, sourceActivity, targetActivity, SubProcessActivityBehavior.class);
     }
     else {
-      ensureScopeActivities(sourceActivity, targetActivity, errorMessage);
+      ensureSameActivityType(instruction, sourceActivity, targetActivity, UserTaskActivityBehavior.class);
     }
   }
 
-  protected void ensureScopeActivities(ActivityImpl sourceActivity, ActivityImpl targetActivity, String errorMessage) {
-    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), SubProcessActivityBehavior.class);
-    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), SubProcessActivityBehavior.class);
+  protected void ensureSameActivityType(MigrationInstruction instruction, ActivityImpl sourceActivity, ActivityImpl targetActivity, Class<? extends ActivityBehavior> type) {
+    boolean sourceHasExpectedType = type.isAssignableFrom(sourceActivity.getActivityBehavior().getClass());
+    boolean targetHasExpectedType = type.isAssignableFrom(targetActivity.getActivityBehavior().getClass());
+
+    if (sourceHasExpectedType && !targetHasExpectedType) {
+      throw new BadUserRequestException(describeInvalidInstruction(instruction, "the source activity is of type '" + type.getName() + "' but the target activity not"));
+    }
+    else if (!sourceHasExpectedType && targetHasExpectedType) {
+      throw new BadUserRequestException(describeInvalidInstruction(instruction, "the target activity is of type '" + type.getName() + "' but the source activity not"));
+    }
+    else if (!sourceHasExpectedType) {
+      throw new BadUserRequestException(describeInvalidInstruction(instruction, "the source and target activity must be of type '" + type.getName() + "'"));
+    }
   }
 
-  protected void ensureUserTaskActivities(ActivityImpl sourceActivity, ActivityImpl targetActivity, String errorMessage) {
-    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "sourceActivityBehavior", sourceActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
-    EnsureUtil.ensureInstanceOf(BadUserRequestException.class, errorMessage, "targetActivityBehavior", targetActivity.getActivityBehavior(), UserTaskActivityBehavior.class);
+  protected boolean isScope(ActivityImpl sourceActivity) {
+    return !sourceActivity.getActivities().isEmpty();
   }
 
-  protected boolean isProcessDefinition(ScopeImpl scope) {
-    return scope == scope.getProcessDefinition();
-  }
-
-  protected String describeInvalidInstruction(MigrationInstruction instruction) {
-    return "Invalid migration instruction " + instruction;
+  protected String describeInvalidInstruction(MigrationInstruction instruction, String reason) {
+    return "Invalid migration instruction as " + reason + ": " + instruction;
   }
 
 }

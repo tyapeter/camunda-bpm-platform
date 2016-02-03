@@ -73,13 +73,10 @@ public class CreateMigrationPlanCmd implements Command<MigrationPlan> {
     }
 
     instructions.addAll(migrationBuilder.getExplicitMigrationInstructions());
+    migrationPlan.setInstructions(instructions);
 
     MigrationPlanValidator validator = new DefaultMigrationPlanValidator();
-    for (MigrationInstruction instruction : instructions) {
-      validator.validateMigrationInstruction(sourceProcessDefinition, targetProcessDefinition, instruction);
-    }
-
-    migrationPlan.setInstructions(instructions);
+    validator.validateMigrationPlan(sourceProcessDefinition, targetProcessDefinition, migrationPlan);
 
     return migrationPlan;
   }
