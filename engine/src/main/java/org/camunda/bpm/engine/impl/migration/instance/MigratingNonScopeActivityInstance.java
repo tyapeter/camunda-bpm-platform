@@ -46,7 +46,8 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
 
   @Override
   public void attachState(ExecutionEntity newScopeExecution) {
-    newScopeExecution.setActivity((PvmActivity) targetScope);
+    this.scopeExecution = newScopeExecution;
+    newScopeExecution.setActivity((PvmActivity) sourceScope);
     newScopeExecution.setActivityInstanceId(activityInstance.getId());
 
     if (dependentInstances != null) {
@@ -54,6 +55,14 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
         dependentInstance.attachState(newScopeExecution);
       }
     }
+  }
+
+  @Override
+  public void migrateState() {
+
+    ExecutionEntity currentExecution = resolveScopeExecution();
+    currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
+    currentExecution.setActivity((PvmActivity) targetScope);
   }
 
   @Override

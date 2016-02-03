@@ -37,12 +37,10 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
   public abstract void attachState(ExecutionEntity newScopeExecution);
 
   public void migrateDependentEntities() {
-    // TODO: this might have to set the id also for a concurrent parent execution probably
-    //   (in the case that no concurrent execution is recreated)
-    scopeExecution.setProcessDefinition(targetScope.getProcessDefinition());
 
     if (dependentInstances != null) {
       for (MigratingInstance dependentInstance : dependentInstances) {
+        dependentInstance.migrateState();
         dependentInstance.migrateDependentEntities();
       }
     }

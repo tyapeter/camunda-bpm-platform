@@ -13,6 +13,7 @@
 package org.camunda.bpm.engine.impl.migration.instance;
 
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
 
 /**
@@ -29,10 +30,17 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
     ExecutionEntity parentScopeExecution = parentExecution.isConcurrent() ? parentExecution.getParent() : parentExecution;
     currentScopeExecution.setParent(null);
 
+
     if (parentExecution.isConcurrent()) {
       parentExecution.remove();
       parentScopeExecution.tryPruneLastConcurrentChild();
     }
+    else {
+      if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
+        parentExecution.leaveActivityInstance();
+      }
+    }
+
   }
 
   @Override
@@ -40,9 +48,20 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
     ExecutionEntity currentScopeExecution = resolveScopeExecution();
     currentScopeExecution.setParent(newScopeExecution);
 
-    if (targetScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
+    if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
       newScopeExecution.setActivityInstanceId(activityInstance.getId());
     }
+  }
+
+  @Override
+  public void migrateState() {
+    ExecutionEntity currentScopeExecution = resolveScopeExecution();
+    currentScopeExecution.setProcessDefinition(targetScope.getProcessDefinition());
+
+    if (sourceScope.getId().equals(currentScopeExecution.getActivityId())) {
+      currentScopeExecution.setActivity((PvmActivity) targetScope);
+    }
+
   }
 
   @Override

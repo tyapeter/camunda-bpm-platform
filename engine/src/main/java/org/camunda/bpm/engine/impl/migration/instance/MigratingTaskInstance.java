@@ -30,7 +30,6 @@ public class MigratingTaskInstance implements MigratingInstance {
   }
 
   public void migrateDependentEntities() {
-    userTask.setProcessDefinitionId(migratingActivityInstance.targetScope.getProcessDefinition().getId());
   }
 
   public void detachState() {
@@ -41,5 +40,10 @@ public class MigratingTaskInstance implements MigratingInstance {
   public void attachState(ExecutionEntity execution) {
     execution.addTask(userTask);
     userTask.setExecution(execution);
+  }
+
+  @Override
+  public void migrateState() {
+    userTask.setProcessDefinitionId(migratingActivityInstance.targetScope.getProcessDefinition().getId());
   }
 }

@@ -13,12 +13,8 @@
 package org.camunda.bpm.engine.impl.migration;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.camunda.bpm.engine.ProcessEngineException;
-import org.camunda.bpm.engine.impl.ActivityExecutionTreeMapping;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.Command;
@@ -29,11 +25,7 @@ import org.camunda.bpm.engine.impl.migration.instance.MigratingProcessInstance;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
-import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
-import org.camunda.bpm.engine.impl.tree.ActivityStackCollector;
-import org.camunda.bpm.engine.impl.tree.FlowScopeWalker;
-import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
@@ -122,7 +114,10 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       }
     }
 
-    // 4. migrate instance state other than execution-tree structure
+    // 4. update state (e.g. activity id)
+    migratingActivityInstance.migrateState();
+
+    // 5. migrate instance state other than execution-tree structure
     migratingActivityInstance.migrateDependentEntities();
 
     // Let activity instances on the same level of subprocess share the same execution context

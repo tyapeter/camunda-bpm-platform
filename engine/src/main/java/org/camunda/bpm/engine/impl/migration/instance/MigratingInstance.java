@@ -19,9 +19,29 @@ import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
  *
  */
 public interface MigratingInstance {
+
+  /**
+   * Detach this instance's state from the execution tree
+   */
   void detachState();
 
+  /**
+   * Restore this instance's state to the execution tree.
+   * Restoration should restore the state that was detached
+   * before (i.e. the source process definition state)
+   * @param newScopeExecution
+   */
   void attachState(ExecutionEntity newScopeExecution);
 
+  /**
+   * Migrate state from the source process definition
+   * to the target process definition.
+   */
+  void migrateState();
+
+  /**
+   * Migrate instances that are aggregated by this instance
+   * (e.g. an activity instance aggregates task instances).
+   */
   void migrateDependentEntities();
 }
