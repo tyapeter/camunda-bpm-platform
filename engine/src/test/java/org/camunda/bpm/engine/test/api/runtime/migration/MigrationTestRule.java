@@ -13,11 +13,14 @@
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.instance.FlowNode;
+import org.camunda.bpm.model.bpmn.instance.camunda.CamundaExecutionListener;
 import org.junit.Assert;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -74,4 +77,20 @@ public class MigrationTestRule extends TestWatcher {
     return deployment.getId();
   }
 
+  public BpmnModelInstance withExecutionListener(BpmnModelInstance originalInstance,
+      Class<? extends ExecutionListener> listenerClass,
+      String flowNodeId,
+      String event) {
+    BpmnModelInstance updatedModel = originalInstance.clone();
+
+    CamundaExecutionListener executionListener = updatedModel.newInstance(CamundaExecutionListener.class);
+    executionListener.setCamundaClass(listenerClass.getCanonicalName());
+
+    updatedModel
+      .<FlowNode>getModelElementById(flowNodeId)
+      .builder().addExtensionElement(executionListener);
+
+    return updatedModel;
+
+  }
 }

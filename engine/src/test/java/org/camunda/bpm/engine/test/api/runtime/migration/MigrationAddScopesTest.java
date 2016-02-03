@@ -21,12 +21,14 @@ import static org.camunda.bpm.engine.test.util.ExecutionAssert.hasProcessDefinit
 import java.util.Arrays;
 import java.util.List;
 
+import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.bpmn.executionlistener.RecorderExecutionListener;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -496,6 +498,34 @@ public class MigrationAddScopesTest {
     // and it is possible to successfully complete the migrated instance
     rule.getTaskService().complete(migratedTask.getId());
     testHelper.assertProcessEnded(processInstance.getId());
+  }
+
+  @Test
+  public void testListenerInvocationForNewlyCreatedScope() {
+    // given
+    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml",
+        testHelper.withExecutionListener(ProcessModels.SUBPROCESS_PROCESS,
+            RecorderExecutionListener.class,
+            "subProcess",
+            ExecutionListener.EVENTNAME_START));
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
+
+    // when
+    rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+
+    // then
+    // TODO: assert execution listener invocation here
   }
 
   // TODO: test deletion of migrated instances
