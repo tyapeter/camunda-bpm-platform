@@ -76,22 +76,4 @@ public class MigrationTestRule extends TestWatcher {
 
     return deployment.getId();
   }
-
-  public BpmnModelInstance withExecutionListener(BpmnModelInstance originalInstance,
-      Class<? extends ExecutionListener> listenerClass,
-      String flowNodeId,
-      String event) {
-    BpmnModelInstance updatedModel = originalInstance.clone();
-
-    CamundaExecutionListener executionListener = updatedModel.newInstance(CamundaExecutionListener.class);
-    executionListener.setCamundaClass(listenerClass.getCanonicalName());
-    executionListener.setCamundaEvent(event);
-
-    updatedModel
-      .<FlowNode>getModelElementById(flowNodeId)
-      .builder().addExtensionElement(executionListener);
-
-    return updatedModel;
-
-  }
 }

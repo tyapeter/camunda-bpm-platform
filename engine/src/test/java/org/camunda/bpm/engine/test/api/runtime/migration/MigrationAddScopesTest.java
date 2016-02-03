@@ -31,6 +31,7 @@ import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateEvent;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateExecutionListener;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
+import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -508,10 +509,13 @@ public class MigrationAddScopesTest {
 
     testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
     testHelper.deploy("scopeTaskSubProcess.bpmn20.xml",
-        testHelper.withExecutionListener(ProcessModels.SUBPROCESS_PROCESS,
-            DelegateExecutionListener.class,
-            "subProcess",
-            ExecutionListener.EVENTNAME_START));
+        ProcessModels.SUBPROCESS_PROCESS.clone()
+          .<SubProcess>getModelElementById("subProcess")
+          .builder()
+          .camundaExecutionListenerClass(
+              ExecutionListener.EVENTNAME_START,
+              DelegateExecutionListener.class.getName())
+          .done());
 
     ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
     ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
