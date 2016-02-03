@@ -17,6 +17,7 @@ import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeAc
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,8 +31,11 @@ import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateEvent;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateExecutionListener;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
+import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.model.bpmn.instance.SubProcess;
+import org.camunda.bpm.model.bpmn.instance.UserTask;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -562,6 +566,81 @@ public class MigrationAddScopesTest {
 
     // then it is possible to delete the process instance
     rule.getRuntimeService().deleteProcessInstance(processInstance.getId(), null);
+    testHelper.assertProcessEnded(processInstance.getId());
+  }
+
+  /**
+   * Readd when we implement migration for multi-instance
+   */
+  @Test
+  @Ignore
+  public void testAddParentScopeToMultiInstance() {
+    // given
+    testHelper.deploy("scopeTask.bpmn20.xml",
+        ProcessModels.ONE_TASK_PROCESS.clone()
+          .<UserTask>getModelElementById("userTask").builder()
+          .multiInstance()
+            .parallel()
+            .camundaCollection("collectionVar")
+            .camundaElementVariable("elementVar")
+          .done()
+          );
+    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml",
+        ProcessModels.SUBPROCESS_PROCESS.clone()
+        .<UserTask>getModelElementById("userTask").builder()
+        .multiInstance()
+          .parallel()
+          .camundaCollection("collectionVar")
+          .camundaElementVariable("elementVar")
+        .done());
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask#multiInstanceBody", "userTask#multiInstanceBody")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    List<String> miElements = new ArrayList<String>();
+    miElements.add("a");
+    miElements.add("b");
+    ProcessInstance processInstance = rule.getRuntimeService()
+        .startProcessInstanceById(sourceProcessDefinition.getId(),
+            Variables.createVariables().putValue("collectionVar", miElements));
+
+    // when
+    rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+
+    // then
+    ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
+    assertThat(updatedTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .beginScope("subProcess")
+            .beginMiBody("userTask")
+              .activity("userTask")
+              .activity("userTask")
+              .activity("userTask")
+        .done());
+
+    // the element variables still exist
+    List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
+    Assert.assertEquals(2, migratedTasks);
+
+    List<String> collectedElementsVars = new ArrayList<String>();
+    for (Task migratedTask : migratedTasks) {
+      collectedElementsVars.add((String) rule.getTaskService().getVariable(migratedTask.getId(), "elementVar"));
+    }
+
+    Assert.assertTrue(collectedElementsVars.contains("a"));
+    Assert.assertTrue(collectedElementsVars.contains("b"));
+
+    // and it is possible to successfully complete the migrated instance
+    for (Task migratedTask : migratedTasks) {
+      rule.getTaskService().complete(migratedTask.getId());
+    }
+
     testHelper.assertProcessEnded(processInstance.getId());
   }
 
