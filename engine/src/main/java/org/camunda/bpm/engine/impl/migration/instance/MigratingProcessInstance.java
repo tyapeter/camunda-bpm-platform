@@ -24,7 +24,6 @@ import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
 import org.camunda.bpm.engine.impl.cmd.GetActivityInstanceCmd;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
-import org.camunda.bpm.engine.impl.migration.MigrateProcessInstanceCmd;
 import org.camunda.bpm.engine.impl.migration.MigrationLogger;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
@@ -79,7 +78,7 @@ public class MigratingProcessInstance {
     migratingInstance.activityInstance = activityInstance;
     migratingInstance.sourceScope = sourceScope;
     migratingInstance.targetScope = targetScope;
-    migratingInstance.scopeExecution = scopeExecution;
+    migratingInstance.representativeExecution = scopeExecution;
     migratingActivityInstances.put(activityInstance.getId(), migratingInstance);
 
     return migratingInstance;
@@ -126,7 +125,7 @@ public class MigratingProcessInstance {
         unmappedInstances.remove(instance);
 
         if (sourceActivity.getActivityBehavior() instanceof UserTaskActivityBehavior) {
-          List<TaskEntity> tasks = migratingInstance.scopeExecution.getTasks();
+          List<TaskEntity> tasks = migratingInstance.representativeExecution.getTasks();
           migratingInstance.addDependentInstance(new MigratingTaskInstance(tasks.get(0), migratingInstance));
         }
       }

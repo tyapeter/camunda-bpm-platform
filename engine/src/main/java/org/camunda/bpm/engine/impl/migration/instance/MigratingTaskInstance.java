@@ -29,14 +29,17 @@ public class MigratingTaskInstance implements MigratingInstance {
     this.migratingActivityInstance = migratingActivityInstance;
   }
 
+  @Override
   public void migrateDependentEntities() {
   }
 
+  @Override
   public void detachState() {
     userTask.getExecution().removeTask(userTask);
     userTask.setExecution(null);
   }
 
+  @Override
   public void attachState(ExecutionEntity execution) {
     execution.addTask(userTask);
     userTask.setExecution(execution);

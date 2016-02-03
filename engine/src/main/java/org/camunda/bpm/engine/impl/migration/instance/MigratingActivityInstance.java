@@ -27,7 +27,7 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
   protected ActivityInstance activityInstance;
   // scope execution for actual scopes,
   // concurrent execution in case of non-scope activity with expanded tree
-  protected ExecutionEntity scopeExecution;
+  protected ExecutionEntity representativeExecution;
   protected List<MigratingInstance> dependentInstances;
   protected ScopeImpl sourceScope;
   protected ScopeImpl targetScope;
@@ -46,12 +46,12 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
     }
   }
 
-  protected ExecutionEntity resolveScopeExecution() {
-    if (scopeExecution.getReplacedBy() != null) {
-      return scopeExecution.resolveReplacedBy();
+  protected ExecutionEntity resolveRepresentativeExecution() {
+    if (representativeExecution.getReplacedBy() != null) {
+      return representativeExecution.resolveReplacedBy();
     }
     else {
-      return scopeExecution;
+      return representativeExecution;
     }
   }
 

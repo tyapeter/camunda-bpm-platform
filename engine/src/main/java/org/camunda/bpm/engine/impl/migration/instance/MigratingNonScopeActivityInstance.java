@@ -23,22 +23,20 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
 
   @Override
   public void detachState() {
-    ExecutionEntity currentScopeExecution = resolveScopeExecution();
+    ExecutionEntity currentExecution = resolveRepresentativeExecution();
 
-    currentScopeExecution.setActivity(null);
-    currentScopeExecution.leaveActivityInstance();
+    currentExecution.setActivity(null);
+    currentExecution.leaveActivityInstance();
 
-    if (!currentScopeExecution.isScope()) {
-      ExecutionEntity parent = currentScopeExecution.getParent();
-
-      if (dependentInstances != null) {
-        for (MigratingInstance dependentInstance : dependentInstances) {
-          dependentInstance.detachState();
-        }
+    if (dependentInstances != null) {
+      for (MigratingInstance dependentInstance : dependentInstances) {
+        dependentInstance.detachState();
       }
+    }
 
-      currentScopeExecution.remove();
-
+    if (!currentExecution.isScope()) {
+      ExecutionEntity parent = currentExecution.getParent();
+      currentExecution.remove();
       parent.tryPruneLastConcurrentChild();
     }
 
@@ -46,7 +44,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
 
   @Override
   public void attachState(ExecutionEntity newScopeExecution) {
-    this.scopeExecution = newScopeExecution;
+    this.representativeExecution = newScopeExecution;
     newScopeExecution.setActivity((PvmActivity) sourceScope);
     newScopeExecution.setActivityInstanceId(activityInstance.getId());
 
@@ -60,7 +58,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
   @Override
   public void migrateState() {
 
-    ExecutionEntity currentExecution = resolveScopeExecution();
+    ExecutionEntity currentExecution = resolveRepresentativeExecution();
     currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
     currentExecution.setActivity((PvmActivity) targetScope);
   }
@@ -68,7 +66,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
   @Override
   public ExecutionEntity getFlowScopeExecution() {
 
-    ExecutionEntity currentScopeExecution = resolveScopeExecution();
+    ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
 
     if (!currentScopeExecution.isScope()) {
       return currentScopeExecution.getParent();

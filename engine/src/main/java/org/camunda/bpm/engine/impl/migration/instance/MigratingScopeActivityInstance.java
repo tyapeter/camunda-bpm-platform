@@ -24,7 +24,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   @Override
   public void detachState() {
-    ExecutionEntity currentScopeExecution = resolveScopeExecution();
+    ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
 
     ExecutionEntity parentExecution = currentScopeExecution.getParent();
     ExecutionEntity parentScopeExecution = parentExecution.isConcurrent() ? parentExecution.getParent() : parentExecution;
@@ -45,7 +45,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   @Override
   public void attachState(ExecutionEntity newScopeExecution) {
-    ExecutionEntity currentScopeExecution = resolveScopeExecution();
+    ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
     currentScopeExecution.setParent(newScopeExecution);
 
     if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
@@ -55,7 +55,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   @Override
   public void migrateState() {
-    ExecutionEntity currentScopeExecution = resolveScopeExecution();
+    ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
     currentScopeExecution.setProcessDefinition(targetScope.getProcessDefinition());
 
     ExecutionEntity parentExecution = currentScopeExecution.getParent();
@@ -72,7 +72,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   @Override
   public ExecutionEntity getFlowScopeExecution() {
-    ExecutionEntity parent = scopeExecution.getParent();
+    ExecutionEntity parent = representativeExecution.getParent();
     return parent.isScope() ? parent : parent.getParent();
   }
 

@@ -99,18 +99,18 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
         migratingActivityInstance.detachState();
 
         // 2. manipulate execution tree
-        ExecutionEntity targetFlowScopeExecution = migratingExecutionBranch.getExecution(targetFlowScope);
+        ExecutionEntity targetExecution = migratingExecutionBranch.getExecution(targetFlowScope);
 
-        if (targetFlowScopeExecution == null) {
-          targetFlowScopeExecution = createMissingTargetFlowScopeExecution(flowScopeExecution, (PvmActivity) targetFlowScope);
-          migratingExecutionBranch.registerExecution(targetFlowScope, targetFlowScopeExecution);
+        if (targetExecution == null) {
+          targetExecution = createMissingTargetFlowScopeExecution(flowScopeExecution, (PvmActivity) targetFlowScope);
+          migratingExecutionBranch.registerExecution(targetFlowScope, targetExecution);
         }
         else {
-          targetFlowScopeExecution = (ExecutionEntity) targetFlowScopeExecution.createConcurrentExecution();
+          targetExecution = (ExecutionEntity) targetExecution.createConcurrentExecution();
         }
 
         // 3. attach to newly created execution
-        migratingActivityInstance.attachState(targetFlowScopeExecution);
+        migratingActivityInstance.attachState(targetExecution);
       }
     }
 

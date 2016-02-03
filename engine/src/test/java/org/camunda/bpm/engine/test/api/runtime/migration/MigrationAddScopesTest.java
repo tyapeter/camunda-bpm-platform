@@ -537,5 +537,29 @@ public class MigrationAddScopesTest {
     DelegateEvent.clearEvents();
   }
 
-  // TODO: test deletion of migrated instances
+  @Test
+  public void testDeleteMigratedInstance() {
+    // given
+    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS);
+    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewaySubProcess", 1);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+
+    // when
+    rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+
+    // then it is possible to delete the process instance
+    rule.getRuntimeService().deleteProcessInstance(processInstance.getId(), null);
+    testHelper.assertProcessEnded(processInstance.getId());
+  }
+
 }
