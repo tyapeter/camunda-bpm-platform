@@ -16,7 +16,6 @@ import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
-import static org.camunda.bpm.engine.test.util.ExecutionAssert.hasProcessDefinitionId;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +73,7 @@ public class MigrationPlanExecutionTest {
     .matches(
       describeExecutionTree("userTask").scope().id(processInstance.getId())
         .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
     Assert.assertEquals(task.getId(), migratedTask.getId());
@@ -115,7 +114,7 @@ public class MigrationPlanExecutionTest {
       describeExecutionTree(null).scope().id(processInstance.getId())
         .child("userTask").scope().id(sourceExecutionTree.getExecutions().get(0).getId())
         .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
     Assert.assertEquals(task.getId(), migratedTask.getId());
@@ -154,7 +153,7 @@ public class MigrationPlanExecutionTest {
         .child("userTask1").concurrent().noScope().up()
         .child("userTask2").concurrent().noScope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
     Assert.assertEquals(2, migratedTasks.size());
@@ -221,7 +220,7 @@ public class MigrationPlanExecutionTest {
     .matches(
       describeExecutionTree("userTask2").scope().id(processInstance.getId())
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(

@@ -16,7 +16,6 @@ import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
-import static org.camunda.bpm.engine.test.util.ExecutionAssert.hasProcessDefinitionId;
 
 import java.util.Arrays;
 import java.util.List;
@@ -79,7 +78,7 @@ public class MigrationAddScopesTest {
           .child("userTask").scope().id(activityInstance.getActivityInstances("userTask")[0].getExecutionIds()[0])
       .done());
 
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -129,7 +128,7 @@ public class MigrationAddScopesTest {
           .child(null).concurrent().noScope()
             .child("userTask2").scope().id(activityInstance.getActivityInstances("userTask2")[0].getExecutionIds()[0])
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -179,7 +178,7 @@ public class MigrationAddScopesTest {
       describeExecutionTree(null).scope().id(processInstance.getId())
         .child("userTask").scope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -226,7 +225,7 @@ public class MigrationAddScopesTest {
           .child("userTask1").concurrent().noScope().up()
           .child("userTask2").concurrent().noScope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -279,7 +278,7 @@ public class MigrationAddScopesTest {
         .child(null).scope().id(activityInstance.getActivityInstances("subProcess")[0].getExecutionIds()[0])
           .child("userTask").scope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -327,7 +326,7 @@ public class MigrationAddScopesTest {
         .child(null).scope()
           .child("userTask").scope().id(activityInstance.getActivityInstances("subProcess")[0].getExecutionIds()[0])
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -380,7 +379,7 @@ public class MigrationAddScopesTest {
           .child(null).scope()
             .child("userTask").scope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -437,7 +436,7 @@ public class MigrationAddScopesTest {
       describeExecutionTree(null).scope().id(processInstance.getId())
         .child("userTask2").scope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
@@ -484,7 +483,7 @@ public class MigrationAddScopesTest {
         .child(null).scope()
           .child("userTask2").scope()
       .done());
-    assertThat(executionTree).matches(hasProcessDefinitionId(targetProcessDefinition.getId()));
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(

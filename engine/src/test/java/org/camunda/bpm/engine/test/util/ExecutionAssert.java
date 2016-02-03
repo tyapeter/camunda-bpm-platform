@@ -36,6 +36,11 @@ public class ExecutionAssert {
     assertion.assertExecution(tree);
   }
 
+  public void hasProcessDefinitionId(String expectedProcessDefinitionId) {
+    ExecutionTreeAssertion assertion = ExecutionTreeProcessDefinitionIdAssertion.processDefinitionId(expectedProcessDefinitionId);
+    matches(assertion);
+  }
+
   public static class ExecutionTreeBuilder {
 
     protected ExecutionTreeStructureAssertion rootAssertion = null;
@@ -101,10 +106,6 @@ public class ExecutionAssert {
 
   public static ExecutionTreeBuilder describeExecutionTree(String activityId) {
     return new ExecutionTreeBuilder(activityId);
-  }
-
-  public static ExecutionTreeAssertion hasProcessDefinitionId(String processDefinitionId) {
-    return ExecutionTreeProcessDefinitionIdAssertion.processDefinitionId(processDefinitionId);
   }
 
 }
