@@ -28,7 +28,8 @@ import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
-import org.camunda.bpm.engine.test.bpmn.executionlistener.RecorderExecutionListener;
+import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateEvent;
+import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateExecutionListener;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -503,10 +504,12 @@ public class MigrationAddScopesTest {
   @Test
   public void testListenerInvocationForNewlyCreatedScope() {
     // given
+    DelegateEvent.clearEvents();
+
     testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
     testHelper.deploy("scopeTaskSubProcess.bpmn20.xml",
         testHelper.withExecutionListener(ProcessModels.SUBPROCESS_PROCESS,
-            RecorderExecutionListener.class,
+            DelegateExecutionListener.class,
             "subProcess",
             ExecutionListener.EVENTNAME_START));
 
@@ -519,15 +522,20 @@ public class MigrationAddScopesTest {
       .build();
 
     ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
-    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
 
     // then
-    // TODO: assert execution listener invocation here
+    List<DelegateEvent> recordedEvents = DelegateEvent.getEvents();
+    Assert.assertEquals(1, recordedEvents.size());
+
+    DelegateEvent event = recordedEvents.get(0);
+    Assert.assertEquals(targetProcessDefinition.getId(), event.getProcessDefinitionId());
+    Assert.assertEquals("subProcess", event.getCurrentActivityId());
+
+    DelegateEvent.clearEvents();
   }
 
   // TODO: test deletion of migrated instances
-  // TODO: actually assert that listeners are invoked
 }

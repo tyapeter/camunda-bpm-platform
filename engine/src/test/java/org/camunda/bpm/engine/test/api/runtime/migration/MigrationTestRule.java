@@ -85,6 +85,7 @@ public class MigrationTestRule extends TestWatcher {
 
     CamundaExecutionListener executionListener = updatedModel.newInstance(CamundaExecutionListener.class);
     executionListener.setCamundaClass(listenerClass.getCanonicalName());
+    executionListener.setCamundaEvent(event);
 
     updatedModel
       .<FlowNode>getModelElementById(flowNodeId)
