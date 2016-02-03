@@ -58,6 +58,12 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
     ExecutionEntity currentScopeExecution = resolveScopeExecution();
     currentScopeExecution.setProcessDefinition(targetScope.getProcessDefinition());
 
+    ExecutionEntity parentExecution = currentScopeExecution.getParent();
+
+    if (parentExecution != null && parentExecution.isConcurrent()) {
+      parentExecution.setProcessDefinition(targetScope.getProcessDefinition());
+    }
+
     if (sourceScope.getId().equals(currentScopeExecution.getActivityId())) {
       currentScopeExecution.setActivity((PvmActivity) targetScope);
     }
