@@ -20,6 +20,7 @@ import java.util.Set;
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidationReport;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
@@ -70,5 +71,13 @@ public class MigrationLogger extends ProcessEngineLogger {
     }
 
     return sb.toString();
+  }
+
+  public ProcessEngineException failingInstructionInstanceValidation(MigrationInstructionInstanceValidationReport validationReport) {
+    StringBuilder sb = new StringBuilder();
+    validationReport.writeTo(sb);
+    return new ProcessEngineException(exceptionMessage("003", "Cannot migrate process instance {}: {}",
+        validationReport.getMigratingProcessInstance().getProcessInstanceId(),
+        sb.toString()));
   }
 }

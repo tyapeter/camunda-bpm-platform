@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
@@ -34,6 +35,7 @@ import org.camunda.bpm.engine.test.util.ExecutionTree;
 import org.camunda.bpm.engine.variable.Variables;
 import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -642,6 +644,59 @@ public class MigrationAddScopesTest {
     }
 
     testHelper.assertProcessEnded(processInstance.getId());
+  }
+
+  @Test
+  public void testCannotAddTwoScopes() {
+    // given
+    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.NESTED_SUBPROCESS_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+
+    // when
+    try {
+      rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+      Assert.fail("should fail");
+    }
+    catch (ProcessEngineException e) {
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("Parent activity instance must be migrated to the parent or grandparent scope"));
+    }
+  }
+
+  @Test
+  public void testCannotMigrateParentScopeWayTooHigh() {
+    // given
+    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
+    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.TRIPLE_SUBPROCESS_PROCESS);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess1")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+
+    // when
+    try {
+      rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+      Assert.fail("should fail");
+    }
+    catch (ProcessEngineException e) {
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("Parent activity instance must be migrated to the parent or grandparent scope"));
+    }
   }
 
 }

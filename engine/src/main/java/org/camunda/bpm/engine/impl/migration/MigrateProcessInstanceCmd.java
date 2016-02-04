@@ -13,6 +13,7 @@
 package org.camunda.bpm.engine.impl.migration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
@@ -22,6 +23,10 @@ import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingActivityInstance;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingExecutionBranch;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingProcessInstance;
+import org.camunda.bpm.engine.impl.migration.validation.AdditionalFlowScopeValidator;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidationReport;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidator;
+import org.camunda.bpm.engine.impl.migration.validation.RemoveFlowScopeValidator;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
@@ -64,9 +69,29 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     MigratingProcessInstance migratingProcessInstance = MigratingProcessInstance.initializeFrom(
         commandContext, migrationPlan, processInstance, targetProcessDefinition);
 
+    validateInstructions(migratingProcessInstance);
+
     migrateProcessInstance(migratingProcessInstance);
 
     return null;
+  }
+
+  protected void validateInstructions(MigratingProcessInstance migratingProcessInstance) {
+
+    List<MigrationInstructionInstanceValidator> validators = Arrays.asList(new AdditionalFlowScopeValidator(),
+        new RemoveFlowScopeValidator());
+    MigrationInstructionInstanceValidationReport validationReport = new MigrationInstructionInstanceValidationReport(migratingProcessInstance);
+
+    for (MigratingActivityInstance migratingActivityInstance : migratingProcessInstance.getMigratingActivityInstances()) {
+      for (MigrationInstructionInstanceValidator validator : validators) {
+        validator.validate(migratingProcessInstance, migratingActivityInstance, validationReport);
+      }
+    }
+
+    if (validationReport.hasFailures()) {
+      throw LOGGER.failingInstructionInstanceValidation(validationReport);
+    }
+
   }
 
   protected void migrateProcessInstance(MigratingProcessInstance migratingProcessInstance) {

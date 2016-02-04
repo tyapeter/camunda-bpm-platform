@@ -87,6 +87,27 @@ public class ProcessModels {
       .endEvent()
       .done();
 
+  public static final BpmnModelInstance TRIPLE_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("NestedSubProcess")
+      .startEvent()
+      .subProcess("subProcess1")
+       .embeddedSubProcess()
+         .startEvent()
+         .subProcess("subProcess2")
+           .embeddedSubProcess()
+             .startEvent()
+             .subProcess("subProcess3")
+               .embeddedSubProcess()
+                 .startEvent()
+                 .userTask("userTask").name("User Task")
+                 .endEvent()
+             .subProcessDone()
+             .endEvent()
+           .subProcessDone()
+           .endEvent()
+         .subProcessDone()
+      .endEvent()
+      .done();
+
   public static final BpmnModelInstance ONE_RECEIVE_TASK_PROCESS = Bpmn.createExecutableProcess("ReceiveTaskProcess")
     .startEvent()
     .receiveTask("receiveTask")
