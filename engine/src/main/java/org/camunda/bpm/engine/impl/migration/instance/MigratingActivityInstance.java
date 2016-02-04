@@ -14,6 +14,7 @@ package org.camunda.bpm.engine.impl.migration.instance;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
@@ -32,6 +33,9 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
   protected ScopeImpl sourceScope;
   protected ScopeImpl targetScope;
 
+  protected Set<MigratingActivityInstance> childInstances;
+  protected MigratingActivityInstance parentInstance;
+
   public abstract void detachState();
 
   public abstract void attachState(ExecutionEntity newScopeExecution);
@@ -46,7 +50,7 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
     }
   }
 
-  protected ExecutionEntity resolveRepresentativeExecution() {
+  public ExecutionEntity resolveRepresentativeExecution() {
     if (representativeExecution.getReplacedBy() != null) {
       return representativeExecution.resolveReplacedBy();
     }
@@ -76,4 +80,17 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
   public ScopeImpl getTargetScope() {
     return targetScope;
   }
+
+  public Set<MigratingActivityInstance> getChildren() {
+    return childInstances;
+  }
+
+  public MigratingActivityInstance getParent() {
+    return parentInstance;
+  }
+
+  public void setParent(MigratingActivityInstance parentInstance) {
+    this.parentInstance = parentInstance;
+  }
+
 }

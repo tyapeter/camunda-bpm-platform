@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.test.api.runtime.migration;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
+import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -84,5 +85,21 @@ public class MigrationTestRule extends TestWatcher {
    */
   public ProcessDefinition deploy(BpmnModelInstance bpmnModel) {
     return deploy(DEFAULT_BPMN_RESOURCE_NAME, bpmnModel);
+  }
+
+  public String getSingleExecutionIdForActivity(ActivityInstance activityInstance, String activityId) {
+    ActivityInstance[] activityInstances = activityInstance.getActivityInstances(activityId);
+    if (activityInstances.length == 1) {
+      String[] executionIds = activityInstances[0].getExecutionIds();
+      if (executionIds.length == 1) {
+        return executionIds[0];
+      }
+      else {
+        throw new RuntimeException("There is more than one execution assigned to activity instance " + activityInstances[0].getId());
+      }
+    }
+    else {
+      throw new RuntimeException("There is more than one activity instance for activity " + activityId);
+    }
   }
 }

@@ -14,7 +14,9 @@ package org.camunda.bpm.engine.impl.migration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -31,6 +33,9 @@ import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
+import org.camunda.bpm.engine.impl.tree.TreeVisitor;
+import org.camunda.bpm.engine.impl.tree.TreeWalker;
+import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
@@ -71,15 +76,94 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
 
     validateInstructions(migratingProcessInstance);
 
+    deleteUnmappedActivityInstances(migratingProcessInstance);
+
     migrateProcessInstance(migratingProcessInstance);
 
     return null;
   }
 
+  protected void deleteUnmappedActivityInstances(MigratingProcessInstance migratingProcessInstance) {
+    // delete unmapped instances in a bottom-up fashion (similar to deleteCascade and regular BPMN execution)
+
+    final Set<MigratingActivityInstance> visitedActivityInstances = new HashSet<MigratingActivityInstance>();
+    Set<MigratingActivityInstance> leafInstances = collectLeafInstances(migratingProcessInstance);
+
+    for (MigratingActivityInstance leafInstance : leafInstances) {
+      MigratingActivityInstanceWalker walker = new MigratingActivityInstanceWalker(leafInstance);
+
+      walker.addPreVisitor(new TreeVisitor<MigratingActivityInstance>() {
+
+        @Override
+        public void visit(MigratingActivityInstance currentInstance) {
+
+          visitedActivityInstances.add(currentInstance);
+          if (currentInstance.getTargetScope() == null) {
+            // delete activity instance
+            Set<MigratingActivityInstance> children = currentInstance.getChildren();
+            MigratingActivityInstance parent = currentInstance.getParent();
+            parent.getChildren().remove(currentInstance);
+
+            for (MigratingActivityInstance child : children) {
+              child.detachState();
+            }
+
+            // TODO: delete reason
+            ExecutionEntity currentFlowScopeExecution = currentInstance.resolveRepresentativeExecution();
+            currentFlowScopeExecution.setActivity((PvmActivity) currentInstance.getSourceScope());
+            currentFlowScopeExecution.setActivityInstanceId(currentInstance.getActivityInstance().getId());
+
+            // TODO: check if this removes concurrent executions
+            currentFlowScopeExecution.deleteCascade(null);
+
+            // reconnect parent and children
+            for (MigratingActivityInstance child : children) {
+              child.attachState(parent.resolveRepresentativeExecution()); // TODO: this does not yet create concurrent executions
+              parent.getChildren().add(child);
+              child.setParent(parent);
+            }
+          }
+
+        }
+      });
+
+      walker.walkUntil(new WalkCondition<MigratingActivityInstance>() {
+
+        @Override
+        public boolean isFulfilled(MigratingActivityInstance element) {
+          return element == null || !visitedActivityInstances.containsAll(element.getChildren());
+        }
+      });
+    }
+  }
+
+  protected Set<MigratingActivityInstance> collectLeafInstances(MigratingProcessInstance migratingProcessInstance) {
+    Set<MigratingActivityInstance> leafInstances = new HashSet<MigratingActivityInstance>();
+
+    for (MigratingActivityInstance migratingActivityInstance : migratingProcessInstance.getMigratingActivityInstances()) {
+      if (migratingActivityInstance.getChildren().isEmpty()) {
+        leafInstances.add(migratingActivityInstance);
+      }
+    }
+
+    return leafInstances;
+  }
+
+  public static class MigratingActivityInstanceWalker extends TreeWalker<MigratingActivityInstance> {
+
+    public MigratingActivityInstanceWalker(MigratingActivityInstance initialElement) {
+      super(initialElement);
+    }
+
+    @Override
+    protected MigratingActivityInstance nextElement() {
+      return currentElement.getParent();
+    }
+  }
+
   protected void validateInstructions(MigratingProcessInstance migratingProcessInstance) {
 
-    List<MigrationInstructionInstanceValidator> validators = Arrays.asList(new AdditionalFlowScopeValidator(),
-        new RemoveFlowScopeValidator());
+    List<MigrationInstructionInstanceValidator> validators = Arrays.<MigrationInstructionInstanceValidator>asList(new AdditionalFlowScopeValidator());
     MigrationInstructionInstanceValidationReport validationReport = new MigrationInstructionInstanceValidationReport(migratingProcessInstance);
 
     for (MigratingActivityInstance migratingActivityInstance : migratingProcessInstance.getMigratingActivityInstances()) {
@@ -109,8 +193,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     ActivityInstance activityInstance = migratingActivityInstance.getActivityInstance();
 
     if (!activityInstance.getId().equals(activityInstance.getProcessInstanceId())) {
-      final MigratingActivityInstance parentMigratingInstance = migratingProcessInstance.getMigratingInstance(
-          activityInstance.getParentActivityInstanceId());
+      final MigratingActivityInstance parentMigratingInstance = migratingActivityInstance.getParent();
 
       ScopeImpl targetFlowScope = migratingActivityInstance.getTargetScope().getFlowScope();
       ScopeImpl parentActivityInstanceTargetScope = parentMigratingInstance.getTargetScope();
@@ -153,9 +236,8 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     // * are not reused when activity instances are in unrelated branches of the execution tree
     migratingExecutionBranch = migratingExecutionBranch.copy();
 
-    for (ActivityInstance childInstance : activityInstance.getChildActivityInstances()) {
-      MigratingActivityInstance migratingChildInstance = migratingProcessInstance.getMigratingInstance(childInstance.getId());
-      migrateActivityInstance(migratingProcessInstance, migratingExecutionBranch, migratingChildInstance);
+    for (MigratingActivityInstance childInstance : migratingActivityInstance.getChildren()) {
+      migrateActivityInstance(migratingProcessInstance, migratingExecutionBranch, childInstance);
     }
 
   }
