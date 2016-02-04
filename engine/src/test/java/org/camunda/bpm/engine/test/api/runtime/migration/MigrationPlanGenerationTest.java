@@ -104,7 +104,7 @@ public class MigrationPlanGenerationTest {
   public void testMapEqualActivitiesToNestedSubProcessScope() {
     // given
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS.clone()
       .<SubProcess>getModelElementById("outerSubProcess")
       .builder()
         .id("subProcess")  // make ID match with subprocess ID of source definition
@@ -130,7 +130,7 @@ public class MigrationPlanGenerationTest {
   public void testMapEqualActivitiesToSurroundingSubProcessScope() {
     // given
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS.clone()
         .<SubProcess>getModelElementById("innerSubProcess")
         .builder()
           .id("subProcess")  // make ID match with subprocess ID of source definition
