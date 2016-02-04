@@ -13,14 +13,11 @@
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.FlowNode;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaExecutionListener;
 import org.junit.Assert;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -30,6 +27,8 @@ import org.junit.runner.Description;
  *
  */
 public class MigrationTestRule extends TestWatcher {
+
+  public static final String DEFAULT_BPMN_RESOURCE_NAME = "process.bpmn20.xml";
 
   protected ProcessEngineRule processEngineRule;
   protected ProcessEngine processEngine;
@@ -66,7 +65,7 @@ public class MigrationTestRule extends TestWatcher {
         .singleResult();
   }
 
-  public String deploy(String name, BpmnModelInstance bpmnModel) {
+  public ProcessDefinition deploy(String name, BpmnModelInstance bpmnModel) {
     Deployment deployment = processEngine.getRepositoryService()
       .createDeployment()
       .addModelInstance(name, bpmnModel)
@@ -74,6 +73,16 @@ public class MigrationTestRule extends TestWatcher {
 
     processEngineRule.manageDeployment(deployment);
 
-    return deployment.getId();
+    return processEngineRule.getRepositoryService()
+      .createProcessDefinitionQuery()
+      .deploymentId(deployment.getId())
+      .singleResult();
+  }
+
+  /**
+   * Deploys a bpmn model instance and returns its corresponding process definition object
+   */
+  public ProcessDefinition deploy(BpmnModelInstance bpmnModel) {
+    return deploy(DEFAULT_BPMN_RESOURCE_NAME, bpmnModel);
   }
 }

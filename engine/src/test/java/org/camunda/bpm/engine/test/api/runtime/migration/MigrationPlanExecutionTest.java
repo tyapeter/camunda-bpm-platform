@@ -49,11 +49,8 @@ public class MigrationPlanExecutionTest {
   @Test
   public void testUserTaskMigrationInProcessDefinitionScope() {
     // given
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService().createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -88,11 +85,8 @@ public class MigrationPlanExecutionTest {
   public void testUserTaskMigrationInSubProcessScope() {
 
     // given
-    testHelper.deploy("subProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("subProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService().createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -128,11 +122,8 @@ public class MigrationPlanExecutionTest {
   @Test
   public void testConcurrentUserTaskMigration() {
     // given
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService().createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapEqualActivities()
@@ -172,11 +163,8 @@ public class MigrationPlanExecutionTest {
   @Test
   public void testCannotMigrateWhenNotAllActivityInstancesAreMapped() {
     // given
-    testHelper.deploy("parallelGateway.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-    testHelper.deploy("subProcess.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService().createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
       .mapActivities("userTask1", "userTask1")
@@ -195,11 +183,8 @@ public class MigrationPlanExecutionTest {
 
   @Test
   public void testChangeActivityId() {
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())

@@ -32,7 +32,7 @@ public class AdditionalFlowScopeValidator implements MigrationInstructionInstanc
     MigratingActivityInstance parentInstance = migratingProcessInstance.getMigratingInstance(activityInstance.getParentActivityInstanceId());
     ScopeImpl targetScope = migratingActivityInstance.getTargetScope();
 
-    if (targetScope != targetScope.getProcessDefinition()) {
+    if (parentInstance != null && targetScope != targetScope.getProcessDefinition()) {
       ScopeImpl parentInstanceTargetScope = parentInstance.getTargetScope();
       ScopeImpl flowScope = targetScope.getFlowScope();
       if (flowScope != parentInstanceTargetScope) {

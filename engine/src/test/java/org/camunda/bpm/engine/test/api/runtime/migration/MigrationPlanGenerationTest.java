@@ -18,6 +18,7 @@ import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.migrate;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,11 +38,8 @@ public class MigrationPlanGenerationTest {
   @Test
   public void testMapEqualActivitiesInProcessDefinitionScope() {
     // given
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     // when
     MigrationPlan migrationPlan = rule.getRuntimeService()
@@ -61,11 +59,8 @@ public class MigrationPlanGenerationTest {
   @Test
   public void testMapEqualActivitiesInSameSubProcessScope() {
     // given
-    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
 
     // when
     MigrationPlan migrationPlan = rule.getRuntimeService()
@@ -87,11 +82,8 @@ public class MigrationPlanGenerationTest {
   @Test
   public void testMapEqualActivitiesToSubProcessScope() {
     // given
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
 
     // when
     MigrationPlan migrationPlan = rule.getRuntimeService()
@@ -111,11 +103,12 @@ public class MigrationPlanGenerationTest {
   @Test
   public void testMapEqualActivitiesToNestedSubProcessScope() {
     // given
-    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("nestedSubProcessProcess.bpmn20.xml", ProcessModels.NEW_NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS
+      .<SubProcess>getModelElementById("outerSubProcess")
+      .builder()
+        .id("subProcess")  // make ID match with subprocess ID of source definition
+        .done());
 
     // when
     MigrationPlan migrationPlan = rule.getRuntimeService()
@@ -136,11 +129,12 @@ public class MigrationPlanGenerationTest {
   @Test
   public void testMapEqualActivitiesToSurroundingSubProcessScope() {
     // given
-    testHelper.deploy("subProcessProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("surroundingSubProcessProcess.bpmn20.xml", ProcessModels.NEW_SURROUNDING_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SurroundingSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS
+        .<SubProcess>getModelElementById("innerSubProcess")
+        .builder()
+          .id("subProcess")  // make ID match with subprocess ID of source definition
+          .done());
 
     // when
     MigrationPlan migrationPlan = rule.getRuntimeService()
@@ -161,11 +155,8 @@ public class MigrationPlanGenerationTest {
   @Test
   public void testMapEqualActivitiesToDeeplyNestedSubProcessScope() {
     // given
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("nestedSubProcessProcess.bpmn20.xml", ProcessModels.NEW_NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS);
 
     // when
     MigrationPlan migrationPlan = rule.getRuntimeService()

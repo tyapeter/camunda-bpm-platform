@@ -40,11 +40,8 @@ public class MigrationPlanCreationTest {
   @Test
   public void testExplicitInstructionGeneration() {
 
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -61,9 +58,7 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNonExistingSourceDefinition() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition processDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition processDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     try {
       rule.getRuntimeService()
@@ -78,9 +73,7 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNullSourceDefinition() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition processDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition processDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     try {
       rule.getRuntimeService()
@@ -95,9 +88,7 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNonExistingTargetDefinition() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition processDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition processDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
     try {
       rule.getRuntimeService()
         .createMigrationPlan(processDefinition.getId(), "aNonExistingProcDefId")
@@ -111,9 +102,7 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNullTargetDefinition() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-
-    ProcessDefinition processDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
+    ProcessDefinition processDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     try {
       rule.getRuntimeService()
@@ -128,11 +117,9 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNonExistingSourceActivityId() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
-    ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
     try {
       rule.getRuntimeService()
         .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
@@ -146,11 +133,9 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNullSourceActivityId() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
-    ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
     try {
       rule.getRuntimeService()
         .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
@@ -164,11 +149,9 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNonExistingTargetActivityId() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
-    ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
     try {
       rule.getRuntimeService()
         .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
@@ -182,11 +165,9 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateNullTargetActivityId() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition sourceDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
-    ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetDefinition = testHelper.findProcessDefinition("UserTaskProcess", 2);
     try {
       rule.getRuntimeService()
         .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
@@ -200,11 +181,8 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateTaskToHigherScope() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition sourceDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceDefinition.getId(), targetDefinition.getId())
@@ -221,11 +199,9 @@ public class MigrationPlanCreationTest {
 
   @Test
   public void testMigrateToDifferentActivityType() {
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("oneTaskProcess.bpmn20.xml", ProcessModels.ONE_RECEIVE_TASK_PROCESS);
 
-    ProcessDefinition sourceDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetDefinition = testHelper.findProcessDefinition("ReceiveTaskProcess", 1);
+    ProcessDefinition sourceDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetDefinition = testHelper.deploy(ProcessModels.ONE_RECEIVE_TASK_PROCESS);
 
     try {
       rule.getRuntimeService()

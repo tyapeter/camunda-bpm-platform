@@ -41,11 +41,8 @@ public class MigrationRemoveScopesTest {
   public void testCannotRemoveScope() {
 
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -60,7 +57,7 @@ public class MigrationRemoveScopesTest {
       Assert.fail("should fail");
     }
     catch (ProcessEngineException e) {
-      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("Parent activity instance must be migrated to the parent or grandparent scope"));
+      Assert.assertThat(e.getMessage(), CoreMatchers.containsString("The parent activity instance is not being migrated"));
     }
   }
 

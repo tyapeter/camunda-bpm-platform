@@ -58,11 +58,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testScopeUserTaskMigration() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.SCOPE_TASK_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SCOPE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -105,11 +102,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testConcurrentScopeUserTaskMigration() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewaySubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -161,11 +155,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testUserTaskMigration() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -205,11 +196,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testConcurrentUserTaskMigration() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewaySubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -258,11 +246,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testNestedScopesMigration1() {
     // given
-    testHelper.deploy("subProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("nestedSubProcess.bpmn20.xml", ProcessModels.NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -306,11 +291,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testNestedScopesMigration2() {
     // given
-    testHelper.deploy("subProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("nestedSubProcess.bpmn20.xml", ProcessModels.NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -353,11 +335,8 @@ public class MigrationAddScopesTest {
 
   @Test
   public void testMultipleInstancesOfScope() {
-    testHelper.deploy("subProcess.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("nestedSubProcess.bpmn20.xml", ProcessModels.NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -416,11 +395,8 @@ public class MigrationAddScopesTest {
 
   @Test
   public void testChangeActivityId() {
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewaySubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -462,11 +438,8 @@ public class MigrationAddScopesTest {
 
   @Test
   public void testChangeScopeActivityId() {
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewaySubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -512,18 +485,15 @@ public class MigrationAddScopesTest {
     // given
     DelegateEvent.clearEvents();
 
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml",
-        ProcessModels.SUBPROCESS_PROCESS.clone()
-          .<SubProcess>getModelElementById("subProcess")
-          .builder()
-          .camundaExecutionListenerClass(
-              ExecutionListener.EVENTNAME_START,
-              DelegateExecutionListener.class.getName())
-          .done());
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(
+      ProcessModels.SUBPROCESS_PROCESS.clone()
+        .<SubProcess>getModelElementById("subProcess")
+        .builder()
+        .camundaExecutionListenerClass(
+            ExecutionListener.EVENTNAME_START,
+            DelegateExecutionListener.class.getName())
+        .done());
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -549,11 +519,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testDeleteMigratedInstance() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("ParallelGatewayProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("ParallelGatewaySubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -578,26 +545,22 @@ public class MigrationAddScopesTest {
   @Ignore
   public void testAddParentScopeToMultiInstance() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml",
-        ProcessModels.ONE_TASK_PROCESS.clone()
-          .<UserTask>getModelElementById("userTask").builder()
-          .multiInstance()
-            .parallel()
-            .camundaCollection("collectionVar")
-            .camundaElementVariable("elementVar")
-          .done()
-          );
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml",
-        ProcessModels.SUBPROCESS_PROCESS.clone()
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(
+      ProcessModels.ONE_TASK_PROCESS.clone()
         .<UserTask>getModelElementById("userTask").builder()
         .multiInstance()
           .parallel()
           .camundaCollection("collectionVar")
           .camundaElementVariable("elementVar")
         .done());
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(
+      ProcessModels.SUBPROCESS_PROCESS.clone()
+        .<UserTask>getModelElementById("userTask").builder()
+        .multiInstance()
+          .parallel()
+          .camundaCollection("collectionVar")
+          .camundaElementVariable("elementVar")
+        .done());
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -649,11 +612,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testCannotAddTwoScopes() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.ONE_TASK_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.NESTED_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("UserTaskProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -675,11 +635,8 @@ public class MigrationAddScopesTest {
   @Test
   public void testCannotMigrateParentScopeWayTooHigh() {
     // given
-    testHelper.deploy("scopeTask.bpmn20.xml", ProcessModels.SUBPROCESS_PROCESS);
-    testHelper.deploy("scopeTaskSubProcess.bpmn20.xml", ProcessModels.TRIPLE_SUBPROCESS_PROCESS);
-
-    ProcessDefinition sourceProcessDefinition = testHelper.findProcessDefinition("SubProcess", 1);
-    ProcessDefinition targetProcessDefinition = testHelper.findProcessDefinition("NestedSubProcess", 1);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.TRIPLE_SUBPROCESS_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())

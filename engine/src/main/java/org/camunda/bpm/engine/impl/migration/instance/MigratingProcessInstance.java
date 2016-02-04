@@ -100,7 +100,7 @@ public class MigratingProcessInstance {
 
     ActivityInstance activityInstanceTree = new GetActivityInstanceCmd(processInstance.getId())
       .execute(commandContext);
-    Set<ActivityInstance> unmappedInstances = collectInstances(activityInstanceTree);
+    Set<ActivityInstance> unmappedInstances = collectLeafInstances(activityInstanceTree);
 
     // always create an entry for the root activity instance because it is implicitly always migrated
     migratingProcessInstance.addActivityInstance(
@@ -138,12 +138,16 @@ public class MigratingProcessInstance {
     return migratingProcessInstance;
   }
 
-  protected static Set<ActivityInstance> collectInstances(ActivityInstance activityInstanceTree) {
+  protected static Set<ActivityInstance> collectLeafInstances(ActivityInstance activityInstanceTree) {
     Set<ActivityInstance> instances = new HashSet<ActivityInstance>();
-    instances.add(activityInstanceTree);
 
-    for (ActivityInstance childInstance : activityInstanceTree.getChildActivityInstances()) {
-      instances.addAll(collectInstances(childInstance));
+    if (activityInstanceTree.getChildActivityInstances().length == 0) {
+      instances.add(activityInstanceTree);
+    }
+    else {
+      for (ActivityInstance childInstance : activityInstanceTree.getChildActivityInstances()) {
+        instances.addAll(collectLeafInstances(childInstance));
+      }
     }
 
     return instances;

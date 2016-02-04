@@ -14,6 +14,7 @@ package org.camunda.bpm.engine.test.api.runtime.migration;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.bpmn.builder.ProcessBuilder;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
 
 /**
@@ -22,56 +23,34 @@ import org.camunda.bpm.model.bpmn.instance.UserTask;
  */
 public class ProcessModels {
 
-  public static final BpmnModelInstance ONE_TASK_PROCESS = Bpmn.createExecutableProcess("UserTaskProcess")
+  public static final String PROCESS_KEY = "Process";
+
+
+  protected static ProcessBuilder newModel() {
+    return Bpmn.createExecutableProcess(PROCESS_KEY);
+  }
+
+  public static final BpmnModelInstance ONE_TASK_PROCESS =
+      newModel()
       .startEvent()
       .userTask("userTask").name("User Task")
       .endEvent()
       .done();
 
-  public static final BpmnModelInstance SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("SubProcess")
-    .startEvent()
-    .subProcess("subProcess")
-      .embeddedSubProcess()
-        .startEvent()
-        .userTask("userTask").name("User Task")
-        .endEvent()
-      .subProcessDone()
-    .endEvent()
-    .done();
-
-  public static final BpmnModelInstance NEW_NESTED_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("NestedSubProcess")
-    .startEvent()
-    .subProcess("subProcess")
-      .embeddedSubProcess()
-        .startEvent()
-          .subProcess("nestedSubProcess")
-          .embeddedSubProcess()
+  public static final BpmnModelInstance SUBPROCESS_PROCESS =
+    newModel()
+      .startEvent()
+      .subProcess("subProcess")
+        .embeddedSubProcess()
           .startEvent()
           .userTask("userTask").name("User Task")
           .endEvent()
         .subProcessDone()
-        .endEvent()
-      .subProcessDone()
-    .endEvent()
-    .done();
+      .endEvent()
+      .done();
 
-  public static final BpmnModelInstance NEW_SURROUNDING_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("SurroundingSubProcess")
-    .startEvent()
-    .subProcess("surroundingSubProcess")
-      .embeddedSubProcess()
-        .startEvent()
-        .subProcess("subProcess")
-          .embeddedSubProcess()
-            .startEvent()
-            .userTask("userTask").name("User Task")
-            .endEvent()
-        .subProcessDone()
-        .endEvent()
-      .subProcessDone()
-    .endEvent()
-    .done();
-
-  public static final BpmnModelInstance NESTED_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("NestedSubProcess")
+  public static final BpmnModelInstance DOUBLE_SUBPROCESS_PROCESS =
+    newModel()
       .startEvent()
       .subProcess("outerSubProcess")
        .embeddedSubProcess()
@@ -87,35 +66,38 @@ public class ProcessModels {
       .endEvent()
       .done();
 
-  public static final BpmnModelInstance TRIPLE_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("NestedSubProcess")
-      .startEvent()
-      .subProcess("subProcess1")
-       .embeddedSubProcess()
-         .startEvent()
-         .subProcess("subProcess2")
-           .embeddedSubProcess()
-             .startEvent()
-             .subProcess("subProcess3")
-               .embeddedSubProcess()
-                 .startEvent()
-                 .userTask("userTask").name("User Task")
-                 .endEvent()
+  public static final BpmnModelInstance TRIPLE_SUBPROCESS_PROCESS =
+      newModel()
+        .startEvent()
+        .subProcess("subProcess1")
+         .embeddedSubProcess()
+           .startEvent()
+           .subProcess("subProcess2")
+             .embeddedSubProcess()
+               .startEvent()
+               .subProcess("subProcess3")
+                 .embeddedSubProcess()
+                   .startEvent()
+                   .userTask("userTask").name("User Task")
+                   .endEvent()
+               .subProcessDone()
+               .endEvent()
              .subProcessDone()
              .endEvent()
            .subProcessDone()
-           .endEvent()
-         .subProcessDone()
+        .endEvent()
+        .done();
+
+  public static final BpmnModelInstance ONE_RECEIVE_TASK_PROCESS =
+    newModel()
+      .startEvent()
+      .receiveTask("receiveTask")
+        .message("Message")
       .endEvent()
       .done();
 
-  public static final BpmnModelInstance ONE_RECEIVE_TASK_PROCESS = Bpmn.createExecutableProcess("ReceiveTaskProcess")
-    .startEvent()
-    .receiveTask("receiveTask")
-      .message("Message")
-    .endEvent()
-    .done();
-
-  public static final BpmnModelInstance PARALLEL_GATEWAY_PROCESS = Bpmn.createExecutableProcess("ParallelGatewayProcess")
+  public static final BpmnModelInstance PARALLEL_GATEWAY_PROCESS =
+    newModel()
       .startEvent()
       .parallelGateway()
       .userTask("userTask1").name("User Task 1")
@@ -125,7 +107,8 @@ public class ProcessModels {
       .endEvent()
       .done();
 
-  public static final BpmnModelInstance PARALLEL_GATEWAY_SUBPROCESS_PROCESS = Bpmn.createExecutableProcess("ParallelGatewaySubProcess")
+  public static final BpmnModelInstance PARALLEL_GATEWAY_SUBPROCESS_PROCESS =
+    newModel()
       .startEvent()
       .subProcess("subProcess")
         .embeddedSubProcess()
