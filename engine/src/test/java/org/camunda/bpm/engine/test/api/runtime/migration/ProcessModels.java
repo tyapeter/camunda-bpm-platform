@@ -107,6 +107,27 @@ public class ProcessModels {
       .endEvent()
       .done();
 
+  public static final BpmnModelInstance PARALLEL_SUBPROCESS_PROCESS =
+      newModel()
+        .startEvent()
+        .parallelGateway()
+        .subProcess("subProcess1")
+          .embeddedSubProcess()
+            .startEvent()
+            .userTask("userTask1")
+            .endEvent()
+          .subProcessDone()
+        .endEvent()
+        .moveToLastGateway()
+        .subProcess("subProcess2")
+          .embeddedSubProcess()
+            .startEvent()
+            .userTask("userTask2")
+            .endEvent()
+          .subProcessDone()
+        .endEvent()
+        .done();
+
   public static final BpmnModelInstance PARALLEL_GATEWAY_SUBPROCESS_PROCESS =
     newModel()
       .startEvent()
