@@ -39,26 +39,27 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
 
   public static final List<MigrationInstructionValidator> instructionValidators = Arrays.asList(
     MigrationInstructionValidators.SAME_ID_VALIDATOR,
-    MigrationInstructionValidators.AT_MOST_ONE_ADDITIONAL_SCOPE
+    MigrationInstructionValidators.SAME_SCOPE
   );
 
-  @Override
   public List<MigrationInstruction> generate(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
-    List<ActivityImpl> availableSourceActivities = new ArrayList<ActivityImpl>();
-    List<ActivityImpl> availableTargetActivities = new ArrayList<ActivityImpl>();
-
-    collectAllActivityAvailableForMigration(sourceProcessDefinition, sourceProcessDefinition, availableSourceActivities);
-    collectAllActivityAvailableForMigration(targetProcessDefinition, targetProcessDefinition, availableTargetActivities);
-
-    return generateInstructionsForActivities(sourceProcessDefinition, availableSourceActivities, targetProcessDefinition, availableTargetActivities);
+    List<MigrationInstruction> migrationInstructions = new ArrayList<MigrationInstruction>();
+    generate(sourceProcessDefinition, targetProcessDefinition, sourceProcessDefinition, targetProcessDefinition, migrationInstructions);
+    return migrationInstructions;
   }
 
-  protected void collectAllActivityAvailableForMigration(ProcessDefinitionImpl processDefinition, ScopeImpl scope, List<ActivityImpl> activitiesAvailableForMigration) {
-    for (ActivityImpl activity : scope.getActivities()) {
-      if (canBeMigrated(activity, processDefinition)) {
-        activitiesAvailableForMigration.add(activity);
-        if (activity.isScope()) {
-          collectAllActivityAvailableForMigration(processDefinition, activity, activitiesAvailableForMigration);
+  public void generate(ScopeImpl sourceScope, ScopeImpl targetScope, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition, List<MigrationInstruction> migrationInstructions) {
+    for (ActivityImpl sourceActivity : sourceScope.getActivities()) {
+      for (ActivityImpl targetActivity : targetScope.getActivities()) {
+        MigrationInstructionImpl migrationInstruction = new MigrationInstructionImpl(sourceActivity.getId(), targetActivity.getId());
+        if (canBeMigrated(sourceActivity, sourceProcessDefinition) && canBeMigrated(targetActivity, targetProcessDefinition) &&
+            isValidInstruction(migrationInstruction, sourceProcessDefinition, targetProcessDefinition)) {
+
+          migrationInstructions.add(migrationInstruction);
+
+          if (sourceActivity.isScope() && targetActivity.isScope()) {
+            generate(sourceActivity, targetActivity, sourceProcessDefinition, targetProcessDefinition, migrationInstructions);
+          }
         }
       }
     }
@@ -71,21 +72,6 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
       }
     }
     return true;
-  }
-
-  protected List<MigrationInstruction> generateInstructionsForActivities(ProcessDefinitionImpl sourceProcessDefinition, List<ActivityImpl> availableSourceActivities, ProcessDefinitionImpl targetProcessDefinition, List<ActivityImpl> availableTargetActivities) {
-    List<MigrationInstruction> migrationInstructions = new ArrayList<MigrationInstruction>();
-
-    for (ActivityImpl availableSourceActivity : availableSourceActivities) {
-      for (ActivityImpl availableTargetActivity : availableTargetActivities) {
-        MigrationInstructionImpl instruction = new MigrationInstructionImpl(availableSourceActivity.getId(), availableTargetActivity.getId());
-        if (isValidInstruction(instruction, sourceProcessDefinition, targetProcessDefinition)) {
-          migrationInstructions.add(instruction);
-        }
-      }
-    }
-
-    return migrationInstructions;
   }
 
   protected boolean isValidInstruction(MigrationInstructionImpl instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {

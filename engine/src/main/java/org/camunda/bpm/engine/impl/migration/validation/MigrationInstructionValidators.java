@@ -79,8 +79,26 @@ public class MigrationInstructionValidators {
     }
   };
 
+  public static final MigrationInstructionValidator SAME_SCOPE = new MigrationInstructionValidator() {
+    public boolean isInstructionValid(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
+      return ONE_TO_ONE_VALIDATOR.isInstructionValid(instruction, sourceProcessDefinition, targetProcessDefinition) &&
+        haveSameScope(instruction.getSourceActivityIds().get(0), instruction.getTargetActivityIds().get(0), sourceProcessDefinition, targetProcessDefinition);
+    }
+  };
+
 
   // Helper
+
+  protected static boolean haveSameScope(String sourceActivityId, String targetActivityId, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
+    ScopeImpl sourceFlowScope = sourceProcessDefinition.findActivity(sourceActivityId).getFlowScope();
+    ScopeImpl targetFlowScope = targetProcessDefinition.findActivity(targetActivityId).getFlowScope();
+
+    return (isProcessDefinition(sourceFlowScope) && isProcessDefinition(targetFlowScope)) || sourceFlowScope.getId().equals(targetFlowScope.getId());
+  }
+
+  protected static boolean isProcessDefinition(ScopeImpl scope) {
+    return scope.getProcessDefinition() == scope;
+  }
 
   protected static boolean atMostOneNewScopeWasAdded(String sourceActivityId, String targetActivityId, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
     ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(sourceActivityId);

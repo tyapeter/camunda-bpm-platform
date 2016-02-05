@@ -97,9 +97,7 @@ public class MigrationPlanGenerationTest {
     assertThat(migrationPlan)
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
-      .hasInstructions(
-        migrate("userTask").to("userTask")
-      );
+      .hasEmptyInstructions();
   }
 
   @Test
@@ -123,8 +121,7 @@ public class MigrationPlanGenerationTest {
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
       .hasInstructions(
-        migrate("subProcess").to("subProcess"),
-        migrate("userTask").to("userTask")
+        migrate("subProcess").to("subProcess")
       );
   }
 
@@ -148,10 +145,7 @@ public class MigrationPlanGenerationTest {
     assertThat(migrationPlan)
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
-      .hasInstructions(
-        migrate("subProcess").to("subProcess"),
-        migrate("userTask").to("userTask")
-      );
+      .hasEmptyInstructions();
   }
 
   @Test
@@ -197,8 +191,7 @@ public class MigrationPlanGenerationTest {
       .hasTargetProcessDefinition(targetProcessDefinition)
       .hasInstructions(
         migrate("subProcess1").to("subProcess1"),
-        migrate("subProcess2").to("subProcess2"),
-        migrate("userTask1").to("userTask1")
+        migrate("subProcess2").to("subProcess2")
       );
   }
 
@@ -293,8 +286,7 @@ public class MigrationPlanGenerationTest {
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
       .hasInstructions(
-        migrate("subProcess").to("subProcess"),
-        migrate("userTask").to("userTask")
+        migrate("subProcess").to("subProcess")
       );
   }
 
@@ -311,9 +303,7 @@ public class MigrationPlanGenerationTest {
     assertThat(migrationPlan)
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
-      .hasInstructions(
-        migrate("userTask").to("userTask")
-      );
+      .hasEmptyInstructions();
   }
 
   @Test
@@ -329,9 +319,7 @@ public class MigrationPlanGenerationTest {
     assertThat(migrationPlan)
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
-      .hasInstructions(
-        migrate("userTask").to("userTask")
-      );
+      .hasEmptyInstructions();
   }
 
   @Test
@@ -347,9 +335,7 @@ public class MigrationPlanGenerationTest {
     assertThat(migrationPlan)
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
-      .hasInstructions(
-        migrate("userTask").to("userTask")
-      );
+      .hasEmptyInstructions();
   }
 
   @Test
@@ -365,9 +351,7 @@ public class MigrationPlanGenerationTest {
     assertThat(migrationPlan)
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
-      .hasInstructions(
-        migrate("userTask").to("userTask")
-      );
+      .hasEmptyInstructions();
   }
 
   @Test
@@ -406,6 +390,44 @@ public class MigrationPlanGenerationTest {
       .hasSourceProcessDefinition(sourceProcessDefinition)
       .hasTargetProcessDefinition(targetProcessDefinition)
       .hasEmptyInstructions();
+  }
+
+  @Test
+  public void testMapEqualActivitiesOutsideOfScope() {
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_TASK_AND_SUBPROCESS_PROCESS);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("userTask1").to("userTask1")
+      );
+  }
+
+  @Test
+  public void testMapEqualActivitiesToHorizontalScope() {
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_TASK_AND_SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("userTask1").to("userTask1")
+      );
   }
 
 }
