@@ -44,13 +44,18 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
 
   @Override
   public void attachState(ExecutionEntity newScopeExecution) {
+
     this.representativeExecution = newScopeExecution;
-    newScopeExecution.setActivity((PvmActivity) sourceScope);
-    newScopeExecution.setActivityInstanceId(activityInstance.getId());
+    if (!newScopeExecution.getNonEventScopeExecutions().isEmpty() || newScopeExecution.getActivity() != null) {
+      this.representativeExecution = (ExecutionEntity) newScopeExecution.createConcurrentExecution();
+    }
+
+    representativeExecution.setActivity((PvmActivity) sourceScope);
+    representativeExecution.setActivityInstanceId(activityInstance.getId());
 
     if (dependentInstances != null) {
       for (MigratingInstance dependentInstance : dependentInstances) {
-        dependentInstance.attachState(newScopeExecution);
+        dependentInstance.attachState(representativeExecution);
       }
     }
   }

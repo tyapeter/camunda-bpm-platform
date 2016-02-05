@@ -153,8 +153,59 @@ public class MigrationRemoveScopesTest {
     assertThat(executionTree)
     .matches(
       describeExecutionTree(null).scope().id(processInstance.getId())
-        .child("userTask1").up()
-        .child("userTask2")
+        .child("userTask1").concurrent().noScope().up()
+        .child("userTask2").concurrent().noScope()
+      .done());
+
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
+
+    ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
+    assertThat(updatedTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .activity("userTask1")
+          .activity("userTask2")
+        .done());
+
+    List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
+    Assert.assertEquals(2, migratedTasks.size());
+    for (Task migratedTask : migratedTasks) {
+      assertEquals(targetProcessDefinition.getId(), migratedTask.getProcessDefinitionId());
+    }
+
+    // and it is possible to successfully complete the migrated instance
+    for (Task migratedTask : migratedTasks) {
+      rule.getTaskService().complete(migratedTask.getId());
+    }
+    testHelper.assertProcessEnded(processInstance.getId());
+  }
+
+  @Test
+  public void testRemoveScopeForConcurrentScopeActivity() {
+
+    // given
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS_SUB_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_SCOPE_TASKS);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+
+    // when
+    rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+
+    // then
+    ExecutionTree executionTree = ExecutionTree.forExecution(processInstance.getId(), rule.getProcessEngine());
+    assertThat(executionTree)
+    .matches(
+      describeExecutionTree(null).scope().id(processInstance.getId())
+        .child(null).concurrent().noScope()
+          .child("userTask1").scope().up().up()
+        .child(null).concurrent().noScope()
+          .child("userTask2").scope()
       .done());
 
     assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
@@ -180,5 +231,6 @@ public class MigrationRemoveScopesTest {
   }
 
   // TODO: test the case of a concurrent activity instance that is being removed
-
+  // TODO: kann es ein Problem geben, wenn wir zwei CC executions erzeugen, dass dann beide ihre representativeExecution
+  //   resolven und replacedBy verwenden, aber das eigentlich nur für die erste gilt?!
 }

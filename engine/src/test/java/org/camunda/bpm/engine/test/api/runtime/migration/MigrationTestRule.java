@@ -88,18 +88,24 @@ public class MigrationTestRule extends TestWatcher {
   }
 
   public String getSingleExecutionIdForActivity(ActivityInstance activityInstance, String activityId) {
-    ActivityInstance[] activityInstances = activityInstance.getActivityInstances(activityId);
-    if (activityInstances.length == 1) {
-      String[] executionIds = activityInstances[0].getExecutionIds();
-      if (executionIds.length == 1) {
-        return executionIds[0];
-      }
-      else {
-        throw new RuntimeException("There is more than one execution assigned to activity instance " + activityInstances[0].getId());
-      }
+    ActivityInstance singleInstance = getSingleActivityInstance(activityInstance, activityId);
+
+    String[] executionIds = singleInstance.getExecutionIds();
+    if (executionIds.length == 1) {
+      return executionIds[0];
     }
     else {
-      throw new RuntimeException("There is more than one activity instance for activity " + activityId);
+      throw new RuntimeException("There is more than one execution assigned to activity instance " + singleInstance.getId());
+    }
+  }
+
+  public ActivityInstance getSingleActivityInstance(ActivityInstance tree, String activityId) {
+    ActivityInstance[] activityInstances = tree.getActivityInstances(activityId);
+    if (activityInstances.length == 1) {
+      return activityInstances[0];
+    }
+    else {
+      throw new RuntimeException("There is not exactly one activity instance for activity " + activityId);
     }
   }
 }

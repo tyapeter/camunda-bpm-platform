@@ -54,7 +54,8 @@ public class ActivityInstanceAssert {
 
     /** if anyone wants to improve this algorithm, feel welcome! */
     protected boolean isTreeMatched(ActivityInstance actualInstance, ActivityInstance expectedInstance) {
-      if(!expectedInstance.getActivityId().equals(actualInstance.getActivityId())) {
+      if(!expectedInstance.getActivityId().equals(actualInstance.getActivityId())
+          || (expectedInstance.getId() != null && !expectedInstance.getId().equals(actualInstance.getId()))) {
         return false;
       } else {
         if(expectedInstance.getChildActivityInstances().length != actualInstance.getChildActivityInstances().length) {
@@ -119,8 +120,13 @@ public class ActivityInstanceAssert {
     }
 
     public ActivityInstanceTreeBuilder beginScope(String activityId) {
+      return beginScope(activityId, null);
+    }
+
+    public ActivityInstanceTreeBuilder beginScope(String activityId, String activityInstanceId) {
       ActivityInstanceImpl newInstance = new ActivityInstanceImpl();
       newInstance.setActivityId(activityId);
+      newInstance.setId(activityInstanceId);
 
       ActivityInstanceImpl parentInstance = activityInstanceStack.peek();
       List<ActivityInstance> childInstances = new ArrayList<ActivityInstance>(Arrays.asList(parentInstance.getChildActivityInstances()));
@@ -133,12 +139,22 @@ public class ActivityInstanceAssert {
     }
 
     public ActivityInstanceTreeBuilder beginMiBody(String activityId) {
-      return beginScope(activityId + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX);
+      return beginMiBody(activityId + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX, null);
+    }
+
+    public ActivityInstanceTreeBuilder beginMiBody(String activityId, String activityInstanceId) {
+      return beginScope(activityId + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX, activityInstanceId);
     }
 
     public ActivityInstanceTreeBuilder activity(String activityId) {
 
+      return activity(activityId, null);
+    }
+
+    public ActivityInstanceTreeBuilder activity(String activityId, String activityInstanceId) {
+
       beginScope(activityId);
+      id(activityInstanceId);
       endScope();
 
       return this;
@@ -165,6 +181,12 @@ public class ActivityInstanceAssert {
 
     public ActivityInstance done() {
       return rootInstance;
+    }
+
+    protected ActivityInstanceTreeBuilder id(String expectedActivityInstanceId) {
+      ActivityInstanceImpl activityInstanceImpl = activityInstanceStack.peek();
+      activityInstanceImpl.setId(expectedActivityInstanceId);
+      return this;
     }
   }
 

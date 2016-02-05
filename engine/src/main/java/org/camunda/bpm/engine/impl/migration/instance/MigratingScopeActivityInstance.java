@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.impl.migration.instance;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
+import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 
 /**
  * @author Thorben Lindhauer
@@ -45,11 +46,17 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   @Override
   public void attachState(ExecutionEntity newScopeExecution) {
+
+    ExecutionEntity newParentExecution = newScopeExecution;
+    if (!newScopeExecution.getNonEventScopeExecutions().isEmpty()) {
+      newParentExecution = (ExecutionEntity) newScopeExecution.createConcurrentExecution();
+    }
+
     ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
-    currentScopeExecution.setParent(newScopeExecution);
+    currentScopeExecution.setParent(newParentExecution);
 
     if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
-      newScopeExecution.setActivityInstanceId(activityInstance.getId());
+      newParentExecution.setActivityInstanceId(activityInstance.getId());
     }
   }
 

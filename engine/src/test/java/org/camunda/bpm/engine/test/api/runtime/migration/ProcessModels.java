@@ -104,7 +104,7 @@ public class ProcessModels {
   public static final BpmnModelInstance PARALLEL_GATEWAY_PROCESS =
     newModel()
       .startEvent()
-      .parallelGateway()
+      .parallelGateway("fork")
       .userTask("userTask1").name("User Task 1")
       .endEvent()
       .moveToLastGateway()
@@ -115,7 +115,7 @@ public class ProcessModels {
   public static final BpmnModelInstance PARALLEL_SUBPROCESS_PROCESS =
       newModel()
         .startEvent()
-        .parallelGateway()
+        .parallelGateway("fork")
         .subProcess("subProcess1")
           .embeddedSubProcess()
             .startEvent()
@@ -170,7 +170,7 @@ public class ProcessModels {
       .subProcess("subProcess")
         .embeddedSubProcess()
           .startEvent()
-          .parallelGateway()
+          .parallelGateway("fork")
           .userTask("userTask1").name("User Task 1")
           .endEvent()
           .moveToLastGateway()
