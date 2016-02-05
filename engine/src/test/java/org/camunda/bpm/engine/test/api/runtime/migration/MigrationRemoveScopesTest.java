@@ -136,7 +136,6 @@ public class MigrationRemoveScopesTest {
     testHelper.assertProcessEnded(processInstance.getId());
   }
 
-  // TODO: fix that attaching creates concurrent executions
   @Test
   public void testRemoveScopeForConcurrentNonScopeActivity() {
 
@@ -271,14 +270,11 @@ public class MigrationRemoveScopesTest {
 
     assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
 
-    // TODO: the below assertion should fail ("userTask1" and "userTask1")
-    // => debug why this is not the case
-
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
-          .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
+          .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask2").getId())
         .done());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
@@ -438,7 +434,5 @@ public class MigrationRemoveScopesTest {
     DelegateEvent.clearEvents();
   }
 
-  // TODO: test that it is not possible to migrate an activity instance downwards (i.e. into a sibling subprocess instance)
-  // => this is horizontal migration; should throw a validation error
   // TODO: add some forceUpdate() statements where we call tryPruneLastConcurrentChild and createConcurrentExecution
 }
