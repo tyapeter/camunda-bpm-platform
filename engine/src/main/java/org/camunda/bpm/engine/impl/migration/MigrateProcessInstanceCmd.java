@@ -113,8 +113,15 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
             currentFlowScopeExecution.setActivity((PvmActivity) currentInstance.getSourceScope());
             currentFlowScopeExecution.setActivityInstanceId(currentInstance.getActivityInstance().getId());
 
-            // TODO: check if this removes concurrent executions
             currentFlowScopeExecution.deleteCascade(null);
+
+            ExecutionEntity parentExecution = currentFlowScopeExecution.getParent();
+
+            if (parentExecution.isConcurrent()) {
+              parentExecution.remove();
+              parentExecution.getParent().tryPruneLastConcurrentChild();
+              // TODO: force update
+            }
 
             // reconnect parent and children
             for (MigratingActivityInstance child : children) {
@@ -182,7 +189,10 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     MigratingActivityInstance rootActivityInstance =
         migratingProcessInstance.getMigratingInstance(migratingProcessInstance.getProcessInstanceId());
 
-    migrateActivityInstance(migratingProcessInstance, new MigratingExecutionBranch(), rootActivityInstance);
+    MigratingExecutionBranch scopeExecutionContext = new MigratingExecutionBranch();
+    scopeExecutionContext.visited(rootActivityInstance);
+
+    migrateActivityInstance(migratingProcessInstance, scopeExecutionContext, rootActivityInstance);
   }
 
   protected void migrateActivityInstance(
@@ -231,6 +241,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     // * are reused to attach activity instances to when the activity instances share a
     //   common ancestor path to the process instance
     // * are not reused when activity instances are in unrelated branches of the execution tree
+    migratingExecutionBranch.visited(migratingActivityInstance);
     migratingExecutionBranch = migratingExecutionBranch.copy();
 
     for (MigratingActivityInstance childInstance : migratingActivityInstance.getChildren()) {

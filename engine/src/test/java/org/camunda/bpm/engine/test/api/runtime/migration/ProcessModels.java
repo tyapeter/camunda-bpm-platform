@@ -16,11 +16,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.ProcessBuilder;
 import org.camunda.bpm.model.bpmn.builder.UserTaskBuilder;
-import org.camunda.bpm.model.bpmn.instance.Activity;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaInputOutput;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaInputParameter;
-import org.camunda.bpm.model.xml.type.ModelElementType;
 
 /**
  * @author Thorben Lindhauer
@@ -163,6 +159,22 @@ public class ProcessModels {
       .subProcessDone()
     .endEvent()
     .done();
+
+  public static final BpmnModelInstance PARALLEL_TASK_AND_SUBPROCESS_PROCESS =
+      newModel()
+        .startEvent()
+        .parallelGateway("fork")
+        .subProcess("subProcess")
+          .embeddedSubProcess()
+            .startEvent()
+            .userTask("userTask1")
+            .endEvent()
+          .subProcessDone()
+        .endEvent()
+        .moveToLastGateway()
+        .userTask("userTask2")
+        .endEvent()
+        .done();
 
   public static final BpmnModelInstance PARALLEL_GATEWAY_SUBPROCESS_PROCESS =
     newModel()

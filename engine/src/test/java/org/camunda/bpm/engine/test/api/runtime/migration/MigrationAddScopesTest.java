@@ -89,7 +89,7 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask")
+            .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask").getId())
         .done());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
@@ -136,8 +136,8 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask1")
-            .activity("userTask2")
+            .activity("userTask1", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
+            .activity("userTask2", testHelper.getSingleActivityInstance(activityInstance, "userTask2").getId())
         .done());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
@@ -166,6 +166,7 @@ public class MigrationAddScopesTest {
       .build();
 
     ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
@@ -183,7 +184,7 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask")
+            .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask").getId())
         .done());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
@@ -208,6 +209,7 @@ public class MigrationAddScopesTest {
       .build();
 
     ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
@@ -227,8 +229,8 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask1")
-            .activity("userTask2")
+            .activity("userTask1", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
+            .activity("userTask2", testHelper.getSingleActivityInstance(activityInstance, "userTask2").getId())
         .done());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
@@ -338,9 +340,9 @@ public class MigrationAddScopesTest {
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
-          .beginScope("outerSubProcess")
+          .beginScope("outerSubProcess", testHelper.getSingleActivityInstance(activityInstance, "subProcess").getId())
             .beginScope("innerSubProcess")
-              .activity("userTask")
+              .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask").getId())
         .done());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
@@ -384,8 +386,8 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("outerSubProcess")
-            .beginScope("innerSubProcess")
-              .activity("userTask")
+            .beginScope("innerSubProcess", testHelper.getSingleActivityInstance(activityInstance, "subProcess").getId())
+              .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask").getId())
         .done());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
@@ -412,6 +414,7 @@ public class MigrationAddScopesTest {
         .startBeforeActivity("subProcess")
         .startBeforeActivity("subProcess")
         .execute();
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
@@ -433,14 +436,14 @@ public class MigrationAddScopesTest {
     ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
-          .beginScope("outerSubProcess")
+          .beginScope("outerSubProcess", activityInstance.getActivityInstances("subProcess")[0].getId())
             .beginScope("innerSubProcess")
-              .activity("userTask")
+              .activity("userTask", activityInstance.getActivityInstances("subProcess")[0].getActivityInstances("userTask")[0].getId())
             .endScope()
           .endScope()
-          .beginScope("outerSubProcess")
+          .beginScope("outerSubProcess", activityInstance.getActivityInstances("subProcess")[1].getId())
             .beginScope("innerSubProcess")
-              .activity("userTask")
+              .activity("userTask", activityInstance.getActivityInstances("subProcess")[1].getActivityInstances("userTask")[0].getId())
         .done());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
@@ -471,6 +474,7 @@ public class MigrationAddScopesTest {
         .createProcessInstanceById(sourceProcessDefinition.getId())
         .startBeforeActivity("userTask1")
         .execute();
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
@@ -488,7 +492,7 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask2")
+            .activity("userTask2", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
         .done());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
@@ -514,6 +518,7 @@ public class MigrationAddScopesTest {
         .createProcessInstanceById(sourceProcessDefinition.getId())
         .startBeforeActivity("userTask1")
         .execute();
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
 
     // when
     rule.getRuntimeService().executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
@@ -532,7 +537,7 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask2")
+            .activity("userTask2", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
         .done());
 
     Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
