@@ -213,9 +213,6 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
           targetExecution = createMissingTargetFlowScopeExecution(flowScopeExecution, (PvmActivity) targetFlowScope);
           migratingExecutionBranch.registerExecution(targetFlowScope, targetExecution);
         }
-//        else {
-//          targetExecution = (ExecutionEntity) targetExecution.createConcurrentExecution();
-//        }
 
         // 3. attach to newly created execution
         migratingActivityInstance.attachState(targetExecution);

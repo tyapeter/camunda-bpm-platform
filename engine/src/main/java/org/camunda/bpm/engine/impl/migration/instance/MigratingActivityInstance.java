@@ -50,14 +50,7 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
     }
   }
 
-  public ExecutionEntity resolveRepresentativeExecution() {
-    if (representativeExecution.getReplacedBy() != null) {
-      return representativeExecution.resolveReplacedBy();
-    }
-    else {
-      return representativeExecution;
-    }
-  }
+  public abstract ExecutionEntity resolveRepresentativeExecution();
 
   public abstract ExecutionEntity getFlowScopeExecution();
 

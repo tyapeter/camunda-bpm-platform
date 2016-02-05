@@ -53,7 +53,7 @@ public class ActivityInstanceAssert {
 
 
     /** if anyone wants to improve this algorithm, feel welcome! */
-    protected boolean isTreeMatched(ActivityInstance actualInstance, ActivityInstance expectedInstance) {
+    protected boolean isTreeMatched(ActivityInstance expectedInstance, ActivityInstance actualInstance) {
       if(!expectedInstance.getActivityId().equals(actualInstance.getActivityId())
           || (expectedInstance.getId() != null && !expectedInstance.getId().equals(actualInstance.getId()))) {
         return false;
@@ -63,11 +63,11 @@ public class ActivityInstanceAssert {
         } else {
 
           List<ActivityInstance> unmatchedInstances = new ArrayList<ActivityInstance>(Arrays.asList(expectedInstance.getChildActivityInstances()));
-          for (ActivityInstance child1 : actualInstance.getChildActivityInstances()) {
+          for (ActivityInstance actualChild : actualInstance.getChildActivityInstances()) {
             boolean matchFound = false;
-            for (ActivityInstance child2 : new ArrayList<ActivityInstance>(unmatchedInstances)) {
-              if (isTreeMatched(child1, child2)) {
-                unmatchedInstances.remove(child2);
+            for (ActivityInstance expectedChild : new ArrayList<ActivityInstance>(unmatchedInstances)) {
+              if (isTreeMatched(expectedChild, actualChild)) {
+                unmatchedInstances.remove(actualChild);
                 matchFound = true;
                 break;
               }

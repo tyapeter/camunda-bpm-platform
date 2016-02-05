@@ -288,9 +288,9 @@ public class MigrationAddScopesTest {
     assertThat(updatedTree).hasStructure(
         describeActivityInstanceTree(targetProcessDefinition.getId())
           .beginScope("subProcess")
-            .activity("userTask1", testHelper.getSingleActivityInstance(activityInstance, "userTask2").getId())
-            .activity("userTask2", testHelper.getSingleActivityInstance(activityInstance, "userTask3").getId())
-            .activity("userTask3", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
+            .activity("userTask1", testHelper.getSingleActivityInstance(activityInstance, "userTask3").getId())
+            .activity("userTask2", testHelper.getSingleActivityInstance(activityInstance, "userTask1").getId())
+            .activity("userTask3", testHelper.getSingleActivityInstance(activityInstance, "userTask2").getId())
         .done());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();

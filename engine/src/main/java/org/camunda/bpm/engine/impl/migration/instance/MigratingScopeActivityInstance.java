@@ -24,6 +24,12 @@ import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   @Override
+  public ExecutionEntity resolveRepresentativeExecution() {
+    // scope executions are stable, so we don't follow the replacedBy links here
+    return representativeExecution;
+  }
+
+  @Override
   public void detachState() {
     ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
 
@@ -41,7 +47,6 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
         parentExecution.leaveActivityInstance();
       }
     }
-
   }
 
   @Override

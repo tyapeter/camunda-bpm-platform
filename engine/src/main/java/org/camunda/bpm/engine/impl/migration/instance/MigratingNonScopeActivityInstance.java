@@ -81,4 +81,14 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     }
   }
 
+  @Override
+  public ExecutionEntity resolveRepresentativeExecution() {
+    if (representativeExecution.getReplacedBy() != null) {
+      return representativeExecution.resolveReplacedBy();
+    }
+    else {
+      return representativeExecution;
+    }
+  }
+
 }
