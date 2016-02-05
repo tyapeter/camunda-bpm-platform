@@ -14,10 +14,12 @@ package org.camunda.bpm.engine.impl.migration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationActivityValidator;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationActivityValidators;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionValidator;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionValidators;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
@@ -29,57 +31,70 @@ import org.camunda.bpm.engine.migration.MigrationInstruction;
  */
 public class DefaultMigrationPlanGenerator implements MigrationInstructionGenerator {
 
+  public static final List<MigrationActivityValidator> activityValidators = Arrays.asList(
+    MigrationActivityValidators.SUPPORTED_ACTIVITY,
+    MigrationActivityValidators.HAS_NO_BOUNDARY_EVENT,
+    MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD
+  );
+
+  public static final List<MigrationInstructionValidator> instructionValidators = Arrays.asList(
+    MigrationInstructionValidators.SAME_ID_VALIDATOR,
+    MigrationInstructionValidators.AT_MOST_ONE_ADDITIONAL_SCOPE
+  );
+
   @Override
   public List<MigrationInstruction> generate(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
-    return generateInstructionsInScope(sourceProcessDefinition, targetProcessDefinition, 1);
+    List<ActivityImpl> availableSourceActivities = new ArrayList<ActivityImpl>();
+    List<ActivityImpl> availableTargetActivities = new ArrayList<ActivityImpl>();
+
+    collectAllActivityAvailableForMigration(sourceProcessDefinition, sourceProcessDefinition, availableSourceActivities);
+    collectAllActivityAvailableForMigration(targetProcessDefinition, targetProcessDefinition, availableTargetActivities);
+
+    return generateInstructionsForActivities(sourceProcessDefinition, availableSourceActivities, targetProcessDefinition, availableTargetActivities);
   }
 
-  protected List<MigrationInstruction> generateInstructionsInScope(ScopeImpl sourceScope, ScopeImpl targetScope, int allowedScopeDepth) {
-    List<MigrationInstruction> instructions = new ArrayList<MigrationInstruction>();
+  protected void collectAllActivityAvailableForMigration(ProcessDefinitionImpl processDefinition, ScopeImpl scope, List<ActivityImpl> activitiesAvailableForMigration) {
+    for (ActivityImpl activity : scope.getActivities()) {
+      if (canBeMigrated(activity, processDefinition)) {
+        activitiesAvailableForMigration.add(activity);
+        if (activity.isScope()) {
+          collectAllActivityAvailableForMigration(processDefinition, activity, activitiesAvailableForMigration);
+        }
+      }
+    }
+  }
 
-    for (ActivityImpl sourceActivity : sourceScope.getActivities()) {
-      for (ActivityImpl targetActivity : targetScope.getActivities()) {
-        if (areEqualScopes(sourceActivity, targetActivity)) {
-          instructions.add(new MigrationInstructionImpl(
-            Collections.singletonList(sourceActivity.getId()), Collections.singletonList(targetActivity.getId())));
-          instructions.addAll(generateInstructionsInScope(sourceActivity, targetActivity, allowedScopeDepth));
-        }
-        else if (areEqualActivities(sourceActivity, targetActivity)) {
-          instructions.add(new MigrationInstructionImpl(
-            Collections.singletonList(sourceActivity.getId()), Collections.singletonList(targetActivity.getId())));
-        }
-        else if (allowedScopeDepth > 0 && isScope(targetActivity)) {
-          instructions.addAll(generateInstructionsInScope(sourceScope, targetActivity, allowedScopeDepth - 1));
+  protected boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {
+    for (MigrationActivityValidator activityValidator : activityValidators) {
+      if (!activityValidator.canBeMigrated(activity, processDefinition)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  protected List<MigrationInstruction> generateInstructionsForActivities(ProcessDefinitionImpl sourceProcessDefinition, List<ActivityImpl> availableSourceActivities, ProcessDefinitionImpl targetProcessDefinition, List<ActivityImpl> availableTargetActivities) {
+    List<MigrationInstruction> migrationInstructions = new ArrayList<MigrationInstruction>();
+
+    for (ActivityImpl availableSourceActivity : availableSourceActivities) {
+      for (ActivityImpl availableTargetActivity : availableTargetActivities) {
+        MigrationInstructionImpl instruction = new MigrationInstructionImpl(availableSourceActivity.getId(), availableTargetActivity.getId());
+        if (isValidInstruction(instruction, sourceProcessDefinition, targetProcessDefinition)) {
+          migrationInstructions.add(instruction);
         }
       }
     }
 
-    return instructions;
+    return migrationInstructions;
   }
 
-  protected boolean areEqualScopes(ScopeImpl sourceScope, ScopeImpl targetScope) {
-
-    boolean areScopes = isScope(sourceScope) && isScope(targetScope);
-    boolean matchingIds = sourceScope.getId().equals(targetScope.getId());
-    boolean matchingTypes = (sourceScope == sourceScope.getProcessDefinition() && targetScope == targetScope.getProcessDefinition())
-        || (sourceScope.getActivityBehavior().getClass() == targetScope.getActivityBehavior().getClass());
-
-    return matchingIds && matchingTypes && areScopes;
-  }
-
-  protected boolean areEqualActivities(ActivityImpl sourceActivity, ActivityImpl targetActivity) {
-    boolean matchingIds = sourceActivity.getId().equals(targetActivity.getId());
-
-    boolean matchingTypes = sourceActivity.getActivityBehavior() instanceof UserTaskActivityBehavior
-        && targetActivity.getActivityBehavior() instanceof UserTaskActivityBehavior;
-
-    boolean areBothEitherScopesOrNot = isScope(sourceActivity) == isScope(targetActivity);
-
-    return matchingIds && matchingTypes && areBothEitherScopesOrNot;
-  }
-
-  protected boolean isScope(ScopeImpl scope) {
-    return scope.isScope();
+  protected boolean isValidInstruction(MigrationInstructionImpl instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
+    for (MigrationInstructionValidator instructionValidator : instructionValidators) {
+      if (!instructionValidator.isInstructionValid(instruction, sourceProcessDefinition, targetProcessDefinition)) {
+        return false;
+      }
+    }
+    return true;
   }
 
 }

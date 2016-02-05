@@ -135,7 +135,7 @@ public class MigrationPlanCreationTest {
     } catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure("thisActivityDoesNotExist", "source activity does not exist");
+        .hasFailure("thisActivityDoesNotExist", "the mapped activities are either null or not supported");
     }
   }
 
@@ -153,7 +153,7 @@ public class MigrationPlanCreationTest {
     } catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure(null, "source activity id and target activity id must not be null");
+        .hasFailure(null, "the mapped activities are either null or not supported");
     }
   }
 
@@ -171,7 +171,7 @@ public class MigrationPlanCreationTest {
     } catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure("userTask", "target activity does not exist");
+        .hasFailure("userTask", "the mapped activities are either null or not supported");
     }
   }
 
@@ -189,7 +189,7 @@ public class MigrationPlanCreationTest {
     } catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure("userTask", "source activity id and target activity id must not be null");
+        .hasFailure("userTask", "the mapped activities are either null or not supported");
     }
   }
 
@@ -226,7 +226,7 @@ public class MigrationPlanCreationTest {
     } catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure("userTask", "the source activity is of type 'org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior' but the target activity not");
+        .hasFailure("userTask", "the mapped activities are either null or not supported");
     }
   }
 
@@ -244,7 +244,7 @@ public class MigrationPlanCreationTest {
     } catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure("subProcess", "the target activity does not exist");
+        .hasFailure("subProcess", "the mapped activities are either null or not supported");
     }
   }
 
@@ -268,7 +268,7 @@ public class MigrationPlanCreationTest {
     catch (MigrationPlanValidationException e) {
       assertThat(e.getValidationReport())
         .hasFailures(1)
-        .hasFailure("userTask", "multi instance child activities are currently not supported");
+        .hasFailure("userTask", "the mapped activities are either null or not supported");
     }
   }
 

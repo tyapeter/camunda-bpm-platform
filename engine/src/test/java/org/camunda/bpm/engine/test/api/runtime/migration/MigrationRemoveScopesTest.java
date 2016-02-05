@@ -167,7 +167,7 @@ public class MigrationRemoveScopesTest {
         .done());
 
     List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
-    Assert.assertEquals(2, migratedTasks);
+    Assert.assertEquals(2, migratedTasks.size());
     for (Task migratedTask : migratedTasks) {
       assertEquals(targetProcessDefinition.getId(), migratedTask.getProcessDefinitionId());
     }
