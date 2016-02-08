@@ -38,6 +38,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
       ExecutionEntity parent = currentExecution.getParent();
       currentExecution.remove();
       parent.tryPruneLastConcurrentChild();
+      parent.forceUpdate();
     }
 
   }
@@ -48,6 +49,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     this.representativeExecution = newScopeExecution;
     if (!newScopeExecution.getNonEventScopeExecutions().isEmpty() || newScopeExecution.getActivity() != null) {
       this.representativeExecution = (ExecutionEntity) newScopeExecution.createConcurrentExecution();
+      newScopeExecution.forceUpdate();
     }
 
     representativeExecution.setActivity((PvmActivity) sourceScope);
@@ -66,6 +68,11 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     ExecutionEntity currentExecution = resolveRepresentativeExecution();
     currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
     currentExecution.setActivity((PvmActivity) targetScope);
+  }
+
+  @Override
+  public void remove() {
+    // not yet implemented since it is not needed
   }
 
   @Override

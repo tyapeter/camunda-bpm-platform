@@ -16,7 +16,6 @@ import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.migrate;
 import static org.camunda.bpm.engine.test.util.MigrationPlanValidationReportAssert.assertThat;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.impl.migration.validation.MigrationPlanValidationException;
@@ -259,7 +258,7 @@ public class MigrationPlanCreationTest {
 
     // when
     try {
-      MigrationPlan migrationPlan = rule.getRuntimeService()
+      rule.getRuntimeService()
         .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
         .mapActivities("userTask", "userTask")
         .build();

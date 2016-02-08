@@ -40,6 +40,8 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
 
   public abstract void attachState(ExecutionEntity newScopeExecution);
 
+  public abstract void remove();
+
   public void migrateDependentEntities() {
 
     if (dependentInstances != null) {

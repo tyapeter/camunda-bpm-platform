@@ -15,7 +15,6 @@ package org.camunda.bpm.engine.impl.migration.instance;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
-import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 
 /**
  * @author Thorben Lindhauer
@@ -41,6 +40,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
     if (parentExecution.isConcurrent()) {
       parentExecution.remove();
       parentScopeExecution.tryPruneLastConcurrentChild();
+      parentScopeExecution.forceUpdate();
     }
     else {
       if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
@@ -55,6 +55,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
     ExecutionEntity newParentExecution = newScopeExecution;
     if (!newScopeExecution.getNonEventScopeExecutions().isEmpty()) {
       newParentExecution = (ExecutionEntity) newScopeExecution.createConcurrentExecution();
+      newScopeExecution.forceUpdate();
     }
 
     ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
@@ -80,6 +81,30 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       currentScopeExecution.setActivity((PvmActivity) targetScope);
     }
 
+  }
+
+
+  @Override
+  public void remove() {
+    parentInstance.getChildren().remove(this);
+    for (MigratingActivityInstance child : childInstances) {
+      child.parentInstance = null;
+    }
+
+    ExecutionEntity currentExecution = resolveRepresentativeExecution();
+    ExecutionEntity parentExecution = currentExecution.getParent();
+
+    currentExecution.setActivity((PvmActivity) sourceScope);
+    currentExecution.setActivityInstanceId(activityInstance.getId());
+
+    currentExecution.deleteCascade("migration");
+
+    if (parentExecution.isConcurrent()) {
+      ExecutionEntity grandParent = parentExecution.getParent();
+      parentExecution.remove();
+      grandParent.tryPruneLastConcurrentChild();
+      grandParent.forceUpdate();
+    }
   }
 
   @Override

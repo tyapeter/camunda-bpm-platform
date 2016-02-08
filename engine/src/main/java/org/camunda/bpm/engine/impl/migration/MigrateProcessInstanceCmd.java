@@ -23,25 +23,34 @@ import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingActivityInstance;
+import org.camunda.bpm.engine.impl.migration.instance.MigratingActivityInstanceWalker;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingExecutionBranch;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingProcessInstance;
 import org.camunda.bpm.engine.impl.migration.validation.AdditionalFlowScopeValidator;
 import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidationReport;
 import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidator;
-import org.camunda.bpm.engine.impl.migration.validation.RemoveFlowScopeValidator;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.impl.tree.TreeVisitor;
-import org.camunda.bpm.engine.impl.tree.TreeWalker;
 import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
 /**
- * @author Thorben Lindhauer
+ * How migration works:
  *
+ * <ol>
+ *   <li>Validate migration instructions.
+ *   <li>Delete activity instances that are not going to be migrated, invoking execution listeners
+ *       and io mappings. This is performed in a bottom-up fashion in the activity instance tree and ensures
+ *       that the "upstream" tree is always consistent with respect to the old process definition.
+ *   <li>Migrate and create activity instances. Creation invokes execution listeners
+ *       and io mappings. This is performed in a top-down fashion in the activity instance tree and
+ *       ensures that the "upstream" tree is always consistent with respect to the new process definition.
+ *
+ * @author Thorben Lindhauer
  */
 public class MigrateProcessInstanceCmd implements Command<Void> {
 
@@ -83,9 +92,10 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     return null;
   }
 
+  /**
+   * delete unmapped instances in a bottom-up fashion (similar to deleteCascade and regular BPMN execution)
+   */
   protected void deleteUnmappedActivityInstances(MigratingProcessInstance migratingProcessInstance) {
-    // delete unmapped instances in a bottom-up fashion (similar to deleteCascade and regular BPMN execution)
-
     final Set<MigratingActivityInstance> visitedActivityInstances = new HashSet<MigratingActivityInstance>();
     Set<MigratingActivityInstance> leafInstances = collectLeafInstances(migratingProcessInstance);
 
@@ -99,38 +109,24 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
 
           visitedActivityInstances.add(currentInstance);
           if (currentInstance.getTargetScope() == null) {
-            // delete activity instance
             Set<MigratingActivityInstance> children = currentInstance.getChildren();
             MigratingActivityInstance parent = currentInstance.getParent();
-            parent.getChildren().remove(currentInstance);
 
+            // 1. detach children
             for (MigratingActivityInstance child : children) {
               child.detachState();
             }
 
-            // TODO: delete reason
-            ExecutionEntity currentFlowScopeExecution = currentInstance.resolveRepresentativeExecution();
-            currentFlowScopeExecution.setActivity((PvmActivity) currentInstance.getSourceScope());
-            currentFlowScopeExecution.setActivityInstanceId(currentInstance.getActivityInstance().getId());
+            // 2. manipulate execution tree (i.e. remove this instance)
+            currentInstance.remove();
 
-            currentFlowScopeExecution.deleteCascade(null);
-
-            ExecutionEntity parentExecution = currentFlowScopeExecution.getParent();
-
-            if (parentExecution.isConcurrent()) {
-              parentExecution.remove();
-              parentExecution.getParent().tryPruneLastConcurrentChild();
-              // TODO: force update
-            }
-
-            // reconnect parent and children
+            // 3. reconnect parent and children
             for (MigratingActivityInstance child : children) {
-              child.attachState(parent.resolveRepresentativeExecution()); // TODO: this does not yet create concurrent executions
+              child.attachState(parent.resolveRepresentativeExecution());
               parent.getChildren().add(child);
               child.setParent(parent);
             }
           }
-
         }
       });
 
@@ -138,6 +134,8 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
 
         @Override
         public boolean isFulfilled(MigratingActivityInstance element) {
+          // walk until top of instance tree is reached or until
+          // a node is reached for which we have not yet visited every child
           return element == null || !visitedActivityInstances.containsAll(element.getChildren());
         }
       });
@@ -154,18 +152,6 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     }
 
     return leafInstances;
-  }
-
-  public static class MigratingActivityInstanceWalker extends TreeWalker<MigratingActivityInstance> {
-
-    public MigratingActivityInstanceWalker(MigratingActivityInstance initialElement) {
-      super(initialElement);
-    }
-
-    @Override
-    protected MigratingActivityInstance nextElement() {
-      return currentElement.getParent();
-    }
   }
 
   protected void validateInstructions(MigratingProcessInstance migratingProcessInstance) {
@@ -185,6 +171,10 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
 
   }
 
+  /**
+   * Migrate activity instances to their new activities and process definition. Creates new
+   * scope instances as necessary.
+   */
   protected void migrateProcessInstance(MigratingProcessInstance migratingProcessInstance) {
     MigratingActivityInstance rootActivityInstance =
         migratingProcessInstance.getMigratingInstance(migratingProcessInstance.getProcessInstanceId());
@@ -241,8 +231,8 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
     // * are reused to attach activity instances to when the activity instances share a
     //   common ancestor path to the process instance
     // * are not reused when activity instances are in unrelated branches of the execution tree
-    migratingExecutionBranch.visited(migratingActivityInstance);
     migratingExecutionBranch = migratingExecutionBranch.copy();
+    migratingExecutionBranch.visited(migratingActivityInstance);
 
     for (MigratingActivityInstance childInstance : migratingActivityInstance.getChildren()) {
       migrateActivityInstance(migratingProcessInstance, migratingExecutionBranch, childInstance);

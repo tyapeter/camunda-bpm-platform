@@ -32,6 +32,8 @@ public class AdditionalFlowScopeValidator implements MigrationInstructionInstanc
     MigratingActivityInstance parentInstance = migratingProcessInstance.getMigratingInstance(activityInstance.getParentActivityInstanceId());
     ScopeImpl targetScope = migratingActivityInstance.getTargetScope();
 
+    // note: this also detects and rejects horizontal migration. In that case, the parent activity instance
+    // is migrated to a scope that is not present in this activity instance's target scope parent hierarchy
     if (parentInstance != null && targetScope != null && targetScope != targetScope.getProcessDefinition()) {
       ScopeImpl parentInstanceTargetScope = parentInstance.getTargetScope();
       ScopeImpl flowScope = targetScope.getFlowScope();

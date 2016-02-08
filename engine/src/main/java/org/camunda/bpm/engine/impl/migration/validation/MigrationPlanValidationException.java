@@ -17,6 +17,8 @@ import org.camunda.bpm.engine.BadUserRequestException;
 
 public class MigrationPlanValidationException extends BadUserRequestException {
 
+  private static final long serialVersionUID = 1L;
+
   protected MigrationPlanValidationReport validationReport;
 
   public MigrationPlanValidationException(String message, MigrationPlanValidationReport validationReport) {

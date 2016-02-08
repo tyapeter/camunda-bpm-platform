@@ -13,7 +13,6 @@
 
 package org.camunda.bpm.engine.impl.migration.validation;
 
-import org.camunda.bpm.engine.impl.migration.instance.MigratingActivityInstance;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
 
 public class MigrationPlanValidationFailure {

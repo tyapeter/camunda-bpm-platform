@@ -17,6 +17,8 @@ import org.camunda.bpm.engine.ProcessEngineException;
 
 public class MigrationInstructionInstanceValidationException extends ProcessEngineException {
 
+  private static final long serialVersionUID = 1L;
+
   protected MigrationInstructionInstanceValidationReport validationReport;
 
   public MigrationInstructionInstanceValidationException(String message, MigrationInstructionInstanceValidationReport validationReport) {

@@ -396,6 +396,47 @@ public class MigrationRemoveScopesTest {
     testHelper.assertProcessEnded(processInstance.getId());
   }
 
+  @Test
+  public void testRemoveMultipleScopes() {
+    // given
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.DOUBLE_SUBPROCESS_PROCESS);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    ProcessInstance processInstance = rule.getRuntimeService().startProcessInstanceById(sourceProcessDefinition.getId());
+    ActivityInstance activityInstance = rule.getRuntimeService().getActivityInstance(processInstance.getId());
+
+    // when
+    rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+
+    // then
+    ExecutionTree executionTree = ExecutionTree.forExecution(processInstance.getId(), rule.getProcessEngine());
+    assertThat(executionTree)
+    .matches(
+      describeExecutionTree("userTask").scope().id(processInstance.getId())
+      .done());
+
+    assertThat(executionTree).hasProcessDefinitionId(targetProcessDefinition.getId());
+
+    ActivityInstance updatedTree = rule.getRuntimeService().getActivityInstance(processInstance.getId());
+    assertThat(updatedTree).hasStructure(
+        describeActivityInstanceTree(targetProcessDefinition.getId())
+          .activity("userTask", testHelper.getSingleActivityInstance(activityInstance, "userTask").getId())
+        .done());
+
+    Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
+    Assert.assertNotNull(migratedTask);
+    assertEquals(targetProcessDefinition.getId(), migratedTask.getProcessDefinitionId());
+
+    // and it is possible to successfully complete the migrated instance
+    rule.getTaskService().complete(migratedTask.getId());
+    testHelper.assertProcessEnded(processInstance.getId());
+  }
+
 
   @Test
   public void testEndListenerInvocationForRemovedScope() {
@@ -434,5 +475,4 @@ public class MigrationRemoveScopesTest {
     DelegateEvent.clearEvents();
   }
 
-  // TODO: add some forceUpdate() statements where we call tryPruneLastConcurrentChild and createConcurrentExecution
 }
