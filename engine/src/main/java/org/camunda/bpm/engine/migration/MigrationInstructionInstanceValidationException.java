@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.impl.migration.validation;
+package org.camunda.bpm.engine.migration;
 
 import org.camunda.bpm.engine.ProcessEngineException;
+import org.camunda.bpm.engine.migration.MigrationInstructionInstanceValidationReport;
 
 public class MigrationInstructionInstanceValidationException extends ProcessEngineException {
 
@@ -26,6 +27,9 @@ public class MigrationInstructionInstanceValidationException extends ProcessEngi
     this.validationReport = validationReport;
   }
 
+  /**
+   * A report with all instructions that cannot be applied to the given process instance
+   */
   public MigrationInstructionInstanceValidationReport getValidationReport() {
     return validationReport;
   }

@@ -64,6 +64,7 @@ public class MigratingProcessInstance {
   }
 
   protected MigratingActivityInstance addActivityInstance(
+      MigrationInstruction migrationInstruction,
       ActivityInstance activityInstance,
       ScopeImpl sourceScope,
       ScopeImpl targetScope,
@@ -76,6 +77,7 @@ public class MigratingProcessInstance {
       migratingInstance = new MigratingNonScopeActivityInstance();
     }
 
+    migratingInstance.migrationInstruction = migrationInstruction;
     migratingInstance.activityInstance = activityInstance;
     migratingInstance.sourceScope = sourceScope;
     migratingInstance.targetScope = targetScope;
@@ -84,6 +86,7 @@ public class MigratingProcessInstance {
 
     return migratingInstance;
   }
+
 
   /**
    * Returns a {@link MigratingProcessInstance}, a data structure that contains meta-data for the activity
@@ -106,6 +109,7 @@ public class MigratingProcessInstance {
 
     // always create an entry for the root activity instance because it is implicitly always migrated
     migratingProcessInstance.addActivityInstance(
+        null,
         activityInstanceTree,
         sourceProcessDefinition,
         targetProcessDefinition,
@@ -134,6 +138,7 @@ public class MigratingProcessInstance {
       }
 
       MigratingActivityInstance migratingInstance = migratingProcessInstance.addActivityInstance(
+        applyingInstruction,
         instance,
         sourceActivity,
         targetActivity,

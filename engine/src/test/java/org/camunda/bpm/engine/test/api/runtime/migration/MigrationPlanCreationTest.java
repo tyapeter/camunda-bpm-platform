@@ -18,8 +18,8 @@ import static org.camunda.bpm.engine.test.util.MigrationPlanValidationReportAsse
 import static org.junit.Assert.assertThat;
 
 import org.camunda.bpm.engine.BadUserRequestException;
-import org.camunda.bpm.engine.impl.migration.validation.MigrationPlanValidationException;
 import org.camunda.bpm.engine.migration.MigrationPlan;
+import org.camunda.bpm.engine.migration.MigrationPlanValidationException;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -248,7 +248,7 @@ public class MigrationPlanCreationTest {
   }
 
   @Test
-  public void testMapEqualActivitiesWhichParallelMultiInstance() {
+  public void testMapEqualActivitiesWithParallelMultiInstance() {
     // given
     BpmnModelInstance testProcess = ProcessModels.ONE_TASK_PROCESS.clone()
       .<UserTask>getModelElementById("userTask").builder()

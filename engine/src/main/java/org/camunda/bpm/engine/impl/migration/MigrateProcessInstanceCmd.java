@@ -27,7 +27,7 @@ import org.camunda.bpm.engine.impl.migration.instance.MigratingActivityInstanceW
 import org.camunda.bpm.engine.impl.migration.instance.MigratingExecutionBranch;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingProcessInstance;
 import org.camunda.bpm.engine.impl.migration.validation.AdditionalFlowScopeValidator;
-import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidationReport;
+import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidationReportImpl;
 import org.camunda.bpm.engine.impl.migration.validation.MigrationInstructionInstanceValidator;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
@@ -157,7 +157,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
   protected void validateInstructions(MigratingProcessInstance migratingProcessInstance) {
 
     List<MigrationInstructionInstanceValidator> validators = Arrays.<MigrationInstructionInstanceValidator>asList(new AdditionalFlowScopeValidator());
-    MigrationInstructionInstanceValidationReport validationReport = new MigrationInstructionInstanceValidationReport(migratingProcessInstance);
+    MigrationInstructionInstanceValidationReportImpl validationReport = new MigrationInstructionInstanceValidationReportImpl(migratingProcessInstance);
 
     for (MigratingActivityInstance migratingActivityInstance : migratingProcessInstance.getMigratingActivityInstances()) {
       for (MigrationInstructionInstanceValidator validator : validators) {

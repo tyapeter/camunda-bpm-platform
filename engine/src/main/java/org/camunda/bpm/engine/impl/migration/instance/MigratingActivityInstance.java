@@ -18,6 +18,7 @@ import java.util.Set;
 
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
+import org.camunda.bpm.engine.migration.MigrationInstruction;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
 /**
@@ -25,6 +26,7 @@ import org.camunda.bpm.engine.runtime.ActivityInstance;
  *
  */
 public abstract class MigratingActivityInstance implements MigratingInstance {
+  protected MigrationInstruction migrationInstruction;
   protected ActivityInstance activityInstance;
   // scope execution for actual scopes,
   // concurrent execution in case of non-scope activity with expanded tree
@@ -86,6 +88,10 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
 
   public void setParent(MigratingActivityInstance parentInstance) {
     this.parentInstance = parentInstance;
+  }
+
+  public MigrationInstruction getMigrationInstruction() {
+    return migrationInstruction;
   }
 
 }

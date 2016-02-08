@@ -27,7 +27,7 @@ public class AdditionalFlowScopeValidator implements MigrationInstructionInstanc
 
   @Override
   public void validate(MigratingProcessInstance migratingProcessInstance, MigratingActivityInstance migratingActivityInstance,
-      MigrationInstructionInstanceValidationReport validationReport) {
+      MigrationInstructionInstanceValidationReportImpl validationReport) {
     ActivityInstance activityInstance = migratingActivityInstance.getActivityInstance();
     MigratingActivityInstance parentInstance = migratingProcessInstance.getMigratingInstance(activityInstance.getParentActivityInstanceId());
     ScopeImpl targetScope = migratingActivityInstance.getTargetScope();

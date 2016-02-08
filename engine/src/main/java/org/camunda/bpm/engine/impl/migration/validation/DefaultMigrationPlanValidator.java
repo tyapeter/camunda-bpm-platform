@@ -27,7 +27,7 @@ import org.camunda.bpm.engine.migration.MigrationPlan;
 public class DefaultMigrationPlanValidator implements MigrationPlanValidator {
 
   public void validateMigrationPlan(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition,
-                                    MigrationPlan migrationPlan, MigrationPlanValidationReport validationReport) {
+                                    MigrationPlan migrationPlan, MigrationPlanValidationReportImpl validationReport) {
 
     Set<String> alreadyMappedSourceActivityIds = new HashSet<String>();
 

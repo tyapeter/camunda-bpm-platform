@@ -11,9 +11,10 @@
  * limitations under the License.
  */
 
-package org.camunda.bpm.engine.impl.migration.validation;
+package org.camunda.bpm.engine.migration;
 
 import org.camunda.bpm.engine.BadUserRequestException;
+import org.camunda.bpm.engine.migration.MigrationPlanValidationReport;
 
 public class MigrationPlanValidationException extends BadUserRequestException {
 
@@ -26,6 +27,9 @@ public class MigrationPlanValidationException extends BadUserRequestException {
     this.validationReport = validationReport;
   }
 
+  /**
+   * A report with all invalid instructions
+   */
   public MigrationPlanValidationReport getValidationReport() {
     return validationReport;
   }
