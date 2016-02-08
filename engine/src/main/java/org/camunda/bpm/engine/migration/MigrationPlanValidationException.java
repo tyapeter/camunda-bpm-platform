@@ -16,6 +16,12 @@ package org.camunda.bpm.engine.migration;
 import org.camunda.bpm.engine.BadUserRequestException;
 import org.camunda.bpm.engine.migration.MigrationPlanValidationReport;
 
+/**
+ * Thrown if a migration plan is not valid, e.g. because it contains instructions that can in general not be executed.
+ * Contains a {@link MigrationPlanValidationReport} that contains the details for all validation erorrs.
+ *
+ * @author Thorben Lindhauer
+ */
 public class MigrationPlanValidationException extends BadUserRequestException {
 
   private static final long serialVersionUID = 1L;

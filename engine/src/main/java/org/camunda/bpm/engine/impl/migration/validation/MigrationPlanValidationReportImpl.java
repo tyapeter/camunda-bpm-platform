@@ -38,7 +38,6 @@ public class MigrationPlanValidationReportImpl implements MigrationPlanValidatio
     return !validationFailures.isEmpty();
   }
 
-  @Override
   public MigrationPlan getMigrationPlan() {
     return migrationPlan;
   }

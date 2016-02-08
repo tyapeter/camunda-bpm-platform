@@ -77,6 +77,10 @@ public class ActivityInstanceAssert {
             }
           }
 
+          if (expectedInstance.getChildTransitionInstances().length != actualInstance.getChildTransitionInstances().length) {
+            return false;
+          }
+
           List<TransitionInstance> unmatchedTransitionInstances =
               new ArrayList<TransitionInstance>(Arrays.asList(expectedInstance.getChildTransitionInstances()));
           for (TransitionInstance child : actualInstance.getChildTransitionInstances()) {
@@ -139,7 +143,7 @@ public class ActivityInstanceAssert {
     }
 
     public ActivityInstanceTreeBuilder beginMiBody(String activityId) {
-      return beginMiBody(activityId + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX, null);
+      return beginScope(activityId + BpmnParse.MULTI_INSTANCE_BODY_ID_SUFFIX, null);
     }
 
     public ActivityInstanceTreeBuilder beginMiBody(String activityId, String activityInstanceId) {

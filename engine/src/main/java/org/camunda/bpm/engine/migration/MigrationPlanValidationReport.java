@@ -16,7 +16,6 @@ import java.util.List;
 
 /**
  * @author Thorben Lindhauer
- *
  */
 public interface MigrationPlanValidationReport {
 
@@ -24,10 +23,5 @@ public interface MigrationPlanValidationReport {
    * @return all detected failures that prevent applying this migration plan
    */
   List<MigrationPlanValidationFailure> getValidationFailures();
-
-  /**
-   * @return the migration plan that cannot be validated
-   */
-  MigrationPlan getMigrationPlan();
 
 }
