@@ -430,4 +430,23 @@ public class MigrationPlanGenerationTest {
       );
   }
 
+  @Test
+  public void testMapEqualActivitiesIgnoreUnsupportedActivities() {
+    // given
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.UNSUPPORTED_ACTIVITIES);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.UNSUPPORTED_ACTIVITIES);
+
+    // when
+    MigrationPlan migrationPlan = rule.getRuntimeService()
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    // then
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasEmptyInstructions();
+  }
+
 }
