@@ -13,43 +13,24 @@
 package org.camunda.bpm.qa.performance.engine.junit;
 
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
-import org.camunda.bpm.qa.performance.engine.framework.PerfTestBuilder;
-import org.camunda.bpm.qa.performance.engine.framework.PerfTestConfiguration;
 import org.junit.Before;
 import org.junit.Rule;
 
 /**
- * <p>Base class for implementing a process engine performance test</p>
- *
- * @author Daniel Meyer, Ingo Richtsmeier
+ * @author Daniel Meyer
  *
  */
-public abstract class ProcessEnginePerformanceTestCase {
+public class ProcessEngineQueryPerformanceTestCase {
 
   @Rule
   public ProcessEngineRule processEngineRule = new ProcessEngineRule(PerfTestProcessEngine.getInstance());
 
-  @Rule
-  public PerfTestConfigurationRule testConfigurationRule = new PerfTestConfigurationRule();
-
-  @Rule
-  public PerfTestResultRecorderRule resultRecorderRule = new PerfTestResultRecorderRule();
-
   protected ProcessEngine engine;
-  protected TaskService taskService;
 
   @Before
   public void setup() {
     engine = processEngineRule.getProcessEngine();
-    taskService = engine.getTaskService();
-  }
-
-  protected PerfTestBuilder performanceTest() {
-    PerfTestConfiguration configuration = testConfigurationRule.getPerformanceTestConfiguration();
-    configuration.setPlatform("camunda BPM");
-    return new PerfTestBuilder(configuration, resultRecorderRule);
   }
 
 }

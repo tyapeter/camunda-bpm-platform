@@ -96,7 +96,7 @@ public class ClassPathProcessApplicationScanner implements ProcessApplicationSca
     }
   }
 
-  protected void scanUrl(URL url, String paResourceRootPath, boolean isPaLocal, String[] additionalResourceSuffixes, Map<String, byte[]> resourceMap) {
+  public void scanUrl(URL url, String paResourceRootPath, boolean isPaLocal, String[] additionalResourceSuffixes, Map<String, byte[]> resourceMap) {
 
     String urlPath = url.toExternalForm();
 
@@ -137,7 +137,7 @@ public class ClassPathProcessApplicationScanner implements ProcessApplicationSca
 
   }
 
-  protected void scanPath(String urlPath, String paResourceRootPath, boolean isPaLocal, String[] additionalResourceSuffixes, Map<String, byte[]> resourceMap) {
+  public void scanPath(String urlPath, String paResourceRootPath, boolean isPaLocal, String[] additionalResourceSuffixes, Map<String, byte[]> resourceMap) {
     if (urlPath.startsWith("file:")) {
       urlPath = urlPath.substring(5);
     }
