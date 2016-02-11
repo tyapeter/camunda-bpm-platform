@@ -17,7 +17,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
+import org.camunda.bpm.engine.impl.context.Context;
+import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -42,6 +45,31 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
   public abstract void detachState();
 
   public abstract void attachState(ExecutionEntity newScopeExecution);
+
+  protected void removeEventSubscriptions(ExecutionEntity currentExecution) {
+    for (EventSubscriptionEntity eventSubscription : currentExecution.getEventSubscriptions()) {
+      if (isEventSubscriptionForSourceScope(eventSubscription)) {
+        eventSubscription.delete();
+      }
+    }
+  }
+
+  protected boolean isEventSubscriptionForSourceScope(EventSubscriptionEntity eventSubscription) {
+    ActivityImpl eventSubscriptionActivity = sourceScope.getProcessDefinition().findActivity(eventSubscription.getActivityId());
+    if (eventSubscriptionActivity != null) {
+      ScopeImpl eventScope = eventSubscriptionActivity.getEventScope();
+      return sourceScope != null && sourceScope.getId().equals(eventScope.getId());
+    }
+    else {
+      return false;
+    }
+  }
+
+  protected void removeTimerJobs(ExecutionEntity currentExecution) {
+    Context.getCommandContext()
+      .getJobManager()
+      .cancelTimers(currentExecution);
+  }
 
   public abstract void remove();
 

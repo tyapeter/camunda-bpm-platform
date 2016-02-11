@@ -26,7 +26,7 @@ public class MigrationInstructionValidators {
 
   public static final MigrationInstructionValidator ACTIVITIES_CAN_BE_MIGRATED = new MigrationInstructionValidator() {
     public final List<MigrationActivityValidator> sourceActivityValidators = Arrays.asList(
-      MigrationActivityValidators.SUPPORTED_ACTIVITY, MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD, MigrationActivityValidators.HAS_NO_BOUNDARY_EVENT
+      MigrationActivityValidators.SUPPORTED_ACTIVITY, MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD
     );
 
     public final List<MigrationActivityValidator> targetActivityValidators = Arrays.asList(
@@ -35,7 +35,8 @@ public class MigrationInstructionValidators {
 
     public boolean isInstructionValid(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
       return canActivitiesBeMigrated(instruction.getSourceActivityIds(), sourceProcessDefinition, sourceActivityValidators) &&
-        canActivitiesBeMigrated(instruction.getTargetActivityIds(), targetProcessDefinition, targetActivityValidators);
+        canActivitiesBeMigrated(instruction.getTargetActivityIds(), targetProcessDefinition, targetActivityValidators) &&
+        maxOneActivityHasABoundaryEvent(instruction, sourceProcessDefinition, targetProcessDefinition);
     }
 
     protected boolean canActivitiesBeMigrated(List<String> activityIds, ProcessDefinitionImpl processDefinition, List<MigrationActivityValidator> activityValidators) {
@@ -54,6 +55,14 @@ public class MigrationInstructionValidators {
         }
       }
       return true;
+    }
+
+    protected boolean maxOneActivityHasABoundaryEvent(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
+      String sourceActivityId = instruction.getSourceActivityIds().get(0);
+      String targetActivityId = instruction.getTargetActivityIds().get(0);
+      boolean sourceHasNoBoundaryEvent = MigrationActivityValidators.HAS_NO_BOUNDARY_EVENT.canBeMigrated(sourceActivityId, sourceProcessDefinition);
+      boolean targetHasNoBoundaryEvent = MigrationActivityValidators.HAS_NO_BOUNDARY_EVENT.canBeMigrated(targetActivityId, targetProcessDefinition);
+      return sourceHasNoBoundaryEvent || targetHasNoBoundaryEvent;
     }
 
   };

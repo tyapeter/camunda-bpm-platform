@@ -12,7 +12,11 @@
  */
 package org.camunda.bpm.engine.impl.migration.instance;
 
+import java.util.List;
+
+import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 
@@ -69,6 +73,9 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     ExecutionEntity currentExecution = resolveRepresentativeExecution();
     currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
     currentExecution.setActivity((PvmActivity) targetScope);
+
+    removeEventSubscriptions(currentExecution);
+    removeTimerJobs(currentExecution);
 
     currentExecution = createNewScopeIfNeeded(currentExecution);
 

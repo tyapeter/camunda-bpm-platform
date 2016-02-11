@@ -12,9 +12,6 @@
  */
 package org.camunda.bpm.engine.impl.migration.instance;
 
-import java.util.List;
-
-import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
@@ -84,6 +81,11 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       currentScopeExecution.setActivity((PvmActivity) targetScope);
     }
 
+    currentScopeExecution = removeExecutionIfNotScopeAnymore(currentScopeExecution);
+
+    removeEventSubscriptions(currentScopeExecution);
+    removeTimerJobs(currentScopeExecution);
+
     createMissingEventSubscriptions(currentScopeExecution);
     createMissingTimerJobs(currentScopeExecution);
 
@@ -113,6 +115,29 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       grandParent.tryPruneLastConcurrentChild();
       grandParent.forceUpdate();
     }
+  }
+
+  protected ExecutionEntity removeExecutionIfNotScopeAnymore(ExecutionEntity currentScopeExecution) {
+    if (!targetScope.isScope()) {
+      for (MigratingInstance dependentInstance : dependentInstances) {
+        dependentInstance.detachState();
+      }
+
+      ExecutionEntity parentExecution = currentScopeExecution.getParent();
+
+      parentExecution.setActivity(currentScopeExecution.getActivity());
+      parentExecution.setActivityInstanceId(currentScopeExecution.getActivityInstanceId());
+
+      currentScopeExecution.deleteCascade("migration");
+      currentScopeExecution = parentExecution;
+
+      representativeExecution = currentScopeExecution;
+      for (MigratingInstance dependentInstance : dependentInstances) {
+        dependentInstance.attachState(currentScopeExecution);
+      }
+    }
+
+    return currentScopeExecution;
   }
 
   protected boolean isLeafActivity() {

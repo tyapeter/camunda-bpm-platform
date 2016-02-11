@@ -1089,7 +1089,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask", testHelper.getSingleActivityInstance(originalActivityTree, "userTask").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
@@ -1154,7 +1154,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask", testHelper.getSingleActivityInstance(originalActivityTree, "userTask").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
@@ -1224,7 +1224,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask2", testHelper.getSingleActivityInstance(originalActivityTree, "userTask2").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask1", "userTask2");
@@ -1296,7 +1296,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask2", testHelper.getSingleActivityInstance(originalActivityTree, "userTask2").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask1", "userTask2");
@@ -1364,7 +1364,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask", testHelper.getSingleActivityInstance(originalActivityTree, "userTask").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
@@ -1433,7 +1433,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask", testHelper.getSingleActivityInstance(originalActivityTree, "userTask").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
@@ -1510,7 +1510,7 @@ public class MigrationAddBoundaryEventsTest {
         .activity("userTask2", testHelper.getSingleActivityInstance(originalActivityTree, "userTask2").getId())
         .done());
 
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask1", "userTask2");
@@ -1588,7 +1588,7 @@ public class MigrationAddBoundaryEventsTest {
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
-    assertTimerJobExsits();
+    assertTimerJobExists();
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
@@ -1722,18 +1722,18 @@ public class MigrationAddBoundaryEventsTest {
 
   protected EventSubscription assertAndGetEventSubscription(String eventName) {
     EventSubscription eventSubscription = runtimeService.createEventSubscriptionQuery().eventName(eventName).singleResult();
-    assertNotNull(eventSubscription);
+    assertNotNull("Expected event subscription for event name: " + eventName, eventSubscription);
     return eventSubscription;
   }
 
-  protected void assertTimerJobExsits() {
+  protected void assertTimerJobExists() {
     Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).timers().singleResult();
-    assertNotNull(job);
+    assertNotNull("Expected a timer job to exist", job);
   }
 
   protected void triggerTimerAndCompleteTasks(String... taskKeys) {
     Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).timers().singleResult();
-    assertNotNull(job);
+    assertNotNull("Expected a timer job to exist", job);
     managementService.executeJob(job.getId());
     completeTasks(taskKeys);
   }
