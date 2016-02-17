@@ -81,10 +81,10 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       currentScopeExecution.setActivity((PvmActivity) targetScope);
     }
 
-    currentScopeExecution = removeExecutionIfNotScopeAnymore(currentScopeExecution);
-
     removeEventSubscriptions(currentScopeExecution);
     removeTimerJobs(currentScopeExecution);
+
+    currentScopeExecution = removeExecutionIfNotScopeAnymore(currentScopeExecution);
 
     createMissingEventSubscriptions(currentScopeExecution);
     createMissingTimerJobs(currentScopeExecution);
@@ -128,7 +128,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       parentExecution.setActivity(currentScopeExecution.getActivity());
       parentExecution.setActivityInstanceId(currentScopeExecution.getActivityInstanceId());
 
-      currentScopeExecution.deleteCascade("migration");
+      currentScopeExecution.remove();
       currentScopeExecution = parentExecution;
 
       representativeExecution = currentScopeExecution;
