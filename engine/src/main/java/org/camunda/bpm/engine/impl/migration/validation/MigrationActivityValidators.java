@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.camunda.bpm.engine.impl.bpmn.behavior.BoundaryEventActivityBehavior;
+import org.camunda.bpm.engine.impl.bpmn.behavior.CancelBoundaryEventActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.MultiInstanceActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.SubProcessActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
@@ -32,9 +34,11 @@ public class MigrationActivityValidators {
   // Validators
 
   public static final MigrationActivityValidator SUPPORTED_ACTIVITY = new AbstractMigrationActivityValidator() {
+
+    // TODO: Do something better here
     @SuppressWarnings("unchecked")
     public final Set<Class<? extends ActivityBehavior>> SUPPORTED_ACTIVITY_BEHAVIORS = new HashSet<Class<? extends ActivityBehavior>>(
-      Arrays.asList(SubProcessActivityBehavior.class, UserTaskActivityBehavior.class)
+      Arrays.asList(SubProcessActivityBehavior.class, UserTaskActivityBehavior.class, BoundaryEventActivityBehavior.class, CancelBoundaryEventActivityBehavior.class)
     );
 
     public boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {

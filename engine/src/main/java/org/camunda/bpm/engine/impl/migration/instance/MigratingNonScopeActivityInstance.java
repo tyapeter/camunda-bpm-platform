@@ -12,13 +12,8 @@
  */
 package org.camunda.bpm.engine.impl.migration.instance;
 
-import java.util.List;
-
-import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.pvm.PvmActivity;
-import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 
 /**
  * @author Thorben Lindhauer
@@ -33,10 +28,8 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     currentExecution.setActivity(null);
     currentExecution.leaveActivityInstance();
 
-    if (dependentInstances != null) {
-      for (MigratingInstance dependentInstance : dependentInstances) {
-        dependentInstance.detachState();
-      }
+    for (MigratingInstance dependentInstance : migratingDependentInstances) {
+      dependentInstance.detachState();
     }
 
     if (!currentExecution.isScope()) {
@@ -60,10 +53,8 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     representativeExecution.setActivity((PvmActivity) sourceScope);
     representativeExecution.setActivityInstanceId(activityInstance.getId());
 
-    if (dependentInstances != null) {
-      for (MigratingInstance dependentInstance : dependentInstances) {
-        dependentInstance.attachState(representativeExecution);
-      }
+    for (MigratingInstance dependentInstance : migratingDependentInstances) {
+      dependentInstance.attachState(representativeExecution);
     }
   }
 
@@ -74,18 +65,16 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
     currentExecution.setActivity((PvmActivity) targetScope);
 
-    removeEventSubscriptions(currentExecution);
     removeTimerJobs(currentExecution);
 
     currentExecution = createNewScopeIfNeeded(currentExecution);
 
-    createMissingEventSubscriptions(currentExecution);
     createMissingTimerJobs(currentExecution);
   }
 
   protected ExecutionEntity createNewScopeIfNeeded(ExecutionEntity currentExecution) {
     if (targetScope.isScope()) {
-      for (MigratingInstance dependentInstance : dependentInstances) {
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
         dependentInstance.detachState();
       }
 
@@ -98,7 +87,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
       }
 
       representativeExecution = currentExecution;
-      for (MigratingInstance dependentInstance : dependentInstances) {
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
         dependentInstance.attachState(currentExecution);
       }
     }

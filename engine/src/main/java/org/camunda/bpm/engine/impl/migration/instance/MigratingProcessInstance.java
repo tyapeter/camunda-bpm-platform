@@ -22,9 +22,11 @@ import java.util.Set;
 import org.camunda.bpm.engine.impl.ActivityExecutionTreeMapping;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
+import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
 import org.camunda.bpm.engine.impl.cmd.GetActivityInstanceCmd;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.migration.MigrationLogger;
+import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
@@ -117,6 +119,7 @@ public class MigratingProcessInstance {
     activityInstances.remove(activityInstanceTree);
 
     Map<String, List<MigrationInstruction>> organizedInstructions = organizeInstructionsBySourceScope(migrationPlan);
+    Map<String, List<MigrationInstruction>> instructionsBySourceEventScope = organizeInstructionsBySourceEventScope(migrationPlan, sourceProcessDefinition);
 
     for (ActivityInstance instance : activityInstances) {
       ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(instance.getActivityId());
@@ -146,8 +149,35 @@ public class MigratingProcessInstance {
 
       if (sourceActivity.getActivityBehavior() instanceof UserTaskActivityBehavior) {
         List<TaskEntity> tasks = migratingInstance.representativeExecution.getTasks();
-        migratingInstance.addDependentInstance(new MigratingTaskInstance(tasks.get(0), migratingInstance));
+        migratingInstance.addMigratingDependentInstance(new MigratingTaskInstance(tasks.get(0), migratingInstance));
       }
+
+      List<MigrationInstruction> eventScopeInstructions = instructionsBySourceEventScope.get(sourceActivity.getId());
+      ExecutionEntity representativeExecution = migratingInstance.representativeExecution;
+
+      if (migratingInstance.migrates()) {
+        Map<String, EventSubscriptionDeclaration> declarationsForTargetScope = new HashMap<String, EventSubscriptionDeclaration>();
+        for (EventSubscriptionDeclaration eventSubscriptionDeclaration : EventSubscriptionDeclaration.getDeclarationsForScope(migratingInstance.getTargetScope())) {
+          declarationsForTargetScope.put(eventSubscriptionDeclaration.getActivityId(), eventSubscriptionDeclaration);
+        }
+        for (EventSubscriptionEntity eventSubscriptionEntity : representativeExecution.getEventSubscriptions()) {
+          List<MigrationInstruction> migrationInstructions = organizedInstructions.get(eventSubscriptionEntity.getActivityId());
+          if (migrationInstructions != null && !migrationInstructions.isEmpty()) {
+            MigrationInstruction eventHandlerInstruction = migrationInstructions.get(0);
+            String targetActivityId = eventHandlerInstruction.getTargetActivityIds().get(0);
+            declarationsForTargetScope.remove(targetActivityId);
+            ActivityImpl eventHandlerActivity = targetProcessDefinition.findActivity(targetActivityId);
+            migratingInstance.addMigratingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscriptionEntity, eventHandlerActivity));
+          }
+          else {
+            migratingInstance.addRemovingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscriptionEntity, null));
+          }
+        }
+        for (EventSubscriptionDeclaration eventSubscriptionDeclaration : declarationsForTargetScope.values()) {
+          migratingInstance.addEmergingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscriptionDeclaration));
+        }
+      }
+
     }
 
     if (!unmappedLeafInstances.isEmpty()) {
@@ -176,6 +206,21 @@ public class MigratingProcessInstance {
 
     for (MigrationInstruction instruction : migrationPlan.getInstructions()) {
       CollectionUtil.addToMapOfLists(organizedInstructions, instruction.getSourceActivityIds().get(0), instruction);
+    }
+
+    return organizedInstructions;
+  }
+
+  protected static Map<String, List<MigrationInstruction>> organizeInstructionsBySourceEventScope(MigrationPlan migrationPlan, ProcessDefinitionImpl sourceProcessDefinition) {
+    Map<String, List<MigrationInstruction>> organizedInstructions = new HashMap<String, List<MigrationInstruction>>();
+
+    for (MigrationInstruction instruction : migrationPlan.getInstructions()) {
+      String sourceActivityId = instruction.getSourceActivityIds().get(0);
+      ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(sourceActivityId);
+      ScopeImpl eventScope = sourceActivity.getEventScope();
+      if (eventScope != null) {
+        CollectionUtil.addToMapOfLists(organizedInstructions, eventScope.getId(), instruction);
+      }
     }
 
     return organizedInstructions;

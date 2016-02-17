@@ -111,7 +111,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
         public void visit(MigratingActivityInstance currentInstance) {
 
           visitedActivityInstances.add(currentInstance);
-          if (currentInstance.getTargetScope() == null) {
+          if (!currentInstance.migrates()) {
             Set<MigratingActivityInstance> children = currentInstance.getChildren();
             MigratingActivityInstance parent = currentInstance.getParent();
 
@@ -129,6 +129,9 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
               parent.getChildren().add(child);
               child.setParent(parent);
             }
+          }
+          else {
+            currentInstance.removeUnmappedDependentInstances();
           }
         }
       });
@@ -251,7 +254,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       migrateActivityInstance(migratingProcessInstance, migratingExecutionBranch, childInstance);
     }
 
-  }
+}
 
   /**
    * Returns a list of flow scopes from the given scope until a scope is reached that is already present in the given

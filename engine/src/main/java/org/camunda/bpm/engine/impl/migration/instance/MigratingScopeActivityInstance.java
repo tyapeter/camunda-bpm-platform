@@ -81,12 +81,10 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       currentScopeExecution.setActivity((PvmActivity) targetScope);
     }
 
-    removeEventSubscriptions(currentScopeExecution);
     removeTimerJobs(currentScopeExecution);
 
     currentScopeExecution = removeExecutionIfNotScopeAnymore(currentScopeExecution);
 
-    createMissingEventSubscriptions(currentScopeExecution);
     createMissingTimerJobs(currentScopeExecution);
 
     if (!isLeafActivity()) {
@@ -119,7 +117,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
 
   protected ExecutionEntity removeExecutionIfNotScopeAnymore(ExecutionEntity currentScopeExecution) {
     if (!targetScope.isScope()) {
-      for (MigratingInstance dependentInstance : dependentInstances) {
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
         dependentInstance.detachState();
       }
 
@@ -132,7 +130,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       currentScopeExecution = parentExecution;
 
       representativeExecution = currentScopeExecution;
-      for (MigratingInstance dependentInstance : dependentInstances) {
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
         dependentInstance.attachState(currentScopeExecution);
       }
     }

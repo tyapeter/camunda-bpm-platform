@@ -13,14 +13,14 @@
 package org.camunda.bpm.engine.impl.migration.instance;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
 import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
-import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -29,13 +29,18 @@ import org.camunda.bpm.engine.runtime.ActivityInstance;
  * @author Thorben Lindhauer
  *
  */
-public abstract class MigratingActivityInstance implements MigratingInstance {
+public abstract class MigratingActivityInstance implements MigratingInstance, RemovingInstance {
+
   protected MigrationInstruction migrationInstruction;
   protected ActivityInstance activityInstance;
   // scope execution for actual scopes,
   // concurrent execution in case of non-scope activity with expanded tree
   protected ExecutionEntity representativeExecution;
-  protected List<MigratingInstance> dependentInstances;
+
+  protected List<RemovingInstance> removingDependentInstances = new ArrayList<RemovingInstance>();
+  protected List<MigratingInstance> migratingDependentInstances = new ArrayList<MigratingInstance>();
+  protected List<EmergingInstance> emergingDependentInstances = new ArrayList<EmergingInstance>();
+
   protected ScopeImpl sourceScope;
   protected ScopeImpl targetScope;
 
@@ -46,58 +51,36 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
 
   public abstract void attachState(ExecutionEntity newScopeExecution);
 
-  protected void removeEventSubscriptions(ExecutionEntity currentExecution) {
-    for (EventSubscriptionEntity eventSubscription : currentExecution.getEventSubscriptions()) {
-      if (isEventSubscriptionForSourceScope(eventSubscription)) {
-        eventSubscription.delete();
-      }
-    }
-  }
-
-  protected boolean isEventSubscriptionForSourceScope(EventSubscriptionEntity eventSubscription) {
-    ActivityImpl eventSubscriptionActivity = sourceScope.getProcessDefinition().findActivity(eventSubscription.getActivityId());
-    if (eventSubscriptionActivity != null) {
-      ScopeImpl eventScope = eventSubscriptionActivity.getEventScope();
-      return sourceScope != null && sourceScope.getId().equals(eventScope.getId());
-    }
-    else {
-      return false;
-    }
-  }
-
   protected void removeTimerJobs(ExecutionEntity currentExecution) {
     Context.getCommandContext()
       .getJobManager()
       .cancelTimers(currentExecution);
   }
 
-  public abstract void remove();
-
   public void migrateDependentEntities() {
+    for (MigratingInstance migratingInstance : migratingDependentInstances) {
+      migratingInstance.migrateState();
+      migratingInstance.migrateDependentEntities();
+    }
 
-    if (dependentInstances != null) {
-      for (MigratingInstance dependentInstance : dependentInstances) {
-        dependentInstance.migrateState();
-        dependentInstance.migrateDependentEntities();
-      }
+    ExecutionEntity representativeExecution = resolveRepresentativeExecution();
+    for (EmergingInstance emergingInstance : emergingDependentInstances) {
+      emergingInstance.create(representativeExecution);
     }
   }
 
   public abstract ExecutionEntity resolveRepresentativeExecution();
 
-  public void addDependentInstance(MigratingInstance migratingInstance) {
-    if (dependentInstances == null) {
-      dependentInstances = new ArrayList<MigratingInstance>();
-    }
-
-    dependentInstances.add(migratingInstance);
+  public void addMigratingDependentInstance(MigratingInstance migratingInstance) {
+    migratingDependentInstances.add(migratingInstance);
   }
 
-  protected void createMissingEventSubscriptions(ExecutionEntity currentScopeExecution) {
-    List<EventSubscriptionDeclaration> eventSubscriptionDeclarations = EventSubscriptionDeclaration.getDeclarationsForScope(targetScope);
-    for (EventSubscriptionDeclaration eventSubscriptionDeclaration : eventSubscriptionDeclarations) {
-      eventSubscriptionDeclaration.createSubscription(currentScopeExecution);
-    }
+  public void addRemovingDependentInstance(RemovingInstance removingInstance) {
+    removingDependentInstances.add(removingInstance);
+  }
+
+  public void addEmergingDependentInstance(EmergingInstance emergingInstance) {
+    emergingDependentInstances.add(emergingInstance);
   }
 
   protected void createMissingTimerJobs(ExecutionEntity currentScopeExecution) {
@@ -132,4 +115,16 @@ public abstract class MigratingActivityInstance implements MigratingInstance {
     return migrationInstruction;
   }
 
+  public boolean migrates() {
+    return targetScope != null;
+  }
+
+  public void removeUnmappedDependentInstances() {
+    for (RemovingInstance removingInstance : removingDependentInstances) {
+      removingInstance.remove();
+    }
+  }
+
 }
+
+

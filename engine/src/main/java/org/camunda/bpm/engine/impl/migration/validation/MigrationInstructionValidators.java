@@ -35,8 +35,7 @@ public class MigrationInstructionValidators {
 
     public boolean isInstructionValid(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
       return canActivitiesBeMigrated(instruction.getSourceActivityIds(), sourceProcessDefinition, sourceActivityValidators) &&
-        canActivitiesBeMigrated(instruction.getTargetActivityIds(), targetProcessDefinition, targetActivityValidators) &&
-        maxOneActivityHasABoundaryEvent(instruction, sourceProcessDefinition, targetProcessDefinition);
+        canActivitiesBeMigrated(instruction.getTargetActivityIds(), targetProcessDefinition, targetActivityValidators);
     }
 
     protected boolean canActivitiesBeMigrated(List<String> activityIds, ProcessDefinitionImpl processDefinition, List<MigrationActivityValidator> activityValidators) {
