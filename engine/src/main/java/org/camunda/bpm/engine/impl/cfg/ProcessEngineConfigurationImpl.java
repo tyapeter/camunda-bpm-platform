@@ -38,6 +38,8 @@ import javax.sql.DataSource;
 import org.apache.ibatis.builder.xml.XMLConfigBuilder;
 import org.apache.ibatis.datasource.pooled.PooledDataSource;
 import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.parsing.XNode;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
@@ -275,6 +277,8 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   public static final String DEFAULT_WS_SYNC_FACTORY = "org.camunda.bpm.engine.impl.webservice.CxfWebServiceClientFactory";
 
   public static final String DEFAULT_MYBATIS_MAPPING_FILE = "org/camunda/bpm/engine/impl/mapping/mappings.xml";
+
+  public static SqlSessionFactory cachedSqlSessionFactory;
 
   // SERVICES /////////////////////////////////////////////////////////////////
 
@@ -515,6 +519,8 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected boolean isBpmnStacktraceVerbose = false;
 
   protected boolean forceCloseMybatisConnectionPool = true;
+
+  protected boolean isUseSharedSqlSessionFactory = false;
 
   // buildProcessEngine ///////////////////////////////////////////////////////
 
@@ -846,6 +852,10 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   }
 
   protected void initSqlSessionFactory() {
+    if(isUseSharedSqlSessionFactory) {
+      sqlSessionFactory = cachedSqlSessionFactory;
+    }
+
     if (sqlSessionFactory==null) {
       InputStream inputStream = null;
       try {
@@ -855,7 +865,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
         Environment environment = new Environment("default", transactionFactory, dataSource);
         Reader reader = new InputStreamReader(inputStream);
         Properties properties = new Properties();
-        properties.put("prefix", databaseTablePrefix);
+        if(isUseSharedSqlSessionFactory) {
+          properties.put("prefix", "${@org.camunda.bpm.engine.impl.context.Context@getProcessEngineConfiguration().databaseTablePrefix}");
+        }
+        else {
+          properties.put("prefix", databaseTablePrefix);
+        }
         if(databaseType != null) {
           properties.put("limitBefore" , DbSqlSessionFactory.databaseSpecificLimitBeforeStatements.get(databaseType));
           properties.put("limitAfter" , DbSqlSessionFactory.databaseSpecificLimitAfterStatements.get(databaseType));
@@ -893,6 +908,11 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
         configuration.setDefaultStatementTimeout(jdbcStatementTimeout);
 
         sqlSessionFactory = new DefaultSqlSessionFactory(configuration);
+
+        if(isUseSharedSqlSessionFactory) {
+          cachedSqlSessionFactory = sqlSessionFactory;
+        }
+
 
       } catch (Exception e) {
         throw new ProcessEngineException("Error while building ibatis SqlSessionFactory: " + e.getMessage(), e);
@@ -2885,6 +2905,15 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   public ProcessEngineConfigurationImpl setRestrictUserOperationLogToAuthenticatedUsers(boolean restrictUserOperationLogToAuthenticatedUsers) {
     this.restrictUserOperationLogToAuthenticatedUsers = restrictUserOperationLogToAuthenticatedUsers;
     return this;
+  }
+
+  public ProcessEngineConfigurationImpl setUseSharedSqlSessionFactory(boolean isUseSharedSqlSessionFactory) {
+    this.isUseSharedSqlSessionFactory = isUseSharedSqlSessionFactory;
+    return this;
+  }
+
+  public boolean isUseSharedSqlSessionFactory() {
+    return isUseSharedSqlSessionFactory;
   }
 
 }
