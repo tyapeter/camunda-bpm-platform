@@ -13,13 +13,9 @@
 package org.camunda.bpm.engine.impl.migration.instance;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
-import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
@@ -51,12 +47,6 @@ public abstract class MigratingActivityInstance implements MigratingInstance, Re
 
   public abstract void attachState(ExecutionEntity newScopeExecution);
 
-  protected void removeTimerJobs(ExecutionEntity currentExecution) {
-    Context.getCommandContext()
-      .getJobManager()
-      .cancelTimers(currentExecution);
-  }
-
   public void migrateDependentEntities() {
     for (MigratingInstance migratingInstance : migratingDependentInstances) {
       migratingInstance.migrateState();
@@ -81,10 +71,6 @@ public abstract class MigratingActivityInstance implements MigratingInstance, Re
 
   public void addEmergingDependentInstance(EmergingInstance emergingInstance) {
     emergingDependentInstances.add(emergingInstance);
-  }
-
-  protected void createMissingTimerJobs(ExecutionEntity currentScopeExecution) {
-    currentScopeExecution.initializeTimerDeclarations();
   }
 
   public ActivityInstance getActivityInstance() {

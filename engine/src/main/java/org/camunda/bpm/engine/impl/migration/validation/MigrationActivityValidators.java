@@ -14,11 +14,10 @@
 package org.camunda.bpm.engine.impl.migration.validation;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 import org.camunda.bpm.engine.impl.bpmn.behavior.BoundaryEventActivityBehavior;
-import org.camunda.bpm.engine.impl.bpmn.behavior.CancelBoundaryEventActivityBehavior;
+import org.camunda.bpm.engine.impl.bpmn.behavior.FlowNodeActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.MultiInstanceActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.SubProcessActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
@@ -35,14 +34,21 @@ public class MigrationActivityValidators {
 
   public static final MigrationActivityValidator SUPPORTED_ACTIVITY = new AbstractMigrationActivityValidator() {
 
-    // TODO: Do something better here
     @SuppressWarnings("unchecked")
-    public final Set<Class<? extends ActivityBehavior>> SUPPORTED_ACTIVITY_BEHAVIORS = new HashSet<Class<? extends ActivityBehavior>>(
-      Arrays.asList(SubProcessActivityBehavior.class, UserTaskActivityBehavior.class, BoundaryEventActivityBehavior.class, CancelBoundaryEventActivityBehavior.class)
+    public final List<Class<? extends FlowNodeActivityBehavior>> SUPPORTED_ACTIVITY_BEHAVIORS = Arrays.asList(
+      SubProcessActivityBehavior.class,
+      UserTaskActivityBehavior.class,
+      BoundaryEventActivityBehavior.class
     );
 
     public boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {
-      return SUPPORTED_ACTIVITY_BEHAVIORS.contains(activity.getActivityBehavior().getClass());
+      Class<? extends ActivityBehavior> activityBehaviorClass = activity.getActivityBehavior().getClass();
+      for (Class<? extends ActivityBehavior> supportedActivityBehaviorClass : SUPPORTED_ACTIVITY_BEHAVIORS) {
+        if (activityBehaviorClass.isAssignableFrom(supportedActivityBehaviorClass)) {
+          return true;
+        }
+      }
+      return false;
     }
   };
 
@@ -51,13 +57,6 @@ public class MigrationActivityValidators {
       return !hasMultiInstanceParent(activity);
     }
   };
-
-  public static final MigrationActivityValidator HAS_NO_BOUNDARY_EVENT = new AbstractMigrationActivityValidator() {
-    public boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {
-      return !isScope(activity) || !hasBoundaryEvent(activity);
-    }
-  };
-
 
   // Helper
 
@@ -70,16 +69,6 @@ public class MigrationActivityValidators {
     });
 
     return isMultiInstance(flowScopeWalker.getCurrentElement());
-  }
-
-  protected static boolean hasBoundaryEvent(ScopeImpl scope) {
-    ScopeImpl flowScope = scope.getFlowScope();
-    for (ActivityImpl siblingActivity : flowScope.getActivities()) {
-      if (scope.equals(siblingActivity.getEventScope())) {
-        return true;
-      }
-    }
-    return false;
   }
 
   protected static boolean isMultiInstance(ScopeImpl scope) {

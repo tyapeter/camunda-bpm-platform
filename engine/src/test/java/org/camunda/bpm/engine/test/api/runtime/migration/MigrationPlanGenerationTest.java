@@ -280,7 +280,9 @@ public class MigrationPlanGenerationTest {
     BpmnModelInstance targetProcess = ProcessModels.ONE_TASK_PROCESS;
 
     assertGeneratedMigrationPlan(sourceProcess, targetProcess)
-      .hasEmptyInstructions();
+      .hasInstructions(
+        migrate("userTask").to("userTask")
+      );
   }
 
   @Test
@@ -301,11 +303,14 @@ public class MigrationPlanGenerationTest {
   public void testMapEqualActivitiesWithBoundaryEvent() {
     BpmnModelInstance testProcess = ProcessModels.ONE_TASK_PROCESS.clone()
       .<UserTask>getModelElementById("userTask").builder()
-      .boundaryEvent().message("Message")
+      .boundaryEvent("boundary").message("Message")
       .done();
 
     assertGeneratedMigrationPlan(testProcess, testProcess)
-      .hasEmptyInstructions();
+      .hasInstructions(
+        migrate("userTask").to("userTask"),
+        migrate("boundary").to("boundary")
+      );
   }
 
   protected MigrationPlanAssert assertGeneratedMigrationPlan(BpmnModelInstance sourceProcess, BpmnModelInstance targetProcess) {

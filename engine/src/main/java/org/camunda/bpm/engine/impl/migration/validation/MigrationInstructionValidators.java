@@ -56,14 +56,6 @@ public class MigrationInstructionValidators {
       return true;
     }
 
-    protected boolean maxOneActivityHasABoundaryEvent(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
-      String sourceActivityId = instruction.getSourceActivityIds().get(0);
-      String targetActivityId = instruction.getTargetActivityIds().get(0);
-      boolean sourceHasNoBoundaryEvent = MigrationActivityValidators.HAS_NO_BOUNDARY_EVENT.canBeMigrated(sourceActivityId, sourceProcessDefinition);
-      boolean targetHasNoBoundaryEvent = MigrationActivityValidators.HAS_NO_BOUNDARY_EVENT.canBeMigrated(targetActivityId, targetProcessDefinition);
-      return sourceHasNoBoundaryEvent || targetHasNoBoundaryEvent;
-    }
-
   };
 
   public static final MigrationInstructionValidator ONE_TO_ONE_VALIDATOR = new MigrationInstructionValidator() {
