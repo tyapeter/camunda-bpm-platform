@@ -12,6 +12,7 @@
  */
 package org.camunda.bpm.engine.impl.migration.instance;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,10 +26,13 @@ import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
 import org.camunda.bpm.engine.impl.cmd.GetActivityInstanceCmd;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
+import org.camunda.bpm.engine.impl.jobexecutor.TimerDeclarationImpl;
 import org.camunda.bpm.engine.impl.migration.MigrationLogger;
 import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.TimerEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
@@ -71,7 +75,8 @@ public class MigratingProcessInstance {
       ScopeImpl sourceScope,
       ScopeImpl targetScope,
       ExecutionEntity scopeExecution) {
-    MigratingActivityInstance migratingInstance = null;
+
+    MigratingActivityInstance migratingInstance;
     if (sourceScope.isScope()) {
       migratingInstance = new MigratingScopeActivityInstance();
     }
@@ -119,25 +124,18 @@ public class MigratingProcessInstance {
     activityInstances.remove(activityInstanceTree);
 
     Map<String, List<MigrationInstruction>> organizedInstructions = organizeInstructionsBySourceScope(migrationPlan);
-    Map<String, List<MigrationInstruction>> instructionsBySourceEventScope = organizeInstructionsBySourceEventScope(migrationPlan, sourceProcessDefinition);
 
     for (ActivityInstance instance : activityInstances) {
       ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(instance.getActivityId());
 
-      List<MigrationInstruction> instructionCandidates = organizedInstructions.get(sourceActivity.getId());
-      MigrationInstruction applyingInstruction = null;
+      MigrationInstruction applyingInstruction = findMigrationInstructionForActivityId(sourceActivity.getId(), organizedInstructions);
       ActivityImpl targetActivity = null;
 
-      if (instructionCandidates != null && instructionCandidates.size() > 0) {
-        // TODO: this could be more than one when we support conditional instructions
-        applyingInstruction = instructionCandidates.get(0);
-        targetActivity = targetProcessDefinition.findActivity(applyingInstruction.getTargetActivityIds().get(0));
-
+      if (applyingInstruction != null) {
+        targetActivity = findTargetActivityForInstruction(applyingInstruction, targetProcessDefinition);
       }
-      else {
-        if (instance.getChildActivityInstances().length == 0) {
+      else if (isLeafActivity(instance)) {
           unmappedLeafInstances.add(instance);
-        }
       }
 
       MigratingActivityInstance migratingInstance = migratingProcessInstance.addActivityInstance(
@@ -147,35 +145,8 @@ public class MigratingProcessInstance {
         targetActivity,
         mapping.getExecution(instance));
 
-      if (sourceActivity.getActivityBehavior() instanceof UserTaskActivityBehavior) {
-        List<TaskEntity> tasks = migratingInstance.representativeExecution.getTasks();
-        migratingInstance.addMigratingDependentInstance(new MigratingTaskInstance(tasks.get(0), migratingInstance));
-      }
-
-      List<MigrationInstruction> eventScopeInstructions = instructionsBySourceEventScope.get(sourceActivity.getId());
-      ExecutionEntity representativeExecution = migratingInstance.representativeExecution;
-
       if (migratingInstance.migrates()) {
-        Map<String, EventSubscriptionDeclaration> declarationsForTargetScope = new HashMap<String, EventSubscriptionDeclaration>();
-        for (EventSubscriptionDeclaration eventSubscriptionDeclaration : EventSubscriptionDeclaration.getDeclarationsForScope(migratingInstance.getTargetScope())) {
-          declarationsForTargetScope.put(eventSubscriptionDeclaration.getActivityId(), eventSubscriptionDeclaration);
-        }
-        for (EventSubscriptionEntity eventSubscriptionEntity : representativeExecution.getEventSubscriptions()) {
-          List<MigrationInstruction> migrationInstructions = organizedInstructions.get(eventSubscriptionEntity.getActivityId());
-          if (migrationInstructions != null && !migrationInstructions.isEmpty()) {
-            MigrationInstruction eventHandlerInstruction = migrationInstructions.get(0);
-            String targetActivityId = eventHandlerInstruction.getTargetActivityIds().get(0);
-            declarationsForTargetScope.remove(targetActivityId);
-            ActivityImpl eventHandlerActivity = targetProcessDefinition.findActivity(targetActivityId);
-            migratingInstance.addMigratingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscriptionEntity, eventHandlerActivity));
-          }
-          else {
-            migratingInstance.addRemovingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscriptionEntity, null));
-          }
-        }
-        for (EventSubscriptionDeclaration eventSubscriptionDeclaration : declarationsForTargetScope.values()) {
-          migratingInstance.addEmergingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscriptionDeclaration));
-        }
+        initializeDependentInstances(migratingInstance, sourceActivity, targetProcessDefinition, organizedInstructions);
       }
 
     }
@@ -187,6 +158,105 @@ public class MigratingProcessInstance {
     initializeParentChildRelationships(migratingProcessInstance);
 
     return migratingProcessInstance;
+  }
+
+  protected static boolean isLeafActivity(ActivityInstance instance) {
+    return instance.getChildActivityInstances().length == 0;
+  }
+
+  protected static void initializeDependentInstances(MigratingActivityInstance migratingInstance, ActivityImpl sourceActivity, ProcessDefinitionImpl targetProcessDefinition, Map<String, List<MigrationInstruction>> organizedInstructions) {
+
+    initializeDependentTaskInstances(migratingInstance, sourceActivity);
+    initializeDependentEventSubscriptionInstances(migratingInstance, targetProcessDefinition, organizedInstructions);
+    initializeDependentTimerJobInstances(migratingInstance, targetProcessDefinition, organizedInstructions);
+
+  }
+
+  protected static void initializeDependentTaskInstances(MigratingActivityInstance migratingInstance, ActivityImpl sourceActivity) {
+    if (sourceActivity.getActivityBehavior() instanceof UserTaskActivityBehavior) {
+      List<TaskEntity> tasks = migratingInstance.representativeExecution.getTasks();
+      migratingInstance.addMigratingDependentInstance(new MigratingTaskInstance(tasks.get(0), migratingInstance));
+    }
+  }
+
+  protected static void initializeDependentEventSubscriptionInstances(MigratingActivityInstance migratingInstance, ProcessDefinitionImpl targetProcessDefinition, Map<String, List<MigrationInstruction>> organizedInstructions) {
+    List<String> migratedEventSubscriptionTargetActivityIds = new ArrayList<String>();
+
+    for (EventSubscriptionEntity eventSubscription : migratingInstance.representativeExecution.getEventSubscriptions()) {
+      MigrationInstruction eventSubscriptionMigrationInstruction = findMigrationInstructionForActivityId(eventSubscription.getActivityId(), organizedInstructions);
+      if (eventSubscriptionMigrationInstruction != null) {
+        // the event subscription is migrated
+        ActivityImpl eventSubscriptionTargetActivity = findTargetActivityForInstruction(eventSubscriptionMigrationInstruction, targetProcessDefinition);
+        migratedEventSubscriptionTargetActivityIds.add(eventSubscriptionTargetActivity.getId());
+        migratingInstance.addMigratingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscription, eventSubscriptionTargetActivity));
+
+      } else {
+        // the event subscription will be removed
+        migratingInstance.addRemovingDependentInstance(new MigratingEventSubscriptionInstance(eventSubscription));
+
+      }
+    }
+
+    List<EventSubscriptionDeclaration> emergingEventSubscriptionDeclarations = findEmergingEventSubscriptionDeclarations(migratingInstance, migratedEventSubscriptionTargetActivityIds);
+    for (EventSubscriptionDeclaration emergingEventSubscriptionDeclaration : emergingEventSubscriptionDeclarations) {
+      // the event subscription will be created
+      migratingInstance.addEmergingDependentInstance(new MigratingEventSubscriptionInstance(emergingEventSubscriptionDeclaration));
+    }
+
+  }
+
+  protected static List<EventSubscriptionDeclaration> findEmergingEventSubscriptionDeclarations(MigratingActivityInstance migratingInstance, List<String> migratedEventSubscriptionTargetActivityIds) {
+    List<EventSubscriptionDeclaration> emergingEventSubscriptionDeclarations = new ArrayList<EventSubscriptionDeclaration>();
+
+    for (EventSubscriptionDeclaration eventSubscriptionDeclaration : EventSubscriptionDeclaration.getDeclarationsForScope(migratingInstance.getTargetScope())) {
+      if (!migratedEventSubscriptionTargetActivityIds.contains(eventSubscriptionDeclaration.getActivityId())) {
+        emergingEventSubscriptionDeclarations.add(eventSubscriptionDeclaration);
+      }
+    }
+
+    return emergingEventSubscriptionDeclarations;
+  }
+
+  protected static void initializeDependentTimerJobInstances(MigratingActivityInstance migratingInstance, ProcessDefinitionImpl targetProcessDefinition, Map<String, List<MigrationInstruction>> organizedInstructions) {
+    List<String> migratedTimerJobTargetActivityIds = new ArrayList<String>();
+
+    for (JobEntity job : migratingInstance.representativeExecution.getJobs()) {
+      if (!isTimerJob(job)) {
+        // skip non timer jobs
+        continue;
+      }
+
+      MigrationInstruction timerJobMigrationInstruction = findMigrationInstructionForActivityId(job.getActivityId(), organizedInstructions);
+      if (timerJobMigrationInstruction != null) {
+        // the timer job is migrated
+        ActivityImpl timerJobTargetActivity = findTargetActivityForInstruction(timerJobMigrationInstruction, targetProcessDefinition);
+        migratedTimerJobTargetActivityIds.add(timerJobTargetActivity.getId());
+        migratingInstance.addMigratingDependentInstance(new MigratingTimerJobInstance(job, timerJobTargetActivity));
+
+      }
+      else {
+        // the timer job is removed
+        migratingInstance.addRemovingDependentInstance(new MigratingTimerJobInstance(job));
+
+      }
+    }
+
+    for (TimerDeclarationImpl emergingTimerDeclaration: findEmergingTimerDeclarations(migratingInstance, migratedTimerJobTargetActivityIds)) {
+      // the timer job will be created
+      migratingInstance.addEmergingDependentInstance(new MigratingTimerJobInstance(emergingTimerDeclaration));
+    }
+  }
+
+  protected static List<TimerDeclarationImpl> findEmergingTimerDeclarations(MigratingActivityInstance migratingInstance, List<String> migratedTimerJobTargetActivityIds) {
+    List<TimerDeclarationImpl> emergingTimerDeclarations = new ArrayList<TimerDeclarationImpl>();
+
+    for (TimerDeclarationImpl timerDeclaration : TimerDeclarationImpl.getDeclarationsForScope(migratingInstance.getTargetScope())) {
+      if (!migratedTimerJobTargetActivityIds.contains(timerDeclaration.getActivityId())) {
+        emergingTimerDeclarations.add(timerDeclaration);
+      }
+    }
+
+    return emergingTimerDeclarations;
   }
 
   protected static Set<ActivityInstance> flatten(ActivityInstance activityInstance) {
@@ -211,19 +281,24 @@ public class MigratingProcessInstance {
     return organizedInstructions;
   }
 
-  protected static Map<String, List<MigrationInstruction>> organizeInstructionsBySourceEventScope(MigrationPlan migrationPlan, ProcessDefinitionImpl sourceProcessDefinition) {
-    Map<String, List<MigrationInstruction>> organizedInstructions = new HashMap<String, List<MigrationInstruction>>();
+  private static ActivityImpl findTargetActivityForInstruction(MigrationInstruction instruction, ProcessDefinitionImpl processDefinition) {
+    String activityId = instruction.getTargetActivityIds().get(0);
+    return processDefinition.findActivity(activityId);
+  }
 
-    for (MigrationInstruction instruction : migrationPlan.getInstructions()) {
-      String sourceActivityId = instruction.getSourceActivityIds().get(0);
-      ActivityImpl sourceActivity = sourceProcessDefinition.findActivity(sourceActivityId);
-      ScopeImpl eventScope = sourceActivity.getEventScope();
-      if (eventScope != null) {
-        CollectionUtil.addToMapOfLists(organizedInstructions, eventScope.getId(), instruction);
-      }
+  protected static MigrationInstruction findMigrationInstructionForActivityId(String activityId, Map<String, List<MigrationInstruction>> organizedInstructions) {
+    List<MigrationInstruction> migrationInstructions = organizedInstructions.get(activityId);
+    if (migrationInstructions != null && !migrationInstructions.isEmpty()) {
+      // TODO: this could be more than one when we support conditional instructions
+      return migrationInstructions.get(0);
     }
+    else {
+      return null;
+    }
+  }
 
-    return organizedInstructions;
+  protected static boolean isTimerJob(JobEntity job) {
+    return job != null && job.getType().equals(TimerEntity.TYPE);
   }
 
   protected static void initializeParentChildRelationships(MigratingProcessInstance migratingProcessInstance) {

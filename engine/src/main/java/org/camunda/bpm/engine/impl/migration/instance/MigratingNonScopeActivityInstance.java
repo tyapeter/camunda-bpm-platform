@@ -65,11 +65,7 @@ public class MigratingNonScopeActivityInstance extends MigratingActivityInstance
     currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
     currentExecution.setActivity((PvmActivity) targetScope);
 
-    removeTimerJobs(currentExecution);
-
-    currentExecution = createNewScopeIfNeeded(currentExecution);
-
-    createMissingTimerJobs(currentExecution);
+    createNewScopeIfNeeded(currentExecution);
   }
 
   protected ExecutionEntity createNewScopeIfNeeded(ExecutionEntity currentExecution) {

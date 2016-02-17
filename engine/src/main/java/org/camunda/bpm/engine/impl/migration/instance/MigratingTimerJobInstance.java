@@ -14,42 +14,43 @@
 package org.camunda.bpm.engine.impl.migration.instance;
 
 import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
+import org.camunda.bpm.engine.impl.jobexecutor.TimerDeclarationImpl;
 import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ActivityImpl;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
-import org.camunda.bpm.engine.migration.MigrationInstruction;
 
-public class MigratingEventSubscriptionInstance implements MigratingInstance, RemovingInstance, EmergingInstance {
+public class MigratingTimerJobInstance implements MigratingInstance, RemovingInstance, EmergingInstance {
 
-  protected EventSubscriptionEntity eventSubscriptionEntity;
+  protected JobEntity jobEntity;
   protected ScopeImpl targetScope;
 
-  protected EventSubscriptionDeclaration eventSubscriptionDeclaration;
+  protected TimerDeclarationImpl timerDeclaration;
 
-  public MigratingEventSubscriptionInstance(EventSubscriptionEntity eventSubscriptionEntity, ScopeImpl targetScope) {
-    this.eventSubscriptionEntity = eventSubscriptionEntity;
+  public MigratingTimerJobInstance(JobEntity jobEntity, ScopeImpl targetScope) {
+    this.jobEntity = jobEntity;
     this.targetScope = targetScope;
   }
 
-  public MigratingEventSubscriptionInstance(EventSubscriptionEntity eventSubscriptionEntity) {
-    this(eventSubscriptionEntity, null);
+  public MigratingTimerJobInstance(JobEntity jobEntity) {
+    this(jobEntity, null);
   }
 
-  public MigratingEventSubscriptionInstance(EventSubscriptionDeclaration eventSubscriptionDeclaration) {
-    this.eventSubscriptionDeclaration = eventSubscriptionDeclaration;
+  public MigratingTimerJobInstance(TimerDeclarationImpl timerDeclaration) {
+    this.timerDeclaration = timerDeclaration;
   }
 
   public void detachState() {
-    eventSubscriptionEntity.setExecution(null);
+    jobEntity.setExecution(null);
   }
 
   public void attachState(ExecutionEntity newScopeExecution) {
-    eventSubscriptionEntity.setExecution(newScopeExecution);
+    jobEntity.setExecution(newScopeExecution);
   }
 
   public void migrateState() {
-    eventSubscriptionEntity.setActivity((ActivityImpl) targetScope);
+    jobEntity.setActivityId(targetScope.getId());
   }
 
   public void migrateDependentEntities() {
@@ -57,10 +58,10 @@ public class MigratingEventSubscriptionInstance implements MigratingInstance, Re
   }
 
   public void create(ExecutionEntity representativeExecution) {
-    eventSubscriptionDeclaration.createSubscription(representativeExecution);
+    timerDeclaration.createTimer(representativeExecution);
   }
 
   public void remove() {
-    eventSubscriptionEntity.delete();
+    jobEntity.delete();
   }
 }

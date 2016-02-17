@@ -81,11 +81,7 @@ public class MigratingScopeActivityInstance extends MigratingActivityInstance {
       currentScopeExecution.setActivity((PvmActivity) targetScope);
     }
 
-    removeTimerJobs(currentScopeExecution);
-
     currentScopeExecution = removeExecutionIfNotScopeAnymore(currentScopeExecution);
-
-    createMissingTimerJobs(currentScopeExecution);
 
     if (!isLeafActivity()) {
       currentScopeExecution.setActivity(null);
