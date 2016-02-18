@@ -76,22 +76,16 @@ public class MigratingProcessInstance {
       ScopeImpl targetScope,
       ExecutionEntity scopeExecution) {
 
-    MigratingActivityInstance migratingInstance;
-    if (sourceScope.isScope()) {
-      migratingInstance = new MigratingScopeActivityInstance();
-    }
-    else {
-      migratingInstance = new MigratingNonScopeActivityInstance();
-    }
+    MigratingActivityInstance migratingActivityInstance = new MigratingActivityInstance(
+        activityInstance,
+        migrationInstruction,
+        sourceScope,
+        targetScope,
+        scopeExecution);
 
-    migratingInstance.migrationInstruction = migrationInstruction;
-    migratingInstance.activityInstance = activityInstance;
-    migratingInstance.sourceScope = sourceScope;
-    migratingInstance.targetScope = targetScope;
-    migratingInstance.representativeExecution = scopeExecution;
-    migratingActivityInstances.put(activityInstance.getId(), migratingInstance);
+    migratingActivityInstances.put(activityInstance.getId(), migratingActivityInstance);
 
-    return migratingInstance;
+    return migratingActivityInstance;
   }
 
 

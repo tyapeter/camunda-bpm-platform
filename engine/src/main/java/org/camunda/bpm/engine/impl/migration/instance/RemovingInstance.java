@@ -12,8 +12,6 @@
  */
 package org.camunda.bpm.engine.impl.migration.instance;
 
-import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
-
 /**
  * @author Thorben Lindhauer
  *

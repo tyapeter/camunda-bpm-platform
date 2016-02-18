@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.pvm.PvmActivity;
+import org.camunda.bpm.engine.impl.pvm.delegate.CompositeActivityBehavior;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.migration.MigrationInstruction;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -25,7 +27,7 @@ import org.camunda.bpm.engine.runtime.ActivityInstance;
  * @author Thorben Lindhauer
  *
  */
-public abstract class MigratingActivityInstance implements MigratingInstance, RemovingInstance {
+public class MigratingActivityInstance implements MigratingInstance, RemovingInstance {
 
   protected MigrationInstruction migrationInstruction;
   protected ActivityInstance activityInstance;
@@ -43,9 +45,35 @@ public abstract class MigratingActivityInstance implements MigratingInstance, Re
   protected Set<MigratingActivityInstance> childInstances;
   protected MigratingActivityInstance parentInstance;
 
-  public abstract void detachState();
+  // behaves differently if the current activity is scope or not
+  protected MigratingActivityInstanceBehavior instanceBehavior;
 
-  public abstract void attachState(ExecutionEntity newScopeExecution);
+  public MigratingActivityInstance(ActivityInstance activityInstance,
+      MigrationInstruction migrationInstruction,
+      ScopeImpl sourceScope,
+      ScopeImpl targetScope,
+      ExecutionEntity scopeExecution) {
+    this.activityInstance = activityInstance;
+    this.migrationInstruction = migrationInstruction;
+    this.sourceScope = sourceScope;
+    this.targetScope = targetScope;
+    this.representativeExecution = scopeExecution;
+
+    if (sourceScope.isScope()) {
+      this.instanceBehavior = new MigratingScopeActivityInstanceBehavior();
+    }
+    else {
+      this.instanceBehavior = new MigratingNonScopeActivityInstanceBehavior();
+    }
+  }
+
+  public void detachState() {
+    instanceBehavior.detachState();
+  }
+
+  public void attachState(ExecutionEntity newScopeExecution) {
+    instanceBehavior.attachState(newScopeExecution);
+  }
 
   public void migrateDependentEntities() {
     for (MigratingInstance migratingInstance : migratingDependentInstances) {
@@ -59,7 +87,9 @@ public abstract class MigratingActivityInstance implements MigratingInstance, Re
     }
   }
 
-  public abstract ExecutionEntity resolveRepresentativeExecution();
+  public ExecutionEntity resolveRepresentativeExecution() {
+    return instanceBehavior.resolveRepresentativeExecution();
+  }
 
   public void addMigratingDependentInstance(MigratingInstance migratingInstance) {
     migratingDependentInstances.add(migratingInstance);
@@ -110,6 +140,236 @@ public abstract class MigratingActivityInstance implements MigratingInstance, Re
       removingInstance.remove();
     }
   }
+
+  @Override
+  public void remove() {
+    instanceBehavior.remove();
+  }
+
+  @Override
+  public void migrateState() {
+    instanceBehavior.migrateState();
+  }
+
+  protected static interface MigratingActivityInstanceBehavior {
+
+    void detachState();
+
+    void attachState(ExecutionEntity representativeExecution);
+
+    void migrateState();
+
+    void remove();
+
+    ExecutionEntity resolveRepresentativeExecution();
+  }
+
+  protected class MigratingNonScopeActivityInstanceBehavior implements MigratingActivityInstanceBehavior {
+
+    @Override
+    public void detachState() {
+      ExecutionEntity currentExecution = resolveRepresentativeExecution();
+
+      currentExecution.setActivity(null);
+      currentExecution.leaveActivityInstance();
+
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
+        dependentInstance.detachState();
+      }
+
+      if (!currentExecution.isScope()) {
+        ExecutionEntity parent = currentExecution.getParent();
+        currentExecution.remove();
+        parent.tryPruneLastConcurrentChild();
+        parent.forceUpdate();
+      }
+
+    }
+
+    @Override
+    public void attachState(ExecutionEntity newScopeExecution) {
+
+      representativeExecution = newScopeExecution;
+      if (!newScopeExecution.getNonEventScopeExecutions().isEmpty() || newScopeExecution.getActivity() != null) {
+        representativeExecution = (ExecutionEntity) newScopeExecution.createConcurrentExecution();
+        newScopeExecution.forceUpdate();
+      }
+
+      representativeExecution.setActivity((PvmActivity) sourceScope);
+      representativeExecution.setActivityInstanceId(activityInstance.getId());
+
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
+        dependentInstance.attachState(representativeExecution);
+      }
+
+    }
+
+    @Override
+    public void migrateState() {
+      ExecutionEntity currentExecution = resolveRepresentativeExecution();
+      currentExecution.setProcessDefinition(targetScope.getProcessDefinition());
+      currentExecution.setActivity((PvmActivity) targetScope);
+
+      if (targetScope.isScope()) {
+        becomeScope();
+      }
+    }
+
+    protected void becomeScope() {
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
+        dependentInstance.detachState();
+      }
+
+      ExecutionEntity currentExecution = resolveRepresentativeExecution();
+
+      currentExecution = currentExecution.createExecution();
+      ExecutionEntity parent = currentExecution.getParent();
+      parent.setActivity(null);
+
+      if (!parent.isConcurrent()) {
+        parent.leaveActivityInstance();
+      }
+
+      representativeExecution = currentExecution;
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
+        dependentInstance.attachState(currentExecution);
+      }
+
+      instanceBehavior = new MigratingScopeActivityInstanceBehavior();
+    }
+
+    @Override
+    public ExecutionEntity resolveRepresentativeExecution() {
+      if (representativeExecution.getReplacedBy() != null) {
+        return representativeExecution.resolveReplacedBy();
+      }
+      else {
+        return representativeExecution;
+      }
+    }
+
+    @Override
+    public void remove() {
+      // nothing to do; we don't remove non-scope instances
+    }
+  }
+
+  protected class MigratingScopeActivityInstanceBehavior implements MigratingActivityInstanceBehavior {
+
+    @Override
+    public void detachState() {
+      ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
+
+      ExecutionEntity parentExecution = currentScopeExecution.getParent();
+      ExecutionEntity parentScopeExecution = parentExecution.isConcurrent() ? parentExecution.getParent() : parentExecution;
+      currentScopeExecution.setParent(null);
+
+      if (parentExecution.isConcurrent()) {
+        parentExecution.remove();
+        parentScopeExecution.tryPruneLastConcurrentChild();
+        parentScopeExecution.forceUpdate();
+      }
+      else {
+        if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
+          parentExecution.leaveActivityInstance();
+        }
+      }
+
+    }
+
+    @Override
+    public void attachState(ExecutionEntity newScopeExecution) {
+      ExecutionEntity newParentExecution = newScopeExecution;
+      if (!newScopeExecution.getNonEventScopeExecutions().isEmpty()) {
+        newParentExecution = (ExecutionEntity) newScopeExecution.createConcurrentExecution();
+        newScopeExecution.forceUpdate();
+      }
+
+      ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
+      currentScopeExecution.setParent(newParentExecution);
+
+      if (sourceScope.getActivityBehavior() instanceof CompositeActivityBehavior) {
+        newParentExecution.setActivityInstanceId(activityInstance.getId());
+      }
+
+
+    }
+
+    @Override
+    public void migrateState() {
+      ExecutionEntity currentScopeExecution = resolveRepresentativeExecution();
+      currentScopeExecution.setProcessDefinition(targetScope.getProcessDefinition());
+
+      ExecutionEntity parentExecution = currentScopeExecution.getParent();
+
+      if (parentExecution != null && parentExecution.isConcurrent()) {
+        parentExecution.setProcessDefinition(targetScope.getProcessDefinition());
+      }
+
+      if (!targetScope.isScope()) {
+        becomeNonScope();
+        currentScopeExecution = resolveRepresentativeExecution();
+      }
+
+      if (isLeafActivity(targetScope)) {
+        currentScopeExecution.setActivity((PvmActivity) targetScope);
+      }
+    }
+
+    protected void becomeNonScope() {
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
+        dependentInstance.detachState();
+      }
+
+      ExecutionEntity parentExecution = representativeExecution.getParent();
+
+      parentExecution.setActivity(representativeExecution.getActivity());
+      parentExecution.setActivityInstanceId(representativeExecution.getActivityInstanceId());
+
+      representativeExecution.remove();
+      representativeExecution = parentExecution;
+
+      for (MigratingInstance dependentInstance : migratingDependentInstances) {
+        dependentInstance.attachState(representativeExecution);
+      }
+
+      instanceBehavior = new MigratingNonScopeActivityInstanceBehavior();
+    }
+
+    protected boolean isLeafActivity(ScopeImpl scope) {
+      return scope.getActivities().isEmpty();
+    }
+
+    @Override
+    public ExecutionEntity resolveRepresentativeExecution() {
+      return representativeExecution;
+    }
+
+    @Override
+    public void remove() {
+      parentInstance.getChildren().remove(MigratingActivityInstance.this);
+      for (MigratingActivityInstance child : childInstances) {
+        child.parentInstance = null;
+      }
+
+      ExecutionEntity currentExecution = resolveRepresentativeExecution();
+      ExecutionEntity parentExecution = currentExecution.getParent();
+
+      currentExecution.setActivity((PvmActivity) sourceScope);
+      currentExecution.setActivityInstanceId(activityInstance.getId());
+
+      currentExecution.deleteCascade("migration");
+
+      if (parentExecution.isConcurrent()) {
+        ExecutionEntity grandParent = parentExecution.getParent();
+        parentExecution.remove();
+        grandParent.tryPruneLastConcurrentChild();
+        grandParent.forceUpdate();
+      }
+
+    }
+  }
+
 
 }
 
