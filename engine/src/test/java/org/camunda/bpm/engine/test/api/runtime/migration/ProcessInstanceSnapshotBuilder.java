@@ -16,7 +16,7 @@ package org.camunda.bpm.engine.test.api.runtime.migration;
 import java.util.List;
 
 import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.management.JobDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
@@ -67,6 +67,11 @@ public class ProcessInstanceSnapshotBuilder {
   public ProcessInstanceSnapshotBuilder jobs() {
     List<Job> jobs = processEngine.getManagementService().createJobQuery().processInstanceId(processInstanceId).list();
     snapshot.setJobs(jobs);
+
+    String processDefinitionId = processEngine.getRuntimeService()
+      .createProcessInstanceQuery().processInstanceId(processInstanceId).singleResult().getProcessDefinitionId();
+    List<JobDefinition> jobDefinitions = processEngine.getManagementService().createJobDefinitionQuery().processDefinitionId(processDefinitionId).list();
+    snapshot.setJobDefinitions(jobDefinitions);
 
     return this;
   }

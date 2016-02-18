@@ -14,24 +14,28 @@
 package org.camunda.bpm.engine.impl.migration.instance;
 
 import org.camunda.bpm.engine.impl.jobexecutor.TimerDeclarationImpl;
+import org.camunda.bpm.engine.impl.jobexecutor.TimerEventJobHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 
 public class MigratingTimerJobInstance implements MigratingInstance, RemovingInstance, EmergingInstance {
 
   protected JobEntity jobEntity;
+  protected JobDefinitionEntity jobDefinitionEntity;
   protected ScopeImpl targetScope;
 
   protected TimerDeclarationImpl timerDeclaration;
 
-  public MigratingTimerJobInstance(JobEntity jobEntity, ScopeImpl targetScope) {
+  public MigratingTimerJobInstance(JobEntity jobEntity, JobDefinitionEntity jobDefinitionEntity, ScopeImpl targetScope) {
     this.jobEntity = jobEntity;
+    this.jobDefinitionEntity = jobDefinitionEntity;
     this.targetScope = targetScope;
   }
 
   public MigratingTimerJobInstance(JobEntity jobEntity) {
-    this(jobEntity, null);
+    this(jobEntity, null, null);
   }
 
   public MigratingTimerJobInstance(TimerDeclarationImpl timerDeclaration) {
@@ -47,7 +51,12 @@ public class MigratingTimerJobInstance implements MigratingInstance, RemovingIns
   }
 
   public void migrateState() {
-    jobEntity.setActivityId(targetScope.getId());
+    String activityId = targetScope.getId();
+    jobEntity.setActivityId(activityId);
+    updateJobConfiguration(activityId);
+    if (jobDefinitionEntity != null) {
+      jobEntity.setJobDefinitionId(jobDefinitionEntity.getId());
+    }
   }
 
   public void migrateDependentEntities() {
@@ -61,4 +70,11 @@ public class MigratingTimerJobInstance implements MigratingInstance, RemovingIns
   public void remove() {
     jobEntity.delete();
   }
+
+  protected void updateJobConfiguration(String activityId) {
+    String configuration = jobEntity.getJobHandlerConfiguration();
+    configuration = TimerEventJobHandler.updateKeyInConfiguration(configuration, activityId);
+    jobEntity.setJobHandlerConfiguration(configuration);
+  }
+
 }

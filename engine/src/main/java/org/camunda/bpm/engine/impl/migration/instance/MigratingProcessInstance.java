@@ -25,11 +25,13 @@ import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.bpmn.behavior.UserTaskActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.parser.EventSubscriptionDeclaration;
 import org.camunda.bpm.engine.impl.cmd.GetActivityInstanceCmd;
+import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.jobexecutor.TimerDeclarationImpl;
 import org.camunda.bpm.engine.impl.migration.MigrationLogger;
 import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TimerEntity;
@@ -212,6 +214,8 @@ public class MigratingProcessInstance {
   }
 
   protected static void initializeDependentTimerJobInstances(MigratingActivityInstance migratingInstance, ProcessDefinitionImpl targetProcessDefinition, Map<String, List<MigrationInstruction>> organizedInstructions) {
+    Map<String, JobDefinitionEntity> jobDefinitionsByActivityId = collectJobDefinitionsForActivityIds(targetProcessDefinition.getId());
+
     List<String> migratedTimerJobTargetActivityIds = new ArrayList<String>();
 
     for (JobEntity job : migratingInstance.representativeExecution.getJobs()) {
@@ -225,7 +229,8 @@ public class MigratingProcessInstance {
         // the timer job is migrated
         ActivityImpl timerJobTargetActivity = findTargetActivityForInstruction(timerJobMigrationInstruction, targetProcessDefinition);
         migratedTimerJobTargetActivityIds.add(timerJobTargetActivity.getId());
-        migratingInstance.addMigratingDependentInstance(new MigratingTimerJobInstance(job, timerJobTargetActivity));
+        JobDefinitionEntity jobDefinitionEntity = jobDefinitionsByActivityId.get(timerJobTargetActivity.getActivityId());
+        migratingInstance.addMigratingDependentInstance(new MigratingTimerJobInstance(job, jobDefinitionEntity, timerJobTargetActivity));
 
       }
       else {
@@ -275,9 +280,19 @@ public class MigratingProcessInstance {
     return organizedInstructions;
   }
 
-  private static ActivityImpl findTargetActivityForInstruction(MigrationInstruction instruction, ProcessDefinitionImpl processDefinition) {
+  protected static ActivityImpl findTargetActivityForInstruction(MigrationInstruction instruction, ProcessDefinitionImpl processDefinition) {
     String activityId = instruction.getTargetActivityIds().get(0);
     return processDefinition.findActivity(activityId);
+  }
+
+  protected static Map<String,JobDefinitionEntity> collectJobDefinitionsForActivityIds(String processDefinitionId) {
+    List<JobDefinitionEntity> jobDefinitions = Context.getCommandContext().getJobDefinitionManager().findByProcessDefinitionId(processDefinitionId);
+    Map<String, JobDefinitionEntity> jobDefinitionsByActivityId = new HashMap<String, JobDefinitionEntity>();
+    for (JobDefinitionEntity jobDefinition : jobDefinitions) {
+      jobDefinitionsByActivityId.put(jobDefinition.getActivityId(), jobDefinition);
+    }
+
+    return jobDefinitionsByActivityId;
   }
 
   protected static MigrationInstruction findMigrationInstructionForActivityId(String activityId, Map<String, List<MigrationInstruction>> organizedInstructions) {

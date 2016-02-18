@@ -16,7 +16,9 @@ package org.camunda.bpm.engine.test.api.runtime.migration;
 import java.util.List;
 
 import org.camunda.bpm.engine.BadUserRequestException;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
+import org.camunda.bpm.engine.management.JobDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
@@ -34,7 +36,8 @@ public class ProcessInstanceSnapshot {
   protected ExecutionTree executionTree;
   protected List<EventSubscription> eventSubscriptions;
   protected List<Job> jobs;
-  private List<Task> tasks;
+  protected List<JobDefinition> jobDefinitions;
+  protected List<Task> tasks;
 
   public ProcessInstanceSnapshot(String processInstanceId, String processDefinitionId) {
     this.processInstanceId = processInstanceId;
@@ -116,12 +119,38 @@ public class ProcessInstanceSnapshot {
     return jobs;
   }
 
+  public Job getJobForDefinitionId(String jobDefinitionId) {
+    for (Job job : getJobs()) {
+      if (jobDefinitionId.equals(job.getJobDefinitionId())) {
+        return job;
+      }
+    }
+    return null;
+  }
+
   public void setJobs(List<Job> jobs) {
     this.jobs = jobs;
+  }
+
+  public List<JobDefinition> getJobDefinitions() {
+    ensurePropertySaved("job definitions", jobDefinitions);
+    return jobDefinitions;
+  }
+
+  public JobDefinition getJobDefinitionForActivityId(String activityId) {
+    for (JobDefinition jobDefinition : getJobDefinitions()) {
+      if (activityId.equals(jobDefinition.getActivityId())) {
+        return jobDefinition;
+      }
+    }
+    return null;
+  }
+
+  public void setJobDefinitions(List<JobDefinition> jobDefinitions) {
+    this.jobDefinitions = jobDefinitions;
   }
 
   protected void ensurePropertySaved(String name, Object property) {
     EnsureUtil.ensureNotNull(BadUserRequestException.class, "The snapshot has not saved the " + name + " of the process instance", name, property);
   }
-
 }
