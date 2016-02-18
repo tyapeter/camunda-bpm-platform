@@ -12,6 +12,7 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
@@ -34,8 +35,7 @@ import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateEvent;
 import org.camunda.bpm.engine.test.bpmn.multiinstance.DelegateExecutionListener;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
 import org.camunda.bpm.engine.variable.Variables;
-import org.camunda.bpm.model.bpmn.instance.ParallelGateway;
-import org.camunda.bpm.model.bpmn.instance.SubProcess;
+import org.camunda.bpm.model.bpmn.builder.ParallelGatewayBuilder;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -249,13 +249,13 @@ public class MigrationAddScopesTest {
   @Test
   public void testConcurrentThreeUserTaskMigration() {
     // given
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_PROCESS.clone()
-        .<ParallelGateway>getModelElementById("fork").builder()
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+        .getBuilderForElementById("fork", ParallelGatewayBuilder.class)
         .userTask("userTask3")
         .endEvent()
         .done());
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS.clone()
-        .<ParallelGateway>getModelElementById("fork").builder()
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(modify(ProcessModels.PARALLEL_GATEWAY_SUBPROCESS_PROCESS)
+      .getBuilderForElementById("fork", ParallelGatewayBuilder.class)
         .userTask("userTask3")
         .endEvent()
         .done());
@@ -554,14 +554,9 @@ public class MigrationAddScopesTest {
     DelegateEvent.clearEvents();
 
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(
-      ProcessModels.SUBPROCESS_PROCESS.clone()
-        .<SubProcess>getModelElementById("subProcess")
-        .builder()
-        .camundaExecutionListenerClass(
-            ExecutionListener.EVENTNAME_START,
-            DelegateExecutionListener.class.getName())
-        .done());
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(modify(ProcessModels.SUBPROCESS_PROCESS)
+        .addCamundaExecutionListenerClass("subProcess", ExecutionListener.EVENTNAME_START, DelegateExecutionListener.class.getName())
+    );
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -614,7 +609,7 @@ public class MigrationAddScopesTest {
   public void testAddParentScopeToMultiInstance() {
     // given
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(
-      ProcessModels.ONE_TASK_PROCESS.clone()
+      modify(ProcessModels.ONE_TASK_PROCESS)
         .<UserTask>getModelElementById("userTask").builder()
         .multiInstance()
           .parallel()
@@ -622,7 +617,7 @@ public class MigrationAddScopesTest {
           .camundaElementVariable("elementVar")
         .done());
     ProcessDefinition targetProcessDefinition = testHelper.deploy(
-      ProcessModels.SUBPROCESS_PROCESS.clone()
+      modify(ProcessModels.SUBPROCESS_PROCESS)
         .<UserTask>getModelElementById("userTask").builder()
         .multiInstance()
           .parallel()

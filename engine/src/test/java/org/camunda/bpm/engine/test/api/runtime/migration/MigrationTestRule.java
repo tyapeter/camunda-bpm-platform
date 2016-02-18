@@ -117,8 +117,4 @@ public class MigrationTestRule extends TestWatcher {
     return new ProcessInstanceSnapshotBuilder(processInstance, processEngine);
   }
 
-  public ModifiableBpmnModelInstance modify(BpmnModelInstance modelInstance) {
-    return new ModifiableBpmnModelInstance(modelInstance.clone());
-  }
-
 }

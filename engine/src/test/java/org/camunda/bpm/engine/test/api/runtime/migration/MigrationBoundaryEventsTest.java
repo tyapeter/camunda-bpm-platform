@@ -12,13 +12,13 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,24 +31,16 @@ import org.camunda.bpm.engine.impl.persistence.entity.MessageEventSubscriptionEn
 import org.camunda.bpm.engine.impl.persistence.entity.SignalEventSubscriptionEntity;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
-import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
-import org.camunda.bpm.engine.test.util.ExecutionTree;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.BoundaryEvent;
-import org.camunda.bpm.model.bpmn.instance.EndEvent;
-import org.camunda.bpm.model.bpmn.instance.SubProcess;
-import org.camunda.bpm.model.bpmn.instance.UserTask;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import com.sun.xml.internal.ws.api.server.BoundEndpoint;
 
 public class MigrationBoundaryEventsTest {
 
@@ -84,17 +76,11 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnUserTask() {
     // given
-    BpmnModelInstance testProcess = ProcessModels.ONE_TASK_PROCESS.clone()
-      .<UserTask>getModelElementById("userTask").builder()
-      .boundaryEvent("boundary").message(MESSAGE_NAME)
-      .userTask(AFTER_BOUNDARY_TASK)
-      .endEvent()
-      .done();
+    BpmnModelInstance testProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess.clone()
-      .<BoundaryEvent>getModelElementById("boundary").builder()
-      .id("newBoundary")
-      .done()
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(modify(testProcess)
+      .changeElementId("boundary", "newBoundary")
     );
 
     MigrationPlan migrationPlan = runtimeService
