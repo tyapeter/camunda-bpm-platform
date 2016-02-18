@@ -90,16 +90,16 @@ public class MigrationBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertEventSubscriptionMigrated("boundary", "newBoundary");

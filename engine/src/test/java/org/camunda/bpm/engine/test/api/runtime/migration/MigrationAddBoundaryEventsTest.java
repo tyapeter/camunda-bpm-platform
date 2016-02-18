@@ -13,9 +13,7 @@
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
 import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
-import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
-import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -85,16 +83,16 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child("userTask").scope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -142,16 +140,16 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -200,7 +198,7 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
@@ -210,10 +208,10 @@ public class MigrationAddBoundaryEventsTest {
           .child("userTask2").concurrent().noScope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -263,21 +261,21 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child(null).concurrent().noScope()
-          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1"))
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask1"))
           .up().up()
           .child(null).concurrent().noScope()
-          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2"))
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask2"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -327,17 +325,17 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -387,18 +385,18 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child(null).scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask"))
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -450,24 +448,24 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child(null).concurrent().noScope()
-          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess1"))
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess1"))
           .up().up()
           .child(null).concurrent().noScope()
-          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess2"))
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess2"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess1").getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
+        .beginScope("subProcess1", testHelper.getSingleActivityInstanceBeforeMigration("subProcess1").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
         .endScope()
-        .beginScope("subProcess2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess2").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .beginScope("subProcess2", testHelper.getSingleActivityInstanceBeforeMigration("subProcess2").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -518,16 +516,16 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child("userTask").scope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -575,16 +573,16 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child("userTask").scope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -633,7 +631,7 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
@@ -643,10 +641,10 @@ public class MigrationAddBoundaryEventsTest {
           .child("userTask2").concurrent().noScope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -696,21 +694,21 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child(null).concurrent().noScope()
-          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1"))
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask1"))
           .up().up()
           .child(null).concurrent().noScope()
-          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2"))
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask2"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -760,17 +758,17 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -820,18 +818,18 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child(null).scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask"))
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -883,24 +881,24 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child(null).concurrent().noScope()
-          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess1"))
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess1"))
           .up().up()
           .child(null).concurrent().noScope()
-          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess2"))
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess2"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess1").getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
+        .beginScope("subProcess1", testHelper.getSingleActivityInstanceBeforeMigration("subProcess1").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
         .endScope()
-        .beginScope("subProcess2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess2").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .beginScope("subProcess2", testHelper.getSingleActivityInstanceBeforeMigration("subProcess2").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertSignalEventSubscriptionExists(SIGNAL_NAME);
@@ -951,16 +949,16 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child("userTask").scope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertTimerJobExists();
@@ -1008,16 +1006,16 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child("userTask").scope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertTimerJobExists();
@@ -1066,7 +1064,7 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
@@ -1076,10 +1074,10 @@ public class MigrationAddBoundaryEventsTest {
           .child("userTask2").concurrent().noScope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertTimerJobExists();
@@ -1129,21 +1127,21 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child(null).concurrent().noScope()
-          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1"))
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask1"))
           .up().up()
           .child(null).concurrent().noScope()
-          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2"))
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask2"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertTimerJobExists();
@@ -1193,17 +1191,17 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertTimerJobExists();
@@ -1253,18 +1251,18 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child(null).scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask"))
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertTimerJobExists();
@@ -1316,24 +1314,24 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .child(null).concurrent().noScope()
-          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess1"))
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess1"))
           .up().up()
           .child(null).concurrent().noScope()
-          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess2"))
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess2"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess1").getId())
-        .activity("userTask1", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask1").getId())
+        .beginScope("subProcess1", testHelper.getSingleActivityInstanceBeforeMigration("subProcess1").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
         .endScope()
-        .beginScope("subProcess2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess2").getId())
-        .activity("userTask2", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask2").getId())
+        .beginScope("subProcess2", testHelper.getSingleActivityInstanceBeforeMigration("subProcess2").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
         .done());
 
     assertTimerJobExists();
@@ -1387,18 +1385,18 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child(null).scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
           .child("userTask").scope()
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     assertMessageEventSubscriptionExists(MESSAGE_NAME);
@@ -1431,17 +1429,17 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     // and it is possible to successfully complete the migrated instance
@@ -1471,17 +1469,17 @@ public class MigrationAddBoundaryEventsTest {
     testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
+    testHelper.assertExecutionTreeAfterMigration()
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
         describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
           .done());
 
-    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .beginScope("subProcess", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "subProcess").getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
         .done());
 
     // and it is possible to successfully complete the migrated instance

@@ -12,6 +12,9 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
+import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
+
 import java.util.Collections;
 
 import org.camunda.bpm.engine.ProcessEngine;
@@ -22,6 +25,8 @@ import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.util.ActivityInstanceAssert;
+import org.camunda.bpm.engine.test.util.ExecutionAssert;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Assert;
 import org.junit.rules.TestWatcher;
@@ -106,6 +111,10 @@ public class MigrationTestRule extends TestWatcher {
     }
   }
 
+  public String getSingleExecutionIdForActivityBeforeMigration(String activityId) {
+    return getSingleExecutionIdForActivity(snapshotBeforeMigration.getActivityTree(), activityId);
+  }
+
   public ActivityInstance getSingleActivityInstance(ActivityInstance tree, String activityId) {
     ActivityInstance[] activityInstances = tree.getActivityInstances(activityId);
     if (activityInstances.length == 1) {
@@ -114,6 +123,10 @@ public class MigrationTestRule extends TestWatcher {
     else {
       throw new RuntimeException("There is not exactly one activity instance for activity " + activityId);
     }
+  }
+
+  public ActivityInstance getSingleActivityInstanceBeforeMigration(String activityId) {
+    return getSingleActivityInstance(snapshotBeforeMigration.getActivityTree(), activityId);
   }
 
   public ProcessInstanceSnapshot takeFullProcessInstanceSnapshot(ProcessInstance processInstance) {
@@ -125,15 +138,28 @@ public class MigrationTestRule extends TestWatcher {
   }
 
   public ProcessInstance createProcessInstanceAndMigrate(MigrationPlan migrationPlan) {
-    RuntimeService runtimeService = processEngine.getRuntimeService();
+    ProcessInstance processInstance = processEngine.getRuntimeService()
+      .startProcessInstanceById(migrationPlan.getSourceProcessDefinitionId());
 
-    ProcessInstance processInstance = runtimeService.startProcessInstanceById(migrationPlan.getSourceProcessDefinitionId());
-    snapshotBeforeMigration = takeFullProcessInstanceSnapshot(processInstance);
-
-    runtimeService.executeMigrationPlan(migrationPlan, Collections.singletonList(snapshotBeforeMigration.getProcessInstanceId()));
-    snapshotAfterMigration = takeFullProcessInstanceSnapshot(processInstance);
+    migrateProcessInstance(migrationPlan, processInstance);
 
     return processInstance;
   }
 
+  public void migrateProcessInstance(MigrationPlan migrationPlan, ProcessInstance processInstance) {
+    snapshotBeforeMigration = takeFullProcessInstanceSnapshot(processInstance);
+
+    processEngine.getRuntimeService()
+      .executeMigrationPlan(migrationPlan, Collections.singletonList(snapshotBeforeMigration.getProcessInstanceId()));
+
+    snapshotAfterMigration = takeFullProcessInstanceSnapshot(processInstance);
+  }
+
+  public ExecutionAssert assertExecutionTreeAfterMigration() {
+    return assertThat(snapshotAfterMigration.getExecutionTree());
+  }
+
+  public ActivityInstanceAssert.ActivityInstanceAssertThatClause assertActivityTreeAfterMigration() {
+    return assertThat(snapshotAfterMigration.getActivityTree());
+  }
 }

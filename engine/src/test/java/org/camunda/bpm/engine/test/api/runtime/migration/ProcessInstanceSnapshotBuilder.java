@@ -21,6 +21,7 @@ import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
 
 public class ProcessInstanceSnapshotBuilder {
@@ -49,6 +50,13 @@ public class ProcessInstanceSnapshotBuilder {
     return this;
   }
 
+  public ProcessInstanceSnapshotBuilder tasks() {
+    List<Task> tasks = processEngine.getTaskService().createTaskQuery().processInstanceId(processInstanceId).list();
+    snapshot.setTasks(tasks);
+
+    return this;
+  }
+
   public ProcessInstanceSnapshotBuilder eventSubscriptions() {
     List<EventSubscription> eventSubscriptions = processEngine.getRuntimeService().createEventSubscriptionQuery().processInstanceId(processInstanceId).list();
     snapshot.setEventSubscriptions(eventSubscriptions);
@@ -70,6 +78,7 @@ public class ProcessInstanceSnapshotBuilder {
   public ProcessInstanceSnapshot full() {
     activityTree();
     executionTree();
+    tasks();
     eventSubscriptions();
     jobs();
 

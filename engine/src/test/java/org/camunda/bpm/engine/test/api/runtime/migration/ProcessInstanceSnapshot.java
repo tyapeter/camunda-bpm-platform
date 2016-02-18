@@ -20,6 +20,7 @@ import org.camunda.bpm.engine.impl.util.EnsureUtil;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
+import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.util.ExecutionTree;
 
 /**
@@ -33,6 +34,7 @@ public class ProcessInstanceSnapshot {
   protected ExecutionTree executionTree;
   protected List<EventSubscription> eventSubscriptions;
   protected List<Job> jobs;
+  private List<Task> tasks;
 
   public ProcessInstanceSnapshot(String processInstanceId, String processDefinitionId) {
     this.processInstanceId = processInstanceId;
@@ -71,6 +73,15 @@ public class ProcessInstanceSnapshot {
 
   public void setExecutionTree(ExecutionTree executionTree) {
     this.executionTree = executionTree;
+  }
+
+  public void setTasks(List<Task> tasks) {
+    this.tasks = tasks;
+  }
+
+  public List<Task> getTasks() {
+    ensurePropertySaved("tasks", tasks);
+    return tasks;
   }
 
   public List<EventSubscription> getEventSubscriptions() {
