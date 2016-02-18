@@ -17,12 +17,9 @@ import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeAc
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
-import org.camunda.bpm.engine.ManagementService;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
@@ -68,12 +65,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnUserTask() {
     // given
-    BpmnModelInstance testProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(modify(testProcess)
-      .changeElementId("boundary", "newBoundary")
-    );
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -103,6 +101,941 @@ public class MigrationBoundaryEventsTest {
     completeTasks("userTask");
     testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
   }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnUserTaskAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnScopeUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+      .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnScopeUserTaskAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+      .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnConcurrentUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+      .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).concurrent().noScope()
+          .child("userTask1").scope()
+          .up().up()
+          .child("userTask2").concurrent().noScope()
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask1", "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnConcurrentUserTaskAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+      .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK, "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnConcurrentScopeUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+      .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).concurrent().noScope()
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask1"))
+          .up().up()
+          .child(null).concurrent().noScope()
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask2"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask1", "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventOnConcurrentScopeUserTaskAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+      .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK, "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventToSubProcess() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventToSubProcessAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventToSubProcessWithScopeUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+      .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventToSubProcessWithScopeUserTaskAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+      .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventToParallelSubProcess() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+      .addMessageBoundaryEventWithUserTask("subProcess1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess1", "subProcess1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("subProcess2", "subProcess2")
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).concurrent().noScope()
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess1"))
+          .up().up()
+          .child(null).concurrent().noScope()
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess2"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess1", testHelper.getSingleActivityInstanceBeforeMigration("subProcess1").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .endScope()
+        .beginScope("subProcess2", testHelper.getSingleActivityInstanceBeforeMigration("subProcess2").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask1", "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateMessageBoundaryEventToParallelSubProcessAndCorrelateMessage() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+      .addMessageBoundaryEventWithUserTask("subProcess1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess1", "subProcess1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("subProcess2", "subProcess2")
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the message and successfully complete the migrated instance
+    correlateMessageAndCompleteTasks(MESSAGE_NAME, AFTER_BOUNDARY_TASK, "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnUserTaskAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnScopeUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+      .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnScopeUserTaskAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+      .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .mapActivities("boundary", "newBoundary")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnConcurrentUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+      .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).concurrent().noScope()
+          .child("userTask1").scope()
+          .up().up()
+          .child("userTask2").concurrent().noScope()
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask1", "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnConcurrentUserTaskAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+      .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK, "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnConcurrentScopeUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+      .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).concurrent().noScope()
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask1"))
+          .up().up()
+          .child(null).concurrent().noScope()
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask2"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask1", "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventOnConcurrentScopeUserTaskAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+      .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK, "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventToSubProcess() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventToSubProcessAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventToSubProcessWithScopeUserTask() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+      .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventToSubProcessWithScopeUserTaskAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+      .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventToParallelSubProcess() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+      .addSignalBoundaryEventWithUserTask("subProcess1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess1", "subProcess1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("subProcess2", "subProcess2")
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).concurrent().noScope()
+          .child("userTask1").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess1"))
+          .up().up()
+          .child(null).concurrent().noScope()
+          .child("userTask2").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess2"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess1", testHelper.getSingleActivityInstanceBeforeMigration("subProcess1").getId())
+        .activity("userTask1", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
+        .endScope()
+        .beginScope("subProcess2", testHelper.getSingleActivityInstanceBeforeMigration("subProcess2").getId())
+        .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask2").getId())
+        .done());
+
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask1", "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateSignalBoundaryEventToParallelSubProcessAndCorrelateSignal() {
+    // given
+    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+      .addSignalBoundaryEventWithUserTask("subProcess1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
+    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+      .changeElementId("boundary", "newBoundary");
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess1", "subProcess1")
+      .mapActivities("boundary", "newBoundary")
+      .mapActivities("subProcess2", "subProcess2")
+      .mapActivities("userTask1", "userTask1")
+      .mapActivities("userTask2", "userTask2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then it is possible to correlate the signal and successfully complete the migrated instance
+    sendSignalAndCompleteTasks(SIGNAL_NAME, AFTER_BOUNDARY_TASK, "userTask2");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
 
   // helper
 
