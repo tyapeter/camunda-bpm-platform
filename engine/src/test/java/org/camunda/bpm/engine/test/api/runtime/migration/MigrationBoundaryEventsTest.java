@@ -13,27 +13,26 @@
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
 import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
-import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
-import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
+import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.MessageEventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.SignalEventSubscriptionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.TimerEntity;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -57,17 +56,13 @@ public class MigrationBoundaryEventsTest {
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(rule).around(testHelper);
 
-  protected ProcessEngine processEngine;
   protected RuntimeService runtimeService;
   protected TaskService taskService;
-  protected ManagementService managementService;
 
   @Before
   public void initServices() {
-    processEngine = rule.getProcessEngine();
     runtimeService = rule.getRuntimeService();
     taskService = rule.getTaskService();
-    managementService = rule.getManagementService();
   }
 
   @Test
@@ -168,15 +163,17 @@ public class MigrationBoundaryEventsTest {
     return eventSubscription;
   }
 
-  protected void assertTimerJobExists() {
-    Job job = managementService.createJobQuery().processInstanceId(testHelper.snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
-    assertNotNull("Expected a timer job to exist", job);
+  protected Job assertTimerJobExists() {
+    List<Job> jobs = testHelper.snapshotAfterMigration.getJobs();
+    assertEquals(1, jobs.size());
+    Job job = jobs.get(0);
+    assertEquals("Expected a timer job to exist", TimerEntity.TYPE, ((JobEntity) job).getType());
+    return job;
   }
 
   protected void triggerTimerAndCompleteTasks(String... taskKeys) {
-    Job job = managementService.createJobQuery().processInstanceId(testHelper.snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
-    assertNotNull("Expected a timer job to exist", job);
-    managementService.executeJob(job.getId());
+    Job job = assertTimerJobExists();
+    rule.getManagementService().executeJob(job.getId());
     completeTasks(taskKeys);
   }
 

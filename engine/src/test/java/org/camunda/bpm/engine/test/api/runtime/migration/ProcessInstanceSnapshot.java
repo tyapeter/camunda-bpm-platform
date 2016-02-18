@@ -84,9 +84,27 @@ public class ProcessInstanceSnapshot {
     return tasks;
   }
 
+  public Task getTaskForKey(String key) {
+    for (Task task : getTasks()) {
+      if (key.equals(task.getTaskDefinitionKey())) {
+        return task;
+      }
+    }
+    return null;
+  }
+
   public List<EventSubscription> getEventSubscriptions() {
     ensurePropertySaved("event subscriptions", eventSubscriptions);
     return eventSubscriptions;
+  }
+
+  public EventSubscription getEventSubscriptionForActivityId(String activityId) {
+    for (EventSubscription eventSubscription : getEventSubscriptions()) {
+      if (activityId.equals(eventSubscription.getActivityId())) {
+        return eventSubscription;
+      }
+    }
+    return null;
   }
 
   public void setEventSubscriptions(List<EventSubscription> eventSubscriptions) {

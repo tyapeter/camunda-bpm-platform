@@ -13,17 +13,13 @@
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
 import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
-import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
-import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
-import org.camunda.bpm.engine.ManagementService;
-import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.migration.MigrationPlan;
@@ -50,17 +46,13 @@ public class MigrationRemoveBoundaryEventsTest {
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(rule).around(testHelper);
 
-  protected ProcessEngine processEngine;
   protected RuntimeService runtimeService;
   protected TaskService taskService;
-  protected ManagementService managementService;
 
   @Before
   public void initServices() {
-    processEngine = rule.getProcessEngine();
     runtimeService = rule.getRuntimeService();
     taskService = rule.getTaskService();
-    managementService = rule.getManagementService();
   }
 
   @Test

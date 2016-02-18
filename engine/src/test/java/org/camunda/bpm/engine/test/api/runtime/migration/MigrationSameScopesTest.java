@@ -63,8 +63,8 @@ public class MigrationSameScopesTest {
         describeExecutionTree("userTask").scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
           .done());
 
-    Task task = testHelper.snapshotAfterMigration.getTasks().get(0);
-    Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
+    Task task = testHelper.snapshotBeforeMigration.getTaskForKey("userTask");
+    Task migratedTask = testHelper.snapshotAfterMigration.getTaskForKey("userTask");
     Assert.assertEquals(task.getId(), migratedTask.getId());
 
     // and it is possible to successfully complete the migrated instance
@@ -97,8 +97,8 @@ public class MigrationSameScopesTest {
           .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
           .done());
 
-    Task task = testHelper.snapshotBeforeMigration.getTasks().get(0);
-    Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
+    Task task = testHelper.snapshotBeforeMigration.getTaskForKey("userTask");
+    Task migratedTask = testHelper.snapshotAfterMigration.getTaskForKey("userTask");
     Assert.assertEquals(task.getId(), migratedTask.getId());
     Assert.assertEquals(targetProcessDefinition.getId(), migratedTask.getProcessDefinitionId());
 
@@ -131,7 +131,7 @@ public class MigrationSameScopesTest {
           .child("userTask2").concurrent().noScope()
           .done());
 
-    List<Task> migratedTasks = rule.getTaskService().createTaskQuery().list();
+    List<Task> migratedTasks = testHelper.snapshotAfterMigration.getTasks();
     Assert.assertEquals(2, migratedTasks.size());
 
     for (Task migratedTask : migratedTasks) {
@@ -195,7 +195,7 @@ public class MigrationSameScopesTest {
           .activity("userTask2", testHelper.getSingleActivityInstanceBeforeMigration("userTask1").getId())
         .done());
 
-    Task migratedTask = rule.getTaskService().createTaskQuery().singleResult();
+    Task migratedTask = testHelper.snapshotAfterMigration.getTaskForKey("userTask1");
     Assert.assertNotNull(migratedTask);
     Assert.assertEquals(targetProcessDefinition.getId(), migratedTask.getProcessDefinitionId());
 
