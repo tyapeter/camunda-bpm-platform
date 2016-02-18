@@ -108,4 +108,12 @@ public class MigrationTestRule extends TestWatcher {
       throw new RuntimeException("There is not exactly one activity instance for activity " + activityId);
     }
   }
+
+  public ProcessInstanceSnapshot takeFullProcessInstanceSnapshot(ProcessInstance processInstance) {
+    return takeProcessInstanceSnapshot(processInstance).full();
+  }
+
+  public ProcessInstanceSnapshotBuilder takeProcessInstanceSnapshot(ProcessInstance processInstance) {
+    return new ProcessInstanceSnapshotBuilder(processInstance, processEngine);
+  }
 }
