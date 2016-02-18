@@ -18,6 +18,7 @@ import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import com.sun.xml.internal.ws.api.server.BoundEndpoint;
+
 public class MigrationBoundaryEventsTest {
 
   public static final String AFTER_BOUNDARY_TASK = "afterBoundary";
@@ -62,16 +65,13 @@ public class MigrationBoundaryEventsTest {
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(rule).around(testHelper);
 
-  public ProcessEngine processEngine;
-  public RuntimeService runtimeService;
-  public TaskService taskService;
-  public ManagementService managementService;
+  protected ProcessEngine processEngine;
+  protected RuntimeService runtimeService;
+  protected TaskService taskService;
+  protected ManagementService managementService;
 
-  public ProcessInstance processInstance;
-  public ActivityInstance originalActivityTree;
-  public ActivityInstance updatedActivityTree;
-  public ExecutionTree migratedExecutionTree;
-  public List<EventSubscription> originalEventSubscriptions;
+  protected ProcessInstanceSnapshot snapshotBeforeMigration;
+  protected ProcessInstanceSnapshot snapshotAfterMigration;
 
   @Before
   public void initServices() {
@@ -83,48 +83,6 @@ public class MigrationBoundaryEventsTest {
 
   @Test
   public void testMigrateMessageBoundaryEventOnUserTask() {
-    // given
-    BpmnModelInstance testProcess = ProcessModels.ONE_TASK_PROCESS.clone()
-      .<UserTask>getModelElementById("userTask").builder()
-      .boundaryEvent("boundary").message(MESSAGE_NAME)
-      .userTask(AFTER_BOUNDARY_TASK)
-      .endEvent()
-      .done();
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
-
-    MigrationPlan migrationPlan = runtimeService
-      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
-      .mapActivities("userTask", "userTask")
-      .mapActivities("boundary", "boundary")
-      .build();
-
-    // when
-    createProcessInstanceAndMigrate(migrationPlan);
-
-    // then
-    assertThat(migratedExecutionTree)
-      .hasProcessDefinitionId(targetProcessDefinition.getId())
-      .matches(
-        describeExecutionTree(null).scope().id(processInstance.getId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(originalActivityTree, "userTask"))
-          .done());
-
-    assertThat(updatedActivityTree).hasStructure(
-      describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(originalActivityTree, "userTask").getId())
-        .done());
-
-    EventSubscription originalEventSubscription = originalEventSubscriptions.get(0);
-    assertMessageEventSubscriptionExists(MESSAGE_NAME, originalEventSubscription.getId(), "boundary");
-
-    // and it is possible to successfully complete the migrated instance
-    completeTasks("userTask");
-    testHelper.assertProcessEnded(processInstance.getId());
-  }
-
-  @Test
-  public void testMigrateMessageBoundaryEventWithOtherActivityIdOnUserTask() {
     // given
     BpmnModelInstance testProcess = ProcessModels.ONE_TASK_PROCESS.clone()
       .<UserTask>getModelElementById("userTask").builder()
@@ -149,35 +107,32 @@ public class MigrationBoundaryEventsTest {
     createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(migratedExecutionTree)
+    assertThat(snapshotAfterMigration.getExecutionTree())
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
-        describeExecutionTree(null).scope().id(processInstance.getId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(originalActivityTree, "userTask"))
+        describeExecutionTree(null).scope().id(snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(snapshotBeforeMigration.getActivityTree(), "userTask"))
           .done());
 
-    assertThat(updatedActivityTree).hasStructure(
+    assertThat(snapshotAfterMigration.getActivityTree()).hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(originalActivityTree, "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstance(snapshotBeforeMigration.getActivityTree(), "userTask").getId())
         .done());
 
-    EventSubscription originalEventSubscription = originalEventSubscriptions.get(0);
-    assertMessageEventSubscriptionExists(MESSAGE_NAME, originalEventSubscription.getId(), "newBoundary");
+    assertEventSubscriptionMigrated("boundary", "newBoundary");
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
-    testHelper.assertProcessEnded(processInstance.getId());
+    testHelper.assertProcessEnded(snapshotBeforeMigration.getProcessInstanceId());
   }
 
   // helper
 
   protected void createProcessInstanceAndMigrate(MigrationPlan migrationPlan) {
-    processInstance = runtimeService.startProcessInstanceById(migrationPlan.getSourceProcessDefinitionId());
-    originalActivityTree = runtimeService.getActivityInstance(processInstance.getId());
-    originalEventSubscriptions = runtimeService.createEventSubscriptionQuery().list();
-    runtimeService.executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
-    updatedActivityTree = runtimeService.getActivityInstance(processInstance.getId());
-    migratedExecutionTree = ExecutionTree.forExecution(processInstance.getId(), processEngine);
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(migrationPlan.getSourceProcessDefinitionId());
+    snapshotBeforeMigration = testHelper.takeFullProcessInstanceSnapshot(processInstance);
+    runtimeService.executeMigrationPlan(migrationPlan, Collections.singletonList(snapshotBeforeMigration.getProcessInstanceId()));
+    snapshotAfterMigration = testHelper.takeFullProcessInstanceSnapshot(processInstance);
   }
 
   protected void completeTasks(String... taskKeys) {
@@ -199,6 +154,26 @@ public class MigrationBoundaryEventsTest {
     completeTasks(taskKeys);
   }
 
+  protected void assertEventSubscriptionMigrated(String activityIdBefore, String activityIdAfter) {
+    EventSubscription eventSubscriptionBefore = findEventSubscriptionFromSnapshotForActivityId(activityIdBefore, snapshotBeforeMigration);
+    assertNotNull("Expected that an event subscription for activity '" + activityIdBefore + "' exists before migration", eventSubscriptionBefore);
+    EventSubscription eventSubscriptionAfter = findEventSubscriptionFromSnapshotForActivityId(activityIdAfter, snapshotAfterMigration);
+    assertNotNull("Expected that an event subscription for activity '" + activityIdAfter + "' exists after migration", eventSubscriptionAfter);
+
+    assertEquals(eventSubscriptionBefore.getId(), eventSubscriptionAfter.getId());
+    assertEquals(eventSubscriptionBefore.getEventType(), eventSubscriptionAfter.getEventType());
+    assertEquals(eventSubscriptionBefore.getEventName(), eventSubscriptionAfter.getEventName());
+  }
+
+  protected EventSubscription findEventSubscriptionFromSnapshotForActivityId(String activityId, ProcessInstanceSnapshot snapshot) {
+    for (EventSubscription eventSubscription : snapshot.getEventSubscriptions()) {
+      if (activityId.equals(eventSubscription.getActivityId())) {
+        return eventSubscription;
+      }
+    }
+    return null;
+  }
+
   protected void assertMessageEventSubscriptionExists(String messageName, String eventSubscriptionId, String activityId) {
     EventSubscription eventSubscription = assertAndGetEventSubscription(messageName);
     assertEquals(MessageEventSubscriptionEntity.EVENT_TYPE, eventSubscription.getEventType());
@@ -218,12 +193,12 @@ public class MigrationBoundaryEventsTest {
   }
 
   protected void assertTimerJobExists() {
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).timers().singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
     assertNotNull("Expected a timer job to exist", job);
   }
 
   protected void triggerTimerAndCompleteTasks(String... taskKeys) {
-    Job job = managementService.createJobQuery().processInstanceId(processInstance.getId()).timers().singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
     assertNotNull("Expected a timer job to exist", job);
     managementService.executeJob(job.getId());
     completeTasks(taskKeys);
