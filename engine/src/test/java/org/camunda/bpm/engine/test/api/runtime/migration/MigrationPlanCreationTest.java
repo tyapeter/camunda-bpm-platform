@@ -12,6 +12,7 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
 import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.MigrationPlanAssert.migrate;
 import static org.camunda.bpm.engine.test.util.MigrationPlanValidationReportAssert.assertThat;
@@ -23,7 +24,7 @@ import org.camunda.bpm.engine.migration.MigrationPlanValidationException;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.UserTask;
+import org.camunda.bpm.model.bpmn.builder.UserTaskBuilder;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -250,8 +251,8 @@ public class MigrationPlanCreationTest {
   @Test
   public void testMapEqualActivitiesWithParallelMultiInstance() {
     // given
-    BpmnModelInstance testProcess = ProcessModels.ONE_TASK_PROCESS.clone()
-      .<UserTask>getModelElementById("userTask").builder()
+    BpmnModelInstance testProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .getBuilderForElementById("userTask", UserTaskBuilder.class)
       .multiInstance().parallel().cardinality("3").multiInstanceDone().done();
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
     ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);

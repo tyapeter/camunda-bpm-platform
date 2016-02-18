@@ -12,7 +12,11 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import java.util.Collections;
+
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.Deployment;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -33,6 +37,9 @@ public class MigrationTestRule extends TestWatcher {
 
   protected ProcessEngineRule processEngineRule;
   protected ProcessEngine processEngine;
+
+  public ProcessInstanceSnapshot snapshotBeforeMigration;
+  public ProcessInstanceSnapshot snapshotAfterMigration;
 
   public MigrationTestRule(ProcessEngineRule processEngineRule) {
     this.processEngineRule = processEngineRule;
@@ -115,6 +122,18 @@ public class MigrationTestRule extends TestWatcher {
 
   public ProcessInstanceSnapshotBuilder takeProcessInstanceSnapshot(ProcessInstance processInstance) {
     return new ProcessInstanceSnapshotBuilder(processInstance, processEngine);
+  }
+
+  public ProcessInstance createProcessInstanceAndMigrate(MigrationPlan migrationPlan) {
+    RuntimeService runtimeService = processEngine.getRuntimeService();
+
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(migrationPlan.getSourceProcessDefinitionId());
+    snapshotBeforeMigration = takeFullProcessInstanceSnapshot(processInstance);
+
+    runtimeService.executeMigrationPlan(migrationPlan, Collections.singletonList(snapshotBeforeMigration.getProcessInstanceId()));
+    snapshotAfterMigration = takeFullProcessInstanceSnapshot(processInstance);
+
+    return processInstance;
   }
 
 }

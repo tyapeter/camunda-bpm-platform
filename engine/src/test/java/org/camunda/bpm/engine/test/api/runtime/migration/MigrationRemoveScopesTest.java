@@ -12,6 +12,7 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration;
 
+import static org.camunda.bpm.engine.test.api.runtime.migration.ModifiableBpmnModelInstance.modify;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.assertThat;
 import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeActivityInstanceTree;
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.assertThat;
@@ -477,13 +478,9 @@ public class MigrationRemoveScopesTest {
     // given
     DelegateEvent.clearEvents();
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(ProcessModels.SUBPROCESS_PROCESS.clone()
-        .<SubProcess>getModelElementById("subProcess")
-        .builder()
-        .camundaExecutionListenerClass(
-            ExecutionListener.EVENTNAME_END,
-            DelegateExecutionListener.class.getName())
-        .done());
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addCamundaExecutionListenerClass("subProcess", ExecutionListener.EVENTNAME_END, DelegateExecutionListener.class.getName())
+    );
     ProcessDefinition targetProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
 
     MigrationPlan migrationPlan = rule.getRuntimeService()
@@ -528,7 +525,7 @@ public class MigrationRemoveScopesTest {
 
     // when
     try {
-      rule.getRuntimeService().executeMigrationPlan(migrationPlan, Arrays.asList(processInstance.getId()));
+      rule.getRuntimeService().executeMigrationPlan(migrationPlan, Collections.singletonList(processInstance.getId()));
       Assert.fail("should not validate");
     } catch (MigrationInstructionInstanceValidationException e) {
       assertThat(e.getValidationReport())

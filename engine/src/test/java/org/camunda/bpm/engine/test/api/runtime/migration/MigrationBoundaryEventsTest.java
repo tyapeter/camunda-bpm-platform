@@ -62,9 +62,6 @@ public class MigrationBoundaryEventsTest {
   protected TaskService taskService;
   protected ManagementService managementService;
 
-  protected ProcessInstanceSnapshot snapshotBeforeMigration;
-  protected ProcessInstanceSnapshot snapshotAfterMigration;
-
   @Before
   public void initServices() {
     processEngine = rule.getProcessEngine();
@@ -90,36 +87,29 @@ public class MigrationBoundaryEventsTest {
       .build();
 
     // when
-    createProcessInstanceAndMigrate(migrationPlan);
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
 
     // then
-    assertThat(snapshotAfterMigration.getExecutionTree())
+    assertThat(testHelper.snapshotAfterMigration.getExecutionTree())
       .hasProcessDefinitionId(targetProcessDefinition.getId())
       .matches(
-        describeExecutionTree(null).scope().id(snapshotBeforeMigration.getProcessInstanceId())
-          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(snapshotBeforeMigration.getActivityTree(), "userTask"))
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivity(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask"))
           .done());
 
-    assertThat(snapshotAfterMigration.getActivityTree()).hasStructure(
+    assertThat(testHelper.snapshotAfterMigration.getActivityTree()).hasStructure(
       describeActivityInstanceTree(targetProcessDefinition.getId())
-        .activity("userTask", testHelper.getSingleActivityInstance(snapshotBeforeMigration.getActivityTree(), "userTask").getId())
+        .activity("userTask", testHelper.getSingleActivityInstance(testHelper.snapshotBeforeMigration.getActivityTree(), "userTask").getId())
         .done());
 
     assertEventSubscriptionMigrated("boundary", "newBoundary");
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
-    testHelper.assertProcessEnded(snapshotBeforeMigration.getProcessInstanceId());
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
   }
 
   // helper
-
-  protected void createProcessInstanceAndMigrate(MigrationPlan migrationPlan) {
-    ProcessInstance processInstance = runtimeService.startProcessInstanceById(migrationPlan.getSourceProcessDefinitionId());
-    snapshotBeforeMigration = testHelper.takeFullProcessInstanceSnapshot(processInstance);
-    runtimeService.executeMigrationPlan(migrationPlan, Collections.singletonList(snapshotBeforeMigration.getProcessInstanceId()));
-    snapshotAfterMigration = testHelper.takeFullProcessInstanceSnapshot(processInstance);
-  }
 
   protected void completeTasks(String... taskKeys) {
     List<Task> tasks = taskService.createTaskQuery().taskDefinitionKeyIn(taskKeys).list();
@@ -141,9 +131,9 @@ public class MigrationBoundaryEventsTest {
   }
 
   protected void assertEventSubscriptionMigrated(String activityIdBefore, String activityIdAfter) {
-    EventSubscription eventSubscriptionBefore = findEventSubscriptionFromSnapshotForActivityId(activityIdBefore, snapshotBeforeMigration);
+    EventSubscription eventSubscriptionBefore = findEventSubscriptionFromSnapshotForActivityId(activityIdBefore, testHelper.snapshotBeforeMigration);
     assertNotNull("Expected that an event subscription for activity '" + activityIdBefore + "' exists before migration", eventSubscriptionBefore);
-    EventSubscription eventSubscriptionAfter = findEventSubscriptionFromSnapshotForActivityId(activityIdAfter, snapshotAfterMigration);
+    EventSubscription eventSubscriptionAfter = findEventSubscriptionFromSnapshotForActivityId(activityIdAfter, testHelper.snapshotAfterMigration);
     assertNotNull("Expected that an event subscription for activity '" + activityIdAfter + "' exists after migration", eventSubscriptionAfter);
 
     assertEquals(eventSubscriptionBefore.getId(), eventSubscriptionAfter.getId());
@@ -179,12 +169,12 @@ public class MigrationBoundaryEventsTest {
   }
 
   protected void assertTimerJobExists() {
-    Job job = managementService.createJobQuery().processInstanceId(snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(testHelper.snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
     assertNotNull("Expected a timer job to exist", job);
   }
 
   protected void triggerTimerAndCompleteTasks(String... taskKeys) {
-    Job job = managementService.createJobQuery().processInstanceId(snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
+    Job job = managementService.createJobQuery().processInstanceId(testHelper.snapshotBeforeMigration.getProcessInstanceId()).timers().singleResult();
     assertNotNull("Expected a timer job to exist", job);
     managementService.executeJob(job.getId());
     completeTasks(taskKeys);
