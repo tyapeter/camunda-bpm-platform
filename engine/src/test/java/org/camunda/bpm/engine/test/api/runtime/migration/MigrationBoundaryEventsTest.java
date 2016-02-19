@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.util.List;
 
 import org.camunda.bpm.engine.RuntimeService;
@@ -32,6 +33,7 @@ import org.camunda.bpm.engine.runtime.EventSubscription;
 import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1571,6 +1573,54 @@ public class MigrationBoundaryEventsTest {
     assertTimerJobsRemoved("timerBoundary2");
     assertTimerJobMigrated("timerBoundary1", "timerBoundary1");
     assertTimerJobsCreated("timerBoundary2");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
+
+  @Test
+  public void testMigrateBoundaryEventAndEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSignalBoundaryEvent("subProcess", "boundary", SIGNAL_NAME)
+      .addSubProcessToParent("subProcess")
+        .triggerByEvent()
+        .embeddedSubProcess()
+          .startEvent("eventStart").message(MESSAGE_NAME)
+          .endEvent()
+        .subProcessDone()
+      .done();
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("boundary", "boundary")
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionsRemoved("eventStart");
+    assertEventSubscriptionMigrated("boundary", "boundary");
+    assertEventSubscriptionsCreated("eventStart");
 
     // and it is possible to successfully complete the migrated instance
     completeTasks("userTask");
