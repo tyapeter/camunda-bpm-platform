@@ -18,10 +18,12 @@ import java.util.Collection;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractActivityBuilder;
 import org.camunda.bpm.model.bpmn.builder.AbstractBaseElementBuilder;
-import org.camunda.bpm.model.bpmn.builder.AbstractFlowElementBuilder;
 import org.camunda.bpm.model.bpmn.builder.AbstractFlowNodeBuilder;
+import org.camunda.bpm.model.bpmn.builder.SubProcessBuilder;
 import org.camunda.bpm.model.bpmn.instance.BaseElement;
+import org.camunda.bpm.model.bpmn.instance.BpmnModelElementInstance;
 import org.camunda.bpm.model.bpmn.instance.Definitions;
+import org.camunda.bpm.model.bpmn.instance.SubProcess;
 import org.camunda.bpm.model.xml.Model;
 import org.camunda.bpm.model.xml.instance.DomDocument;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -305,6 +307,15 @@ public class ModifiableBpmnModelInstance implements BpmnModelInstance {
       .camundaExecutionListenerClass(eventName, className);
 
     return this;
+  }
+
+  public SubProcessBuilder addSubProcessToParent(String parentId) {
+    SubProcess eventSubProcess = modelInstance.newInstance(SubProcess.class);
+
+    BpmnModelElementInstance parent = getModelElementById(parentId);
+    parent.addChildElement(eventSubProcess);
+
+    return eventSubProcess.builder();
   }
 
 }

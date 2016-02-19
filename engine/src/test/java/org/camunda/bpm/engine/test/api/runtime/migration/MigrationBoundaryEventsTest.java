@@ -17,6 +17,7 @@ import static org.camunda.bpm.engine.test.util.ActivityInstanceAssert.describeAc
 import static org.camunda.bpm.engine.test.util.ExecutionAssert.describeExecutionTree;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 
@@ -1522,6 +1523,59 @@ public class MigrationBoundaryEventsTest {
     testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
   }
 
+  @Test
+  public void testMigrateMultipleBoundaryEvents() {
+    // given
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addTimerDateBoundaryEvent("subProcess", "timerBoundary1", TIMER_DATE)
+      .addMessageBoundaryEvent("subProcess", "messageBoundary1", MESSAGE_NAME)
+      .addSignalBoundaryEvent("subProcess", "signalBoundary1", SIGNAL_NAME)
+      .addTimerDateBoundaryEvent("userTask", "timerBoundary2", TIMER_DATE)
+      .addMessageBoundaryEvent("userTask", "messageBoundary2", MESSAGE_NAME)
+      .addSignalBoundaryEvent("userTask", "signalBoundary2", SIGNAL_NAME);
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("subProcess", "subProcess")
+      .mapActivities("timerBoundary1", "timerBoundary1")
+      .mapActivities("signalBoundary1", "signalBoundary1")
+      .mapActivities("userTask", "userTask")
+      .mapActivities("messageBoundary2", "messageBoundary2")
+      .build();
+
+    // when
+    testHelper.createProcessInstanceAndMigrate(migrationPlan);
+
+    // then
+    testHelper.assertExecutionTreeAfterMigration()
+      .hasProcessDefinitionId(targetProcessDefinition.getId())
+      .matches(
+        describeExecutionTree(null).scope().id(testHelper.snapshotBeforeMigration.getProcessInstanceId())
+          .child(null).scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("subProcess"))
+          .child("userTask").scope().id(testHelper.getSingleExecutionIdForActivityBeforeMigration("userTask"))
+          .done());
+
+    testHelper.assertActivityTreeAfterMigration().hasStructure(
+      describeActivityInstanceTree(targetProcessDefinition.getId())
+        .beginScope("subProcess", testHelper.getSingleActivityInstanceBeforeMigration("subProcess").getId())
+        .activity("userTask", testHelper.getSingleActivityInstanceBeforeMigration("userTask").getId())
+        .done());
+
+    assertEventSubscriptionsRemoved("messageBoundary1", "signalBoundary2");
+    assertEventSubscriptionMigrated("signalBoundary1", "signalBoundary1");
+    assertEventSubscriptionMigrated("messageBoundary2", "messageBoundary2");
+    assertEventSubscriptionsCreated("messageBoundary1", "signalBoundary2");
+    assertTimerJobsRemoved("timerBoundary2");
+    assertTimerJobMigrated("timerBoundary1", "timerBoundary1");
+    assertTimerJobsCreated("timerBoundary2");
+
+    // and it is possible to successfully complete the migrated instance
+    completeTasks("userTask");
+    testHelper.assertProcessEnded(testHelper.snapshotBeforeMigration.getProcessInstanceId());
+  }
 
   // helper
 
@@ -1539,6 +1593,7 @@ public class MigrationBoundaryEventsTest {
     completeTasks(taskKeys);
   }
 
+
   protected void sendSignalAndCompleteTasks(String signalName, String... taskKeys) {
     runtimeService.signalEventReceived(signalName);
     completeTasks(taskKeys);
@@ -1553,6 +1608,40 @@ public class MigrationBoundaryEventsTest {
     assertEquals(eventSubscriptionBefore.getId(), eventSubscriptionAfter.getId());
     assertEquals(eventSubscriptionBefore.getEventType(), eventSubscriptionAfter.getEventType());
     assertEquals(eventSubscriptionBefore.getEventName(), eventSubscriptionAfter.getEventName());
+  }
+
+  protected void assertEventSubscriptionsRemoved(String... activityIds) {
+    for (String activityId : activityIds) {
+      assertEventSubscriptionRemoved(activityId);
+    }
+  }
+
+  protected void assertEventSubscriptionRemoved(String activityId) {
+    EventSubscription eventSubscriptionBefore = testHelper.snapshotBeforeMigration.getEventSubscriptionForActivityId(activityId);
+    assertNotNull("Expected an event subscription for activity '" + activityId + "' before the migration", eventSubscriptionBefore);
+
+    for (EventSubscription eventSubscription : testHelper.snapshotAfterMigration.getEventSubscriptions()) {
+      if (eventSubscriptionBefore.getId().equals(eventSubscription.getId())) {
+        fail("Expected event subscription '" + eventSubscriptionBefore.getId() + "' to be removed after migration");
+      }
+    }
+  }
+
+  protected void assertEventSubscriptionsCreated(String... activityIds) {
+    for (String activityId : activityIds) {
+      assertEventSubscriptionCreated(activityId);
+    }
+  }
+
+  protected void assertEventSubscriptionCreated(String activityId) {
+    EventSubscription eventSubscriptionAfter = testHelper.snapshotAfterMigration.getEventSubscriptionForActivityId(activityId);
+    assertNotNull("Expected an event subscription for activity '" + activityId + "' after the migration", eventSubscriptionAfter);
+
+    for (EventSubscription eventSubscription : testHelper.snapshotBeforeMigration.getEventSubscriptions()) {
+      if (eventSubscriptionAfter.getId().equals(eventSubscription.getId())) {
+        fail("Expected event subscription '" + eventSubscriptionAfter.getId() + "' to be first created after migration");
+      }
+    }
   }
 
   protected void assertTimerJobMigrated(String activityIdBefore, String activityIdAfter) {
@@ -1573,6 +1662,48 @@ public class MigrationBoundaryEventsTest {
     assertEquals(jobBefore.getId(), jobAfter.getId());
     assertEquals(jobBefore.getDuedate(), jobAfter.getDuedate());
 
+  }
+
+  protected void assertTimerJobsRemoved(String... activityIds) {
+    for (String activityId : activityIds) {
+      assertTimerJobRemoved(activityId);
+    }
+  }
+
+  protected void assertTimerJobRemoved(String activityId) {
+    JobDefinition jobDefinitionBefore = testHelper.snapshotBeforeMigration.getJobDefinitionForActivityId(activityId);
+    assertNotNull("Expected that a job definition for activity '" + activityId + "' exists before migration", jobDefinitionBefore);
+
+    Job jobBefore = testHelper.snapshotBeforeMigration.getJobForDefinitionId(jobDefinitionBefore.getId());
+    assertNotNull("Expected that a timer job for activity '" + activityId + "' exists before migration", jobBefore);
+    assertTimerJob(jobBefore);
+
+    for (Job job : testHelper.snapshotAfterMigration.getJobs()) {
+      if (jobBefore.getId().equals(job.getId())) {
+        fail("Expected job '" + jobBefore.getId() + "' to be removed after migration");
+      }
+    }
+  }
+
+  protected void assertTimerJobsCreated(String... activityIds) {
+    for (String activityId : activityIds) {
+      assertTimerJobCreated(activityId);
+    }
+  }
+
+  protected void assertTimerJobCreated(String activityId) {
+    JobDefinition jobDefinitionAfter = testHelper.snapshotAfterMigration.getJobDefinitionForActivityId(activityId);
+    assertNotNull("Expected that a job definition for activity '" + activityId + "' exists after migration", jobDefinitionAfter);
+
+    Job jobAfter = testHelper.snapshotAfterMigration.getJobForDefinitionId(jobDefinitionAfter.getId());
+    assertNotNull("Expected that a timer job for activity '" + activityId + "' exists after migration", jobAfter);
+    assertTimerJob(jobAfter);
+
+    for (Job job : testHelper.snapshotBeforeMigration.getJobs()) {
+      if (jobAfter.getId().equals(job.getId())) {
+        fail("Expected job '" + jobAfter.getId() + "' to be created first after migration");
+      }
+    }
   }
 
   protected EventSubscription assertAndGetEventSubscription(String eventName) {
