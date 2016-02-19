@@ -78,14 +78,29 @@ public class MigrationInstructionValidators {
     }
   };
 
+  public static final MigrationInstructionValidator SAME_EVENT_SCOPE = new MigrationInstructionValidator() {
+    public boolean isInstructionValid(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
+      return ONE_TO_ONE_VALIDATOR.isInstructionValid(instruction, sourceProcessDefinition, targetProcessDefinition) &&
+        haveSameEventScope(instruction.getSourceActivityIds().get(0), instruction.getTargetActivityIds().get(0), sourceProcessDefinition, targetProcessDefinition);
+    }
+  };
 
   // Helper
+
 
   protected static boolean haveSameScope(String sourceActivityId, String targetActivityId, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
     ScopeImpl sourceFlowScope = sourceProcessDefinition.findActivity(sourceActivityId).getFlowScope();
     ScopeImpl targetFlowScope = targetProcessDefinition.findActivity(targetActivityId).getFlowScope();
 
     return (isProcessDefinition(sourceFlowScope) && isProcessDefinition(targetFlowScope)) || sourceFlowScope.getId().equals(targetFlowScope.getId());
+  }
+
+  protected static boolean haveSameEventScope(String sourceActivityId, String targetActivityId, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
+    ScopeImpl sourceEventScope = sourceProcessDefinition.findActivity(sourceActivityId).getEventScope();
+    ScopeImpl targetEventScope = targetProcessDefinition.findActivity(targetActivityId).getEventScope();
+
+    return (sourceEventScope == null && targetEventScope == null) ||
+      ((sourceEventScope != null && targetEventScope != null) && (sourceEventScope.getId().equals(targetEventScope.getId())));
   }
 
   protected static boolean isProcessDefinition(ScopeImpl scope) {

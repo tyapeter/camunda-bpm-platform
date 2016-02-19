@@ -35,6 +35,13 @@ public class MigrationPlanGenerationTest {
   protected ProcessEngineRule rule = new ProcessEngineRule();
   protected MigrationTestRule testHelper = new MigrationTestRule(rule);
 
+  public static final String AFTER_BOUNDARY_TASK = "afterBoundary";
+  public static final String MESSAGE_NAME = "Message";
+  public static final String SIGNAL_NAME = "Signal";
+  public static final String TIMER_DATE = "2016-02-11T12:13:14Z";
+  public static final String ERROR_CODE = "Error";
+  public static final String ESCALATION_CODE = "Escalation";
+
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(rule).around(testHelper);
 
@@ -278,15 +285,81 @@ public class MigrationPlanGenerationTest {
 
   @Test
   public void testMapEqualActivitiesWithBoundaryEvent() {
-    BpmnModelInstance testProcess = modify(ProcessModels.ONE_TASK_PROCESS)
-      .addMessageBoundaryEvent("userTask", "boundary", "Message");
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addMessageBoundaryEvent("subProcess", "message", MESSAGE_NAME)
+      .addSignalBoundaryEvent("userTask", "signal", SIGNAL_NAME)
+      .addTimerDateBoundaryEvent("userTask", "timer", TIMER_DATE);
 
     assertGeneratedMigrationPlan(testProcess, testProcess)
       .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("message").to("message"),
         migrate("userTask").to("userTask"),
-        migrate("boundary").to("boundary")
+        migrate("signal").to("signal"),
+        migrate("timer").to("timer")
       );
   }
+
+  @Test
+  public void testNotMapBoundaryEventsWithDifferentIds() {
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addMessageBoundaryEvent("userTask", "message", MESSAGE_NAME);
+    BpmnModelInstance targetProcess = modify(sourceProcess)
+      .changeElementId("message", "newMessage");
+
+    assertGeneratedMigrationPlan(sourceProcess, targetProcess)
+      .hasInstructions(
+        migrate("userTask").to("userTask")
+      );
+  }
+
+  @Test
+  public void testIgnoreNotSupportedBoundaryEvents() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addMessageBoundaryEvent("subProcess", "message", MESSAGE_NAME)
+      .addErrorBoundaryEvent("subProcess", "error", ERROR_CODE)
+      .addEscalationBoundaryEvent("subProcess", "escalation", ESCALATION_CODE)
+      .addSignalBoundaryEvent("userTask", "signal", SIGNAL_NAME);
+
+    assertGeneratedMigrationPlan(testProcess, testProcess)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("message").to("message"),
+        migrate("userTask").to("userTask"),
+        migrate("signal").to("signal")
+      );
+  }
+
+  @Test
+  public void testNotMigrateBoundaryToParallelActivity() {
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+      .addMessageBoundaryEvent("userTask1", "message", MESSAGE_NAME);
+    BpmnModelInstance targetProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+      .addMessageBoundaryEvent("userTask2", "message", MESSAGE_NAME);
+
+    assertGeneratedMigrationPlan(sourceProcess, targetProcess)
+      .hasInstructions(
+        migrate("userTask1").to("userTask1"),
+        migrate("userTask2").to("userTask2")
+      );
+  }
+
+  @Test
+  public void testNotMigrateBoundaryToChildActivity() {
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addMessageBoundaryEvent("subProcess", "message", MESSAGE_NAME);
+    BpmnModelInstance targetProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addMessageBoundaryEvent("userTask", "message", MESSAGE_NAME);
+
+    assertGeneratedMigrationPlan(sourceProcess, targetProcess)
+      .hasInstructions(
+        migrate("subProcess").to("subProcess"),
+        migrate("userTask").to("userTask")
+      );
+  }
+
+
+  // helper
 
   protected MigrationPlanAssert assertGeneratedMigrationPlan(BpmnModelInstance sourceProcess, BpmnModelInstance targetProcess) {
     ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);

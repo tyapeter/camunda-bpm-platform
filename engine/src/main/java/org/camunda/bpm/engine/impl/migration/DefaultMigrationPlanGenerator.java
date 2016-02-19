@@ -43,7 +43,8 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
 
   public static final List<MigrationInstructionValidator> instructionValidators = Arrays.asList(
     MigrationInstructionValidators.SAME_ID_VALIDATOR,
-    MigrationInstructionValidators.SAME_SCOPE
+    MigrationInstructionValidators.SAME_SCOPE,
+    MigrationInstructionValidators.SAME_EVENT_SCOPE
   );
 
   public List<MigrationInstruction> generate(ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
