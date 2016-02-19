@@ -58,6 +58,24 @@ public class MigrationActivityValidators {
     }
   };
 
+  public static final MigrationActivityValidator SUPPORTED_BOUNDARY_EVENT = new AbstractMigrationActivityValidator() {
+    public final List<String> supportedTypes = Arrays.asList(
+      "boundaryMessage",
+      "boundarySignal",
+      "boundaryTimer"
+    );
+
+    public boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {
+      if (activity.getActivityBehavior().getClass().isAssignableFrom(BoundaryEventActivityBehavior.class)) {
+        String boundaryType = (String) activity.getProperty("type");
+        return supportedTypes.contains(boundaryType);
+      }
+      else {
+        return true;
+      }
+    }
+  };
+
   // Helper
 
   protected static boolean hasMultiInstanceParent(ActivityImpl activity) {

@@ -33,11 +33,13 @@ public class DefaultMigrationPlanGenerator implements MigrationInstructionGenera
 
   public static final List<MigrationActivityValidator> sourceActivityValidators = Arrays.asList(
     MigrationActivityValidators.SUPPORTED_ACTIVITY,
+    MigrationActivityValidators.SUPPORTED_BOUNDARY_EVENT,
     MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD
   );
 
   public static final List<MigrationActivityValidator> targetActivityValidators = Arrays.asList(
     MigrationActivityValidators.SUPPORTED_ACTIVITY,
+    MigrationActivityValidators.SUPPORTED_BOUNDARY_EVENT,
     MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD
   );
 
