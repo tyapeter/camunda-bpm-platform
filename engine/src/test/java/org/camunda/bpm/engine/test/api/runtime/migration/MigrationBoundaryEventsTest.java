@@ -67,13 +67,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -107,13 +107,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnUserTaskAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -132,13 +132,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -172,13 +172,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnScopeUserTaskAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -197,13 +197,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnConcurrentUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -242,13 +242,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnConcurrentUserTaskAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
       .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -268,13 +268,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnConcurrentScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
       .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -314,13 +314,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventOnConcurrentScopeUserTaskAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
       .addMessageBoundaryEventWithUserTask("userTask1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -340,13 +340,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventToSubProcess() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
       .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -382,13 +382,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventToSubProcessAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
       .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -408,13 +408,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventToSubProcessWithScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
       .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -451,13 +451,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventToSubProcessWithScopeUserTaskAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
       .addMessageBoundaryEventWithUserTask("subProcess", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -477,12 +477,12 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventToParallelSubProcess() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
       .addMessageBoundaryEventWithUserTask("subProcess1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -527,12 +527,12 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateMessageBoundaryEventToParallelSubProcessAndCorrelateMessage() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
       .addMessageBoundaryEventWithUserTask("subProcess1", "boundary", MESSAGE_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -554,13 +554,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -594,13 +594,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnUserTaskAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -619,13 +619,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
       .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -659,13 +659,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnScopeUserTaskAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
       .addSignalBoundaryEventWithUserTask("userTask", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -684,13 +684,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnConcurrentUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
       .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -729,13 +729,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnConcurrentUserTaskAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
       .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -755,13 +755,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnConcurrentScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
       .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -801,13 +801,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventOnConcurrentScopeUserTaskAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
       .addSignalBoundaryEventWithUserTask("userTask1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -827,13 +827,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventToSubProcess() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
       .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -869,13 +869,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventToSubProcessAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
       .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -895,13 +895,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventToSubProcessWithScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
       .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -938,13 +938,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventToSubProcessWithScopeUserTaskAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
       .addSignalBoundaryEventWithUserTask("subProcess", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -964,12 +964,12 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventToParallelSubProcess() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
       .addSignalBoundaryEventWithUserTask("subProcess1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1014,12 +1014,12 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateSignalBoundaryEventToParallelSubProcessAndCorrelateSignal() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
       .addSignalBoundaryEventWithUserTask("subProcess1", "boundary", SIGNAL_NAME, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1041,13 +1041,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("userTask", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1081,13 +1081,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnUserTaskAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.ONE_TASK_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("userTask", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1106,13 +1106,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("userTask", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1146,13 +1146,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnScopeUserTaskAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("userTask", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1171,13 +1171,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnConcurrentUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("userTask1", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1216,13 +1216,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnConcurrentUserTaskAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_GATEWAY_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("userTask1", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1242,13 +1242,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnConcurrentScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
       .addTimerDateBoundaryEventWithUserTask("userTask1", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1288,13 +1288,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventOnConcurrentScopeUserTaskAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SCOPE_TASKS)
       .addTimerDateBoundaryEventWithUserTask("userTask1", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1314,13 +1314,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventToSubProcess() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("subProcess", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1356,13 +1356,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventToSubProcessAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("subProcess", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1382,13 +1382,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventToSubProcessWithScopeUserTask() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("subProcess", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1425,13 +1425,13 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventToSubProcessWithScopeUserTaskAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.SCOPE_TASK_SUBPROCESS_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("subProcess", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
 
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1451,12 +1451,12 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventToParallelSubProcess() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("subProcess1", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
@@ -1501,12 +1501,12 @@ public class MigrationBoundaryEventsTest {
   @Test
   public void testMigrateTimerBoundaryEventToParallelSubProcessAndTriggerTimer() {
     // given
-    BpmnModelInstance sourceTestProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
+    BpmnModelInstance sourceProcess = modify(ProcessModels.PARALLEL_SUBPROCESS_PROCESS)
       .addTimerDateBoundaryEventWithUserTask("subProcess1", "boundary", TIMER_DATE, AFTER_BOUNDARY_TASK);
-    BpmnModelInstance targetTestProcess = modify(sourceTestProcess)
+    BpmnModelInstance targetProcess = modify(sourceProcess)
       .changeElementId("boundary", "newBoundary");
-    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceTestProcess);
-    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetTestProcess);
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(sourceProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(targetProcess);
 
     MigrationPlan migrationPlan = runtimeService
       .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
