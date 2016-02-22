@@ -55,7 +55,7 @@ public class MigratingTimerJobInstance implements MigratingInstance, RemovingIns
     jobEntity.setActivityId(activityId);
     updateJobConfiguration(activityId);
     if (jobDefinitionEntity != null) {
-      jobEntity.setJobDefinitionId(jobDefinitionEntity.getId());
+      jobEntity.setJobDefinition(jobDefinitionEntity);
     }
   }
 

@@ -516,6 +516,120 @@ public class MigrationPlanCreationTest {
 
   }
 
+  @Test
+  public void testNotMapProcessDefinitionWithEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addSubProcessToParent(ProcessModels.PROCESS_KEY)
+      .triggerByEvent()
+      .embeddedSubProcess()
+      .startEvent().message(MESSAGE_NAME)
+      .endEvent()
+      .subProcessDone()
+      .done();
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
+
+    try {
+      runtimeService
+        .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+        .build();
+      Assert.fail("Should not succeed");
+    }
+    catch (MigrationPlanValidationException e) {
+      assertThat(e.getValidationReport())
+        .hasFailures(1)
+        .hasFailure("userTask", "the mapped activities are either null or not supported");
+    }
+  }
+
+  @Test
+  public void testNotMapSubProcessWithEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSubProcessToParent("subProcess")
+      .triggerByEvent()
+      .embeddedSubProcess()
+      .startEvent().message(MESSAGE_NAME)
+      .endEvent()
+      .subProcessDone()
+      .done();
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
+
+    try {
+      runtimeService
+        .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("subProcess", "subProcess")
+        .mapActivities("userTask", "userTask")
+        .build();
+      Assert.fail("Should not succeed");
+    }
+    catch (MigrationPlanValidationException e) {
+      assertThat(e.getValidationReport())
+        .hasFailures(1)
+        .hasFailure("subProcess", "the mapped activities are either null or not supported");
+    }
+  }
+
+  @Test
+  public void testMapActivityWithUnmappedParentWhichHasAEventSubProcessChild() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSubProcessToParent("subProcess")
+      .triggerByEvent()
+      .embeddedSubProcess()
+      .startEvent().message(MESSAGE_NAME)
+      .endEvent()
+      .subProcessDone()
+      .done();
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
+
+    MigrationPlan migrationPlan = runtimeService
+      .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+      .mapActivities("userTask", "userTask")
+      .build();
+
+    assertThat(migrationPlan)
+      .hasSourceProcessDefinition(sourceProcessDefinition)
+      .hasTargetProcessDefinition(targetProcessDefinition)
+      .hasInstructions(
+        migrate("userTask").to("userTask")
+      );
+  }
+
+  @Test
+  public void testNotMapUserTaskInEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSubProcessToParent("subProcess")
+      .triggerByEvent()
+      .embeddedSubProcess()
+      .startEvent().message(MESSAGE_NAME)
+      .userTask("innerTask")
+      .endEvent()
+      .subProcessDone()
+      .done();
+
+    ProcessDefinition sourceProcessDefinition = testHelper.deploy(testProcess);
+    ProcessDefinition targetProcessDefinition = testHelper.deploy(testProcess);
+
+    try {
+      runtimeService
+        .createMigrationPlan(sourceProcessDefinition.getId(), targetProcessDefinition.getId())
+        .mapActivities("userTask", "userTask")
+        .mapActivities("innerTask", "innerTask")
+        .build();
+      Assert.fail("Should not succeed");
+    }
+    catch (MigrationPlanValidationException e) {
+      assertThat(e.getValidationReport())
+        .hasFailures(1)
+        .hasFailure("innerTask", "the mapped activities are either null or not supported");
+    }
+  }
+
   protected void assertExceptionMessage(Exception e, String message) {
     assertThat(e.getMessage(), CoreMatchers.containsString(message));
   }

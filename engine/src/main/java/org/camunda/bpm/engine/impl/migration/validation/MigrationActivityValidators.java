@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.camunda.bpm.engine.impl.bpmn.behavior.BoundaryEventActivityBehavior;
+import org.camunda.bpm.engine.impl.bpmn.behavior.EventSubProcessActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.FlowNodeActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.MultiInstanceActivityBehavior;
 import org.camunda.bpm.engine.impl.bpmn.behavior.SubProcessActivityBehavior;
@@ -76,6 +77,18 @@ public class MigrationActivityValidators {
     }
   };
 
+  public static final MigrationActivityValidator NOT_EVENT_SUB_PROCESS_CHILD = new AbstractMigrationActivityValidator() {
+    public boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {
+      return !hasEventSubProcessParent(activity);
+    }
+  };
+
+  public static final MigrationActivityValidator HAS_NO_EVENT_SUB_PROCESS_CHILD = new AbstractMigrationActivityValidator() {
+    public boolean canBeMigrated(ActivityImpl activity, ProcessDefinitionImpl processDefinition) {
+      return !hasEventSubProcessChildOrAncestor(activity);
+    }
+  };
+
   // Helper
 
   protected static boolean hasMultiInstanceParent(ActivityImpl activity) {
@@ -91,6 +104,46 @@ public class MigrationActivityValidators {
 
   protected static boolean isMultiInstance(ScopeImpl scope) {
     return !isProcessDefinition(scope) && scope.getActivityBehavior() instanceof MultiInstanceActivityBehavior;
+  }
+
+  protected static boolean hasEventSubProcessParent(ActivityImpl activity) {
+    FlowScopeWalker flowScopeWalker = new FlowScopeWalker(activity);
+    flowScopeWalker.walkUntil(new TreeWalker.WalkCondition<ScopeImpl>() {
+      public boolean isFulfilled(ScopeImpl element) {
+        return isProcessDefinition(element) || isEventSubProcess(element);
+      }
+    });
+
+    return isEventSubProcess(flowScopeWalker.getCurrentElement());
+  }
+
+  protected static boolean isEventSubProcess(ScopeImpl scope) {
+    return !isProcessDefinition(scope) && scope.getActivityBehavior() instanceof EventSubProcessActivityBehavior;
+  }
+
+  protected static boolean hasEventSubProcessChildOrAncestor(ActivityImpl activity) {
+    if (isScope(activity) || isProcessDefinition(activity.getFlowScope())) {
+      List<ActivityImpl> activitiesToCheck;
+      if (!isScope(activity) && isProcessDefinition(activity.getFlowScope())) {
+        // if the activity is not a scope its parent is the process definition
+        // so we have to check for ancestors not childs as the process definition
+        // has no explicit instruction
+        activitiesToCheck = activity.getFlowScope().getActivities();
+      }
+      else {
+        activitiesToCheck = activity.getActivities();
+      }
+
+      for (ActivityImpl activityToCheck : activitiesToCheck) {
+        ActivityBehavior activityBehavior = activityToCheck.getActivityBehavior();
+        if (activityBehavior instanceof EventSubProcessActivityBehavior) {
+          return true;
+        }
+      }
+
+    }
+
+    return false;
   }
 
   protected static boolean isProcessDefinition(ScopeImpl scope) {

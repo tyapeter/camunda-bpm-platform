@@ -20,6 +20,7 @@ import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.util.MigrationPlanAssert;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.UserTask;
 import org.junit.Rule;
@@ -355,6 +356,71 @@ public class MigrationPlanGenerationTest {
         migrate("subProcess").to("subProcess"),
         migrate("userTask").to("userTask")
       );
+  }
+
+  @Test
+  public void testNotMigrateProcessInstanceWithEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.ONE_TASK_PROCESS)
+      .addSubProcessToParent(ProcessModels.PROCESS_KEY)
+      .triggerByEvent()
+      .embeddedSubProcess()
+        .startEvent().message(MESSAGE_NAME)
+        .endEvent()
+      .subProcessDone()
+      .done();
+
+    assertGeneratedMigrationPlan(testProcess, testProcess)
+      .hasEmptyInstructions();
+
+    assertGeneratedMigrationPlan(testProcess, ProcessModels.ONE_TASK_PROCESS)
+      .hasEmptyInstructions();
+
+    assertGeneratedMigrationPlan(ProcessModels.ONE_TASK_PROCESS, testProcess)
+      .hasEmptyInstructions();
+  }
+
+  @Test
+  public void testNotMigrateSubProcessWithEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSubProcessToParent("subProcess")
+      .triggerByEvent()
+      .embeddedSubProcess()
+      .startEvent().message(MESSAGE_NAME)
+      .endEvent()
+      .subProcessDone()
+      .done();
+
+    assertGeneratedMigrationPlan(testProcess, testProcess)
+      .hasEmptyInstructions();
+
+    assertGeneratedMigrationPlan(testProcess, ProcessModels.SUBPROCESS_PROCESS)
+      .hasEmptyInstructions();
+
+    assertGeneratedMigrationPlan(ProcessModels.SUBPROCESS_PROCESS, testProcess)
+      .hasEmptyInstructions();
+  }
+
+  @Test
+  public void testNotMigrateUserTaskInEventSubProcess() {
+    BpmnModelInstance testProcess = modify(ProcessModels.SUBPROCESS_PROCESS)
+      .addSubProcessToParent("subProcess")
+      .triggerByEvent()
+      .embeddedSubProcess()
+      .startEvent().message(MESSAGE_NAME)
+      .userTask("innerTask")
+      .endEvent()
+      .subProcessDone()
+      .done();
+
+    assertGeneratedMigrationPlan(testProcess, testProcess)
+      .hasEmptyInstructions();
+
+    assertGeneratedMigrationPlan(testProcess, ProcessModels.SUBPROCESS_PROCESS)
+      .hasEmptyInstructions();
+
+    assertGeneratedMigrationPlan(ProcessModels.SUBPROCESS_PROCESS, testProcess)
+      .hasEmptyInstructions();
+
   }
 
 

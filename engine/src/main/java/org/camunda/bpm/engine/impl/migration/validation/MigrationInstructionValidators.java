@@ -28,13 +28,17 @@ public class MigrationInstructionValidators {
     public final List<MigrationActivityValidator> sourceActivityValidators = Arrays.asList(
       MigrationActivityValidators.SUPPORTED_ACTIVITY,
       MigrationActivityValidators.SUPPORTED_BOUNDARY_EVENT,
-      MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD
+      MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD,
+      MigrationActivityValidators.NOT_EVENT_SUB_PROCESS_CHILD,
+      MigrationActivityValidators.HAS_NO_EVENT_SUB_PROCESS_CHILD
     );
 
     public final List<MigrationActivityValidator> targetActivityValidators = Arrays.asList(
       MigrationActivityValidators.SUPPORTED_ACTIVITY,
       MigrationActivityValidators.SUPPORTED_BOUNDARY_EVENT,
-      MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD
+      MigrationActivityValidators.NOT_MULTI_INSTANCE_CHILD,
+      MigrationActivityValidators.NOT_EVENT_SUB_PROCESS_CHILD,
+      MigrationActivityValidators.HAS_NO_EVENT_SUB_PROCESS_CHILD
     );
 
     public boolean isInstructionValid(MigrationInstruction instruction, ProcessDefinitionImpl sourceProcessDefinition, ProcessDefinitionImpl targetProcessDefinition) {
