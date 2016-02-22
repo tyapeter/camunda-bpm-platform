@@ -12,16 +12,18 @@
  */
 package org.camunda.bpm.example.invoice;
 
-import static org.camunda.bpm.engine.variable.Variables.*;
-
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Calendar;
+
+import static org.camunda.bpm.engine.variable.Variables.createVariables;
+import static org.camunda.bpm.engine.variable.Variables.fileValue;
 
 import org.camunda.bpm.application.PostDeploy;
 import org.camunda.bpm.application.ProcessApplication;
 import org.camunda.bpm.application.impl.ServletProcessApplication;
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.authorization.Groups;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
@@ -40,18 +42,44 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
    */
   @PostDeploy
   public void startFirstProcess(ProcessEngine processEngine) {
-
     createUsers(processEngine);
-    startProcessInstances(processEngine, "invoice.v1");
-    startProcessInstances(processEngine, "invoice.v2");
+
+    deployProcessDefinitions(processEngine);
+    startProcessInstances(processEngine, "invoice", 1);
+    startProcessInstances(processEngine, "invoice", 2);
   }
 
-  private void startProcessInstances(ProcessEngine processEngine, String processDefinitionKey) {
+  private void deployProcessDefinitions(ProcessEngine processEngine) {
+    RepositoryService repositoryService = processEngine.getRepositoryService();
+    if (repositoryService.createProcessDefinitionQuery().processDefinitionKey("invoice").count() == 0) {
+      ClassLoader classLoader = getProcessApplicationClassloader();
 
-    InputStream invoiceInputStream = InvoiceProcessApplication.class.getClassLoader().getResourceAsStream("invoice.pdf");
+      // deploy version 1
+      repositoryService.createDeployment()
+        .addInputStream("invoice.bpmn", classLoader.getResourceAsStream("invoice.v1.bpmn"))
+        .addInputStream("assign-approver-groups.dmn", classLoader.getResourceAsStream("assign-approver-groups.dmn"))
+        .deploy();
+
+      // deploy version 2
+      repositoryService.createDeployment()
+        .addInputStream("invoice.bpmn", classLoader.getResourceAsStream("invoice.v2.bpmn"))
+        .addInputStream("assign-approver-groups.dmn", classLoader.getResourceAsStream("assign-approver-groups.dmn"))
+        .deploy();
+    }
+
+  }
+
+  private void startProcessInstances(ProcessEngine processEngine, String processDefinitionKey, int processDefinitionVersion) {
+
+    InputStream invoiceInputStream = getProcessApplicationClassloader().getResourceAsStream("invoice.pdf");
+    String processDefinitionId = processEngine.getRepositoryService().createProcessDefinitionQuery()
+      .processDefinitionKey(processDefinitionKey)
+      .processDefinitionVersion(processDefinitionVersion)
+      .singleResult()
+      .getId();
 
     // process instance 1
-    processEngine.getRuntimeService().startProcessInstanceByKey(processDefinitionKey, createVariables()
+    processEngine.getRuntimeService().startProcessInstanceById(processDefinitionId, createVariables()
         .putValue("creditor", "Great Pizza for Everyone Inc.")
         .putValue("amount", 30.00d)
         .putValue("invoiceCategory", "Travel Expenses")
@@ -70,7 +98,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
       calendar.add(Calendar.DAY_OF_MONTH, -14);
       ClockUtil.setCurrentTime(calendar.getTime());
 
-      ProcessInstance pi = processEngine.getRuntimeService().startProcessInstanceByKey(processDefinitionKey, createVariables()
+      ProcessInstance pi = processEngine.getRuntimeService().startProcessInstanceById(processDefinitionId, createVariables()
           .putValue("creditor", "Bobby's Office Supplies")
           .putValue("amount", 900.00d)
           .putValue("invoiceCategory", "Misc")
@@ -102,7 +130,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
       calendar.add(Calendar.DAY_OF_MONTH, -5);
       ClockUtil.setCurrentTime(calendar.getTime());
 
-      ProcessInstance pi = processEngine.getRuntimeService().startProcessInstanceByKey(processDefinitionKey, createVariables()
+      ProcessInstance pi = processEngine.getRuntimeService().startProcessInstanceById(processDefinitionId, createVariables()
           .putValue("creditor", "Papa Steve's all you can eat")
           .putValue("amount", 10.99d)
           .putValue("invoiceCategory", "Travel Expenses")
