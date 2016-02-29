@@ -226,6 +226,11 @@ public class EventSubscriptionManager extends AbstractManager {
     }
   }
 
+  @SuppressWarnings("unchecked")
+  public List<EventSubscriptionEntity> findEventSubscriptionsByProcessInstanceId(String processInstanceId) {
+    return getDbEntityManager().selectList("selectEventSubscriptionsByProcessInstanceId", processInstanceId);
+  }
+
   public MessageEventSubscriptionEntity findMessageStartEventSubscriptionByName(String messageName) {
     MessageEventSubscriptionEntity entity = (MessageEventSubscriptionEntity) getDbEntityManager().selectOne("selectMessageStartEventSubscriptionByName", messageName);
     return entity;
