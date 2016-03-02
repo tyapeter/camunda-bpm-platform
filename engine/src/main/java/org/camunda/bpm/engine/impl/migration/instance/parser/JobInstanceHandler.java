@@ -38,7 +38,6 @@ public class JobInstanceHandler implements MigratingDependentInstanceParseHandle
   public void handle(MigratingInstanceParseContext parseContext, MigratingActivityInstance activityInstance, List<JobEntity> elements) {
 
     List<String> migratingActivityIds = new ArrayList<String>();
-    Map<String, JobDefinitionEntity> targetJobDefinitions = collectJobDefinitionsForActivityIds(parseContext.getTargetProcessDefinition().getId());
 
     for (JobEntity job : elements) {
       if (!isTimerJob(job)) {
@@ -52,7 +51,7 @@ public class JobInstanceHandler implements MigratingDependentInstanceParseHandle
         // the timer job is migrated
         ActivityImpl timerJobTargetActivity = parseContext.getTargetProcessDefinition().findActivity(timerJobMigrationInstruction.getTargetActivityIds().get(0));
         migratingActivityIds.add(timerJobTargetActivity.getId());
-        JobDefinitionEntity targetJobDefinitionEntity = targetJobDefinitions.get(timerJobTargetActivity.getActivityId());
+        JobDefinitionEntity targetJobDefinitionEntity = parseContext.getTargetJobDefinition(timerJobTargetActivity.getActivityId(), job.getJobHandlerType());
         MigratingJobInstance migratingTimerJobInstance = new MigratingJobInstance(job, targetJobDefinitionEntity, timerJobTargetActivity);
         activityInstance.addMigratingDependentInstance(migratingTimerJobInstance);
         parseContext.submit(migratingTimerJobInstance);
@@ -86,17 +85,6 @@ public class JobInstanceHandler implements MigratingDependentInstanceParseHandle
 
   protected static boolean isTimerJob(JobEntity job) {
     return job != null && job.getType().equals(TimerEntity.TYPE);
-  }
-
-  protected static Map<String, JobDefinitionEntity> collectJobDefinitionsForActivityIds(String processDefinitionId) {
-
-    List<JobDefinitionEntity> jobDefinitions = Context.getCommandContext().getJobDefinitionManager().findByProcessDefinitionId(processDefinitionId);
-    Map<String, JobDefinitionEntity> jobDefinitionsByActivityId = new HashMap<String, JobDefinitionEntity>();
-    for (JobDefinitionEntity jobDefinition : jobDefinitions) {
-      jobDefinitionsByActivityId.put(jobDefinition.getActivityId(), jobDefinition);
-    }
-
-    return jobDefinitionsByActivityId;
   }
 
 }

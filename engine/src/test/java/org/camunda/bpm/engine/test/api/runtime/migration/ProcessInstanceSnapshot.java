@@ -136,9 +136,9 @@ public class ProcessInstanceSnapshot {
     return jobDefinitions;
   }
 
-  public JobDefinition getJobDefinitionForActivityId(String activityId) {
+  public JobDefinition getJobDefinitionForActivityIdAndType(String activityId, String jobHandlerType) {
     for (JobDefinition jobDefinition : getJobDefinitions()) {
-      if (activityId.equals(jobDefinition.getActivityId())) {
+      if (activityId.equals(jobDefinition.getActivityId()) && jobHandlerType.equals(jobDefinition.getJobType())) {
         return jobDefinition;
       }
     }

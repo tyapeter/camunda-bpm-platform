@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.impl.migration.instance.MigratingProcessInstance;
 import org.camunda.bpm.engine.impl.persistence.entity.EventSubscriptionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.IncidentEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.pvm.process.ProcessDefinitionImpl;
@@ -51,6 +52,7 @@ public class MigratingInstanceParseContext {
 
   protected ProcessDefinitionImpl sourceProcessDefinition;
   protected ProcessDefinitionImpl targetProcessDefinition;
+  protected Map<String, List<JobDefinitionEntity>> targetJobDefinitions;
   protected ActivityExecutionTreeMapping mapping;
   protected Map<String, List<MigrationInstruction>> instructionsBySourceScope;
 
@@ -86,6 +88,15 @@ public class MigratingInstanceParseContext {
 
   public MigratingInstanceParseContext eventSubscriptions(Collection<EventSubscriptionEntity> eventSubscriptions) {
     this.eventSubscriptions = new HashSet<EventSubscriptionEntity>(eventSubscriptions);
+    return this;
+  }
+
+  public MigratingInstanceParseContext targetJobDefinitions(Collection<JobDefinitionEntity> jobDefinitions) {
+    this.targetJobDefinitions = new HashMap<String, List<JobDefinitionEntity>>();
+
+    for (JobDefinitionEntity jobDefinition : jobDefinitions) {
+      CollectionUtil.addToMapOfLists(this.targetJobDefinitions, jobDefinition.getActivityId(), jobDefinition);
+    }
     return this;
   }
 
@@ -125,6 +136,21 @@ public class MigratingInstanceParseContext {
 
   public ProcessDefinitionImpl getTargetProcessDefinition() {
     return targetProcessDefinition;
+  }
+
+  public JobDefinitionEntity getTargetJobDefinition(String activityId, String jobHandlerType) {
+    List<JobDefinitionEntity> jobDefinitionsForActivity = targetJobDefinitions.get(activityId);
+
+    if (jobDefinitionsForActivity != null) {
+      for (JobDefinitionEntity jobDefinition : jobDefinitionsForActivity) {
+        if (jobHandlerType.equals(jobDefinition.getJobType())) {
+          // assuming there is no more than one job definition per pair of activity and type
+          return jobDefinition;
+        }
+      }
+    }
+
+    return null;
   }
 
   public ActivityExecutionTreeMapping getMapping() {

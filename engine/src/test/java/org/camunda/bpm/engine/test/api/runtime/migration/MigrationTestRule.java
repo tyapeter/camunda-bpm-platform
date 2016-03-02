@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.TaskService;
+import org.camunda.bpm.engine.impl.jobexecutor.TimerExecuteNestedActivityJobHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TimerEntity;
 import org.camunda.bpm.engine.management.JobDefinition;
@@ -238,7 +239,7 @@ public class MigrationTestRule extends TestWatcher {
   }
 
   public void assertTimerJobCreated(String activityId) {
-    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityId(activityId);
+    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityIdAndType(activityId, TimerExecuteNestedActivityJobHandler.TYPE);
     assertNotNull("Expected that a job definition for activity '" + activityId + "' exists after migration", jobDefinitionAfter);
 
     Job jobAfter = snapshotAfterMigration.getJobForDefinitionId(jobDefinitionAfter.getId());
@@ -253,7 +254,7 @@ public class MigrationTestRule extends TestWatcher {
   }
 
   public void assertTimerJobRemoved(String activityId) {
-    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityId(activityId);
+    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityIdAndType(activityId, TimerExecuteNestedActivityJobHandler.TYPE);
     assertNotNull("Expected that a job definition for activity '" + activityId + "' exists before migration", jobDefinitionBefore);
 
     Job jobBefore = snapshotBeforeMigration.getJobForDefinitionId(jobDefinitionBefore.getId());
@@ -268,14 +269,14 @@ public class MigrationTestRule extends TestWatcher {
   }
 
   public void assertTimerJobMigrated(String activityIdBefore, String activityIdAfter) {
-    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityId(activityIdBefore);
+    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityIdAndType(activityIdBefore, TimerExecuteNestedActivityJobHandler.TYPE);
     assertNotNull("Expected that a job definition for activity '" + activityIdBefore + "' exists before migration", jobDefinitionBefore);
 
     Job jobBefore = snapshotBeforeMigration.getJobForDefinitionId(jobDefinitionBefore.getId());
     assertNotNull("Expected that a timer job for activity '" + activityIdBefore + "' exists before migration", jobBefore);
     assertTimerJob(jobBefore);
 
-    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityId(activityIdAfter);
+    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityIdAndType(activityIdAfter, TimerExecuteNestedActivityJobHandler.TYPE);
     assertNotNull("Expected that a job definition for activity '" + activityIdAfter + "' exists after migration", jobDefinitionAfter);
 
     Job jobAfter = snapshotAfterMigration.getJobForDefinitionId(jobDefinitionAfter.getId());
