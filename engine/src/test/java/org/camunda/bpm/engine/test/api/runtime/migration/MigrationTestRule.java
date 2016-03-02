@@ -24,6 +24,7 @@ import java.util.List;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.impl.jobexecutor.TimerExecuteNestedActivityJobHandler;
+import org.camunda.bpm.engine.impl.jobexecutor.TimerStartEventSubprocessJobHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.TimerEntity;
 import org.camunda.bpm.engine.management.JobDefinition;
@@ -238,12 +239,12 @@ public class MigrationTestRule extends TestWatcher {
     return job;
   }
 
-  public void assertTimerJobCreated(String activityId) {
-    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityIdAndType(activityId, TimerExecuteNestedActivityJobHandler.TYPE);
+  public void assertJobCreated(String activityId, String handlerType) {
+    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityIdAndType(activityId, handlerType);
     assertNotNull("Expected that a job definition for activity '" + activityId + "' exists after migration", jobDefinitionAfter);
 
     Job jobAfter = snapshotAfterMigration.getJobForDefinitionId(jobDefinitionAfter.getId());
-    assertNotNull("Expected that a timer job for activity '" + activityId + "' exists after migration", jobAfter);
+    assertNotNull("Expected that a job for activity '" + activityId + "' exists after migration", jobAfter);
     assertTimerJob(jobAfter);
 
     for (Job job : snapshotBeforeMigration.getJobs()) {
@@ -253,12 +254,12 @@ public class MigrationTestRule extends TestWatcher {
     }
   }
 
-  public void assertTimerJobRemoved(String activityId) {
-    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityIdAndType(activityId, TimerExecuteNestedActivityJobHandler.TYPE);
+  public void assertJobRemoved(String activityId, String handlerType) {
+    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityIdAndType(activityId, handlerType);
     assertNotNull("Expected that a job definition for activity '" + activityId + "' exists before migration", jobDefinitionBefore);
 
     Job jobBefore = snapshotBeforeMigration.getJobForDefinitionId(jobDefinitionBefore.getId());
-    assertNotNull("Expected that a timer job for activity '" + activityId + "' exists before migration", jobBefore);
+    assertNotNull("Expected that a job for activity '" + activityId + "' exists before migration", jobBefore);
     assertTimerJob(jobBefore);
 
     for (Job job : snapshotAfterMigration.getJobs()) {
@@ -268,15 +269,15 @@ public class MigrationTestRule extends TestWatcher {
     }
   }
 
-  public void assertTimerJobMigrated(String activityIdBefore, String activityIdAfter) {
-    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityIdAndType(activityIdBefore, TimerExecuteNestedActivityJobHandler.TYPE);
+  public void assertJobMigrated(String activityIdBefore, String activityIdAfter, String handlerType) {
+    JobDefinition jobDefinitionBefore = snapshotBeforeMigration.getJobDefinitionForActivityIdAndType(activityIdBefore, handlerType);
     assertNotNull("Expected that a job definition for activity '" + activityIdBefore + "' exists before migration", jobDefinitionBefore);
 
     Job jobBefore = snapshotBeforeMigration.getJobForDefinitionId(jobDefinitionBefore.getId());
     assertNotNull("Expected that a timer job for activity '" + activityIdBefore + "' exists before migration", jobBefore);
     assertTimerJob(jobBefore);
 
-    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityIdAndType(activityIdAfter, TimerExecuteNestedActivityJobHandler.TYPE);
+    JobDefinition jobDefinitionAfter = snapshotAfterMigration.getJobDefinitionForActivityIdAndType(activityIdAfter, handlerType);
     assertNotNull("Expected that a job definition for activity '" + activityIdAfter + "' exists after migration", jobDefinitionAfter);
 
     Job jobAfter = snapshotAfterMigration.getJobForDefinitionId(jobDefinitionAfter.getId());
@@ -287,6 +288,26 @@ public class MigrationTestRule extends TestWatcher {
     assertEquals(jobBefore.getDuedate(), jobAfter.getDuedate());
     assertEquals(jobDefinitionAfter.getProcessDefinitionId(), jobAfter.getProcessDefinitionId());
     assertEquals(jobDefinitionAfter.getProcessDefinitionKey(), jobAfter.getProcessDefinitionKey());
+  }
+
+  public void assertBoundaryTimerJobCreated(String activityId) {
+    assertJobCreated(activityId, TimerExecuteNestedActivityJobHandler.TYPE);
+  }
+
+  public void assertBoundaryTimerJobRemoved(String activityId) {
+    assertJobRemoved(activityId, TimerExecuteNestedActivityJobHandler.TYPE);
+  }
+
+  public void assertBoundaryTimerJobMigrated(String activityIdBefore, String activityIdAfter) {
+    assertJobMigrated(activityIdBefore, activityIdAfter, TimerExecuteNestedActivityJobHandler.TYPE);
+  }
+
+  public void assertEventSubProcessTimerJobCreated(String activityId) {
+    assertJobCreated(activityId, TimerStartEventSubprocessJobHandler.TYPE);
+  }
+
+  public void assertEventSubProcessTimerJobRemoved(String activityId) {
+    assertJobRemoved(activityId, TimerStartEventSubprocessJobHandler.TYPE);
   }
 
 }
