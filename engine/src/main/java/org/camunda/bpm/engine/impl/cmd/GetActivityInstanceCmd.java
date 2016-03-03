@@ -347,8 +347,11 @@ public class GetActivityInstanceCmd implements Command<ActivityInstance> {
     List<ExecutionEntity> executions = commandContext.getExecutionManager().findExecutionsByProcessInstanceId(processInstanceId);
     ExecutionEntity processInstance = commandContext.getExecutionManager().findExecutionById(processInstanceId);
 
-    // initialize parent/child sets
-    processInstance.restoreProcessInstance(executions, null, null, null, null, null);
+    // could be deleted
+    if (processInstance != null) {
+      // initialize parent/child sets
+      processInstance.restoreProcessInstance(executions, null, null, null, null, null);
+    }
 
     return executions;
   }
