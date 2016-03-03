@@ -13,11 +13,8 @@
 package org.camunda.bpm.engine.impl.migration.instance.parser;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.jobexecutor.TimerDeclarationImpl;
 import org.camunda.bpm.engine.impl.migration.instance.EmergingJobInstance;
 import org.camunda.bpm.engine.impl.migration.instance.MigratingActivityInstance;

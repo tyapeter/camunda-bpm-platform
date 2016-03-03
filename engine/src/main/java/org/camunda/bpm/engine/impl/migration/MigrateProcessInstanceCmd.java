@@ -38,8 +38,8 @@ import org.camunda.bpm.engine.impl.pvm.PvmActivity;
 import org.camunda.bpm.engine.impl.pvm.process.ScopeImpl;
 import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 import org.camunda.bpm.engine.impl.tree.FlowScopeWalker;
+import org.camunda.bpm.engine.impl.tree.ReferenceWalker;
 import org.camunda.bpm.engine.impl.tree.TreeVisitor;
-import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
 import org.camunda.bpm.engine.impl.util.EnsureUtil;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
@@ -145,7 +145,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
         }
       });
 
-      walker.walkUntil(new WalkCondition<MigratingActivityInstance>() {
+      walker.walkUntil(new ReferenceWalker.WalkCondition<MigratingActivityInstance>() {
 
         @Override
         public boolean isFulfilled(MigratingActivityInstance element) {
@@ -281,7 +281,7 @@ public class MigrateProcessInstanceCmd implements Command<Void> {
       }
     });
 
-    walker.walkWhile(new WalkCondition<ScopeImpl>() {
+    walker.walkWhile(new ReferenceWalker.WalkCondition<ScopeImpl>() {
 
       @Override
       public boolean isFulfilled(ScopeImpl element) {

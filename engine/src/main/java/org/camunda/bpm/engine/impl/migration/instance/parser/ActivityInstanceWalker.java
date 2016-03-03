@@ -15,14 +15,14 @@ package org.camunda.bpm.engine.impl.migration.instance.parser;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.camunda.bpm.engine.impl.tree.BranchingWalker;
+import org.camunda.bpm.engine.impl.tree.ReferenceWalker;
 import org.camunda.bpm.engine.runtime.ActivityInstance;
 
 /**
  * @author Thorben Lindhauer
  *
  */
-public class ActivityInstanceWalker extends BranchingWalker<ActivityInstance> {
+public class ActivityInstanceWalker extends ReferenceWalker<ActivityInstance> {
 
   public ActivityInstanceWalker(ActivityInstance initialElement) {
     super(initialElement);

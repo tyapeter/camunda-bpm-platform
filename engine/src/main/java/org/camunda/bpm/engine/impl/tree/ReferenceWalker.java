@@ -17,13 +17,18 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.camunda.bpm.engine.impl.tree.TreeWalker.WalkCondition;
-
 /**
- * @author Thorben Lindhauer
+ * <p>A walker for walking through an object reference structure (e.g. an execution tree).
+ * Any visited element can have any number of following elements. The elements are visited
+ * with a breadth-first approach: The walker maintains a list of next elements to which it adds
+ * a new elements at the end whenever it has visited an element. The walker stops when it encounters
+ * an element that fulfills the given {@link WalkCondition}.
  *
+ * <p>Subclasses define the type of objects and provide the walking behavior.
+ *
+ * @author Thorben Lindhauer
  */
-public abstract class BranchingWalker<T> {
+public abstract class ReferenceWalker<T> {
 
   protected List<T> currentElements;
 
@@ -33,26 +38,30 @@ public abstract class BranchingWalker<T> {
 
   protected abstract Collection<T> nextElements();
 
-  public BranchingWalker(T initialElement) {
+  public ReferenceWalker(T initialElement) {
     currentElements = new LinkedList<T>();
     currentElements.add(initialElement);
   }
 
-  public BranchingWalker<T> addPreVisitor(TreeVisitor<T> collector) {
+  public ReferenceWalker<T> addPreVisitor(TreeVisitor<T> collector) {
     this.preVisitor.add(collector);
     return this;
   }
 
-  public BranchingWalker<T> addPostVisitor(TreeVisitor<T> collector) {
+  public ReferenceWalker<T> addPostVisitor(TreeVisitor<T> collector) {
     this.postVisitor.add(collector);
     return this;
   }
 
   public T walkWhile() {
-    return walkWhile(new TreeWalker.NullCondition<T>());
+    return walkWhile(new ReferenceWalker.NullCondition<T>());
   }
 
-  public T walkWhile(WalkCondition<T> condition) {
+  public T walkUntil() {
+    return walkUntil(new ReferenceWalker.NullCondition<T>());
+  }
+
+  public T walkWhile(ReferenceWalker.WalkCondition<T> condition) {
     while (!condition.isFulfilled(getCurrentElement())) {
       for (TreeVisitor<T> collector : preVisitor) {
         collector.visit(getCurrentElement());
@@ -68,8 +77,7 @@ public abstract class BranchingWalker<T> {
     return getCurrentElement();
   }
 
-  // TODO: not sure if this is of any use
-  public T walkUntil(WalkCondition<T> condition) {
+  public T walkUntil(ReferenceWalker.WalkCondition<T> condition) {
     do {
       for (TreeVisitor<T> collector : preVisitor) {
         collector.visit(getCurrentElement());
@@ -85,9 +93,24 @@ public abstract class BranchingWalker<T> {
     return getCurrentElement();
   }
 
-
   public T getCurrentElement() {
     return currentElements.isEmpty() ? null : currentElements.get(0);
+  }
+
+  public interface WalkCondition<S> {
+    boolean isFulfilled(S element);
+  }
+
+  public static class NullCondition<S> implements ReferenceWalker.WalkCondition<S> {
+
+    public boolean isFulfilled(S element) {
+      return element == null;
+    }
+
+    public static <S> ReferenceWalker.WalkCondition<S> notNull() {
+      return new NullCondition<S>();
+    }
+
   }
 
 
