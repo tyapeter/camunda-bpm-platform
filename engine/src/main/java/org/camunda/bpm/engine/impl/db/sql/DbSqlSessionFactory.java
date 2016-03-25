@@ -38,6 +38,7 @@ public class DbSqlSessionFactory implements SessionFactory {
   public static final String MYSQL = "mysql";
   public static final String POSTGRES = "postgres";
   public static final String MARIADB = "mariadb";
+  public static final String INFORMIX = "informix";
 
   protected static final Map<String, Map<String, String>> databaseSpecificStatements = new HashMap<String, Map<String,String>>();
 
@@ -316,6 +317,34 @@ public class DbSqlSessionFactory implements SessionFactory {
     constants.put("constant.datepart.month", "MONTH");
     constants.put("constant.null.startTime", "null START_TIME_");
     dbSpecificConstants.put(MSSQL, constants);
+
+    // informix
+    databaseSpecificLimitBeforeStatements.put(INFORMIX, "SELECT SKIP #{firstResult} FIRST #{maxResults} * FROM (");
+    databaseSpecificLimitAfterStatements.put(INFORMIX, ")");
+    databaseSpecificInnerLimitAfterStatements.put(INFORMIX, databaseSpecificLimitAfterStatements.get(INFORMIX));
+    databaseSpecificLimitBetweenStatements.put(INFORMIX, "");
+    databaseSpecificLimitBetweenClobStatements.put(INFORMIX, databaseSpecificLimitBetweenStatements.get(INFORMIX));
+    databaseSpecificOrderByStatements.put(INFORMIX, defaultOrderBy);
+    databaseSpecificLimitBeforeNativeQueryStatements.put(INFORMIX, "");
+
+    databaseSpecificBitAnd1.put(INFORMIX, "BITAND(");
+    databaseSpecificBitAnd2.put(INFORMIX, ",");
+    databaseSpecificBitAnd3.put(INFORMIX, ")");
+    databaseSpecificDatepart1.put(INFORMIX, "");
+    databaseSpecificDatepart2.put(INFORMIX, "(");
+    databaseSpecificDatepart3.put(INFORMIX, ")");
+    databaseSpecificDummyTable.put(INFORMIX, "FROM SYSMASTER:SYSDUAL");
+    databaseSpecificTrueConstant.put(INFORMIX, "'t'");
+    databaseSpecificFalseConstant.put(INFORMIX, "'f'");
+    databaseSpecificIfNull.put(INFORMIX, "NVL");
+
+    constants = new HashMap<String, String>();
+    constants.put("constant.event", "'event'");
+    constants.put("constant.op_message", "NEW_VALUE_ || '_|_' || PROPERTY_");
+    constants.put("constant.for.update", "for update");
+    constants.put("constant.datepart.quarter", "QUARTER");
+    constants.put("constant.datepart.month", "MONTH");
+    dbSpecificConstants.put(INFORMIX, constants);
   }
 
   protected String databaseType;
