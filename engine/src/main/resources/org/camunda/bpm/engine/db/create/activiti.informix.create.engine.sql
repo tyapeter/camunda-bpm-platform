@@ -1,5 +1,5 @@
 create table if not exists ACT_GE_PROPERTY (
-  NAME_ varchar(64),
+  NAME_ varchar(64) not null,
   VALUE_ lvarchar(300),
   REV_ integer,
   primary key (NAME_)
@@ -18,7 +18,7 @@ insert into ACT_GE_PROPERTY
 values ('deployment.lock', '0', 1);
 
 create table if not exists ACT_GE_BYTEARRAY (
-  ID_ varchar(64),
+  ID_ varchar(64) not null,
   REV_ integer,
   NAME_ varchar(255),
   DEPLOYMENT_ID_ varchar(64),
@@ -29,7 +29,7 @@ create table if not exists ACT_GE_BYTEARRAY (
 );
 
 create table if not exists ACT_RE_DEPLOYMENT (
-  ID_ varchar(64),
+  ID_ varchar(64) not null,
   NAME_ varchar(255),
   DEPLOY_TIME_ datetime year to fraction(5),
   SOURCE_ varchar(255),
@@ -38,7 +38,7 @@ create table if not exists ACT_RE_DEPLOYMENT (
 );
 
 create table if not exists ACT_RU_EXECUTION (
-  ID_ varchar(64),
+  ID_ varchar(64) not null,
   REV_ integer,
   PROC_INST_ID_ varchar(64),
   BUSINESS_KEY_ varchar(255),
@@ -70,7 +70,7 @@ create table if not exists ACT_RU_JOB (
   EXECUTION_ID_ varchar(64),
   PROCESS_INSTANCE_ID_ varchar(64),
   PROCESS_DEF_ID_ varchar(64),
-  PROCESS_DEF_KEY_ varchar(64),
+  PROCESS_DEF_KEY_ varchar(255),
   RETRIES_ integer,
   EXCEPTION_STACK_ID_ varchar(64),
   EXCEPTION_MSG_ lvarchar(4000),
@@ -114,11 +114,12 @@ create table if not exists ACT_RE_PROCDEF (
   HAS_START_FORM_KEY_ boolean,
   SUSPENSION_STATE_ integer,
   TENANT_ID_ varchar(64),
+  VERSION_TAG_ varchar(64),
   primary key (ID_)
 );
 
 create table if not exists ACT_RU_TASK (
-  ID_ varchar(64),
+  ID_ varchar(64) not null,
   REV_ integer,
   EXECUTION_ID_ varchar(64),
   PROC_INST_ID_ varchar(64),
@@ -143,13 +144,14 @@ create table if not exists ACT_RU_TASK (
 );
 
 create table if not exists ACT_RU_IDENTITYLINK (
-  ID_ varchar(64),
+  ID_ varchar(64) not null,
   REV_ integer,
   GROUP_ID_ varchar(255),
   TYPE_ varchar(255),
   USER_ID_ varchar(255),
   TASK_ID_ varchar(64),
   PROC_DEF_ID_ varchar(64),
+  TENANT_ID_ varchar(64),
   primary key (ID_)
 );
 
@@ -203,6 +205,7 @@ create table if not exists ACT_RU_INCIDENT (
   ROOT_CAUSE_INCIDENT_ID_ varchar(64),
   CONFIGURATION_ varchar(255),
   TENANT_ID_ varchar(64),
+  JOB_DEF_ID_ varchar(64),
   primary key (ID_)
 );
 
@@ -245,6 +248,7 @@ create table ACT_RU_EXT_TASK (
   TOPIC_NAME_ varchar(255),
   RETRIES_ integer,
   ERROR_MSG_ lvarchar(4000),
+  ERROR_DETAILS_ID_ varchar(64),
   LOCK_EXP_TIME_ datetime year to fraction(5),
   SUSPENSION_STATE_ integer,
   EXECUTION_ID_ varchar(64),
@@ -254,6 +258,7 @@ create table ACT_RU_EXT_TASK (
   ACT_ID_ varchar(255),
   ACT_INST_ID_ varchar(64),
   TENANT_ID_ varchar(64),
+  PRIORITY_ bigint not null default 0,
   primary key (ID_)
 );
 
@@ -261,12 +266,14 @@ create table ACT_RU_BATCH (
   ID_ varchar(64) not null,
   REV_ integer not null,
   TYPE_ varchar(255),
-  SIZE_ integer,
+  TOTAL_JOBS_ integer,
+  JOBS_CREATED_ integer,
   JOBS_PER_SEED_ integer,
   INVOCATIONS_PER_JOB_ integer,
   SEED_JOB_DEF_ID_ varchar(64),
   BATCH_JOB_DEF_ID_ varchar(64),
   MONITOR_JOB_DEF_ID_ varchar(64),
+  SUSPENSION_STATE_ integer,
   CONFIGURATION_ varchar(255),
   TENANT_ID_ varchar(64),
   primary key (ID_)
@@ -286,12 +293,16 @@ create index if not exists ACT_IDX_VARIABLE_TENANT_ID on ACT_RU_VARIABLE(TENANT_
 create index if not exists ACT_IDX_ATHRZ_PROCEDEF  on ACT_RU_IDENTITYLINK(PROC_DEF_ID_);
 create index if not exists ACT_IDX_INC_CONFIGURATION on ACT_RU_INCIDENT(CONFIGURATION_);
 create index if not exists ACT_IDX_INC_TENANT_ID on ACT_RU_INCIDENT(TENANT_ID_);
+-- CAM-5914
+create index if not exists ACT_IDX_JOB_EXECUTION_ID on ACT_RU_JOB(EXECUTION_ID_);
+create index if not exists ACT_IDX_JOB_HANDLER on ACT_RU_JOB(HANDLER_TYPE_); -- ,HANDLER_CFG_);
 create index if not exists ACT_IDX_JOB_PROCINST on ACT_RU_JOB(PROCESS_INSTANCE_ID_);
 create index if not exists ACT_IDX_JOB_TENANT_ID on ACT_RU_JOB(TENANT_ID_);
 create index if not exists ACT_IDX_JOBDEF_TENANT_ID on ACT_RU_JOBDEF(TENANT_ID_);
 create index if not exists ACT_IDX_METER_LOG on ACT_RU_METER_LOG(NAME_,TIMESTAMP_);
 create index if not exists ACT_IDX_EXT_TASK_TOPIC ON ACT_RU_EXT_TASK(TOPIC_NAME_);
 create index if not exists ACT_IDX_EXT_TASK_TENANT_ID ON ACT_RU_EXT_TASK(TENANT_ID_);
+create index if not exists ACT_IDX_EXT_TASK_PRIORITY ON ACT_RU_EXT_TASK(PRIORITY_);
 create index if not exists ACT_IDX_AUTH_GROUP_ID ON ACT_RU_AUTHORIZATION(GROUP_ID_);
 create index if not exists ACT_IDX_JOB_JOB_DEF_ID on ACT_RU_JOB(JOB_DEF_ID_);
 
@@ -301,6 +312,7 @@ create index if not exists ACT_IDX_INC_EXID on ACT_RU_INCIDENT(EXECUTION_ID_);
 create index if not exists ACT_IDX_INC_PROCDEFID on ACT_RU_INCIDENT(PROC_DEF_ID_);
 create index if not exists ACT_IDX_INC_PROCINSTID on ACT_RU_INCIDENT(PROC_INST_ID_);
 create index if not exists ACT_IDX_INC_ROOTCAUSEINCID on ACT_RU_INCIDENT(ROOT_CAUSE_INCIDENT_ID_);
+create index if not exists ACT_IDX_INC_JOB_DEF on ACT_RU_INCIDENT(JOB_DEF_ID_);
 
 alter table ACT_GE_BYTEARRAY
   add constraint foreign key (DEPLOYMENT_ID_)
@@ -402,25 +414,35 @@ alter table ACT_RU_INCIDENT
   references ACT_RU_INCIDENT (ID_)
   constraint ACT_FK_INC_RCAUSE;
 
+alter table ACT_RU_INCIDENT
+  add constraint foreign key (JOB_DEF_ID_)
+  references ACT_RU_JOBDEF (ID_)
+  constraint ACT_FK_INC_JOB_DEF;
+
 alter table ACT_RU_EXT_TASK
   add constraint foreign key (EXECUTION_ID_)
   references ACT_RU_EXECUTION (ID_)
   constraint ACT_FK_EXT_TASK_EXE;
 
-alter table ACT_RU_BATCH
-    add constraint foreign key (SEED_JOB_DEF_ID_)
-    references ACT_RU_JOBDEF (ID_)
-    constraint ACT_FK_BATCH_SEED_JOB_DEF;
+alter table ACT_RU_EXT_TASK
+  add constraint foreign key (ERROR_DETAILS_ID_)
+  references ACT_GE_BYTEARRAY (ID_)
+  constraint ACT_FK_EXT_TASK_ERROR_DETAILS;
 
 alter table ACT_RU_BATCH
-    add constraint foreign key (MONITOR_JOB_DEF_ID_)
-    references ACT_RU_JOBDEF (ID_)
-    constraint ACT_FK_BATCH_MONITOR_JOB_DEF;
+  add constraint foreign key (SEED_JOB_DEF_ID_)
+  references ACT_RU_JOBDEF (ID_)
+  constraint ACT_FK_BATCH_SEED_JOB_DEF;
 
 alter table ACT_RU_BATCH
-    add constraint foreign key (BATCH_JOB_DEF_ID_)
-    references ACT_RU_JOBDEF (ID_)
-    constraint ACT_FK_BATCH_JOB_DEF;
+  add constraint foreign key (MONITOR_JOB_DEF_ID_)
+  references ACT_RU_JOBDEF (ID_)
+  constraint ACT_FK_BATCH_MONITOR_JOB_DEF;
+
+alter table ACT_RU_BATCH
+  add constraint foreign key (BATCH_JOB_DEF_ID_)
+  references ACT_RU_JOBDEF (ID_)
+  constraint ACT_FK_BATCH_JOB_DEF;
 
 -- These functions cannot be created atomatically, because every line is terminated by a semicolon and therefore executed seperately. --
 create function if not exists ACT_FCT_USER_ID_OR_ID_(USER_ID_ varchar(255),ID_ varchar(64)) returning varchar(255) with (not variant); return nvl(USER_ID_,ID_); end function;
@@ -433,6 +455,8 @@ create unique index if not exists ACT_UNIQ_AUTH_GROUP on ACT_RU_AUTHORIZATION(TY
 alter table ACT_RU_VARIABLE
   add constraint unique (VAR_SCOPE_,NAME_)
   constraint ACT_UNIQ_VARIABLE;
+
+
 
 -- index for deadlock problem - https://app.camunda.com/jira/browse/CAM-4440 --
 create index if not exists ACT_IDX_AUTH_RESOURCE_ID on ACT_RU_AUTHORIZATION(RESOURCE_ID_);
@@ -448,5 +472,6 @@ create index if not exists ACT_IDX_JOB_HANDLER_TYPE on ACT_RU_JOB(HANDLER_TYPE_)
 create index if not exists ACT_IDX_EVENT_SUBSCR_EVT_NAME on ACT_RU_EVENT_SUBSCR(EVENT_NAME_);
 create index if not exists ACT_IDX_PROCDEF_DEPLOYMENT_ID on ACT_RE_PROCDEF(DEPLOYMENT_ID_);
 create index if not exists ACT_IDX_PROCDEF_TENANT_ID ON ACT_RE_PROCDEF(TENANT_ID_);
+create index if not exists ACT_IDX_PROCDEF_VER_TAG ON ACT_RE_PROCDEF(VERSION_TAG_);
 
 create function if not exists QUARTER(DT date) returning integer with (not variant); return 1 + trunc((month(DT)-1)/3,0); end function;
