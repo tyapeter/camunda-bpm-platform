@@ -29,8 +29,7 @@ create table if not exists ACT_RU_CASE_EXECUTION (
   PREV_STATE_ integer,
   CURRENT_STATE_ integer,
   REQUIRED_ boolean,
-  REPEATABLE_ boolean,
-  REPETITION_ boolean,
+  TENANT_ID_ varchar(64),
   primary key (ID_)
 );
 
@@ -46,7 +45,10 @@ create table if not exists ACT_RU_CASE_SENTRY_PART (
   SOURCE_CASE_EXEC_ID_ varchar(64),
   STANDARD_EVENT_ varchar(255),
   SOURCE_ varchar(255),
+  VARIABLE_EVENT_ varchar(255),
+  VARIABLE_NAME_ varchar(255),
   SATISFIED_ boolean,
+  TENANT_ID_ varchar(64),
   primary key (ID_)
 );
 
@@ -102,3 +104,4 @@ alter table ACT_RU_CASE_SENTRY_PART
   constraint ACT_FK_CASE_SENTRY_CASE_EXEC;
 
 create index if not exists ACT_IDX_CASE_DEF_TENANT_ID on ACT_RE_CASE_DEF(TENANT_ID_);
+create index if not exists ACT_IDX_CASE_EXEC_TENANT_ID on ACT_RU_CASE_EXECUTION(TENANT_ID_);

@@ -323,9 +323,10 @@ public class DbSqlSessionFactory implements SessionFactory {
     databaseSpecificLimitAfterStatements.put(INFORMIX, ")");
     databaseSpecificInnerLimitAfterStatements.put(INFORMIX, databaseSpecificLimitAfterStatements.get(INFORMIX));
     databaseSpecificLimitBetweenStatements.put(INFORMIX, "");
-    databaseSpecificLimitBetweenClobStatements.put(INFORMIX, databaseSpecificLimitBetweenStatements.get(INFORMIX));
+    databaseSpecificLimitBetweenFilterStatements.put(INFORMIX, "");
     databaseSpecificOrderByStatements.put(INFORMIX, defaultOrderBy);
     databaseSpecificLimitBeforeNativeQueryStatements.put(INFORMIX, "");
+    databaseSpecificDistinct.put(INFORMIX, "distinct");
 
     databaseSpecificBitAnd1.put(INFORMIX, "BITAND(");
     databaseSpecificBitAnd2.put(INFORMIX, ",");
@@ -337,6 +338,8 @@ public class DbSqlSessionFactory implements SessionFactory {
     databaseSpecificTrueConstant.put(INFORMIX, "'t'");
     databaseSpecificFalseConstant.put(INFORMIX, "'f'");
     databaseSpecificIfNull.put(INFORMIX, "NVL");
+
+    addDatabaseSpecificStatement(INFORMIX, "selectFilterByQueryCriteria", "selectFilterByQueryCriteria_oracleDb2");
 
     constants = new HashMap<String, String>();
     constants.put("constant.event", "'event'");
