@@ -347,6 +347,7 @@ public class DbSqlSessionFactory implements SessionFactory {
     constants.put("constant.for.update", "for update");
     constants.put("constant.datepart.quarter", "QUARTER");
     constants.put("constant.datepart.month", "MONTH");
+    constants.put("constant.null.startTime", "null START_TIME_");
     dbSpecificConstants.put(INFORMIX, constants);
   }
 

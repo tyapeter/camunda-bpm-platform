@@ -161,6 +161,9 @@
                     <driver name="postgresql" module="org.postgresql.postgresql">
                         <xa-datasource-class>org.postgresql.xa.PGXADataSource</xa-datasource-class>
                     </driver>
+                    <driver name="com.ibm.informix.jdbc" module="com.ibm.informix.jdbc.ifxjdbc_all">
+                        <xa-datasource-class>com.informix.jdbcx.IfxXADataSource</xa-datasource-class>
+                    </driver>
                 </drivers>
             </datasources>
         </subsystem>

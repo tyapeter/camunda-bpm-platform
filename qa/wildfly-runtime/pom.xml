@@ -47,6 +47,11 @@
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <dependency>
+      <groupId>com.ibm.informix.jdbc</groupId>
+      <artifactId>ifxjdbc_all</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.python</groupId>
@@ -320,6 +325,7 @@
                       <replacefilter token="@version.oracle@" value="${version.oracle}" />
                       <replacefilter token="@version.postgresql@" value="${version.postgresql}" />
                       <replacefilter token="@version.sqlserver@" value="${version.sqlserver}" />
+                      <replacefilter token="@version.informix@" value="${version.informix}" />
                     </replace>
 
                   </target>
@@ -454,6 +460,7 @@
                       <replacefilter token="@version.oracle@" value="${version.oracle}" />
                       <replacefilter token="@version.postgresql@" value="${version.postgresql}" />
                       <replacefilter token="@version.sqlserver@" value="${version.sqlserver}" />
+                      <replacefilter token="@version.informix@" value="${version.informix}" />
                     </replace>
 
                   </target>

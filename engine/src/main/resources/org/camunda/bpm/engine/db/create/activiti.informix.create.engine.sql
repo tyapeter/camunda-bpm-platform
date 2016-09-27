@@ -237,7 +237,8 @@ create table ACT_RU_METER_LOG (
   NAME_ varchar(64) not null,
   REPORTER_ varchar(255),
   VALUE_ bigint,
-  TIMESTAMP_ datetime year to fraction(5) not null,
+  TIMESTAMP_ datetime year to fraction(5),
+  MILLISECONDS_ bigint default 0,
   primary key (ID_)
 );
 
@@ -295,15 +296,24 @@ create index if not exists ACT_IDX_INC_CONFIGURATION on ACT_RU_INCIDENT(CONFIGUR
 create index if not exists ACT_IDX_INC_TENANT_ID on ACT_RU_INCIDENT(TENANT_ID_);
 -- CAM-5914
 create index if not exists ACT_IDX_JOB_EXECUTION_ID on ACT_RU_JOB(EXECUTION_ID_);
-create index if not exists ACT_IDX_JOB_HANDLER on ACT_RU_JOB(HANDLER_TYPE_); -- ,HANDLER_CFG_);
+-- create index if not exists ACT_IDX_JOB_HANDLER on ACT_RU_JOB(HANDLER_TYPE_, HANDLER_CFG_);
 create index if not exists ACT_IDX_JOB_PROCINST on ACT_RU_JOB(PROCESS_INSTANCE_ID_);
 create index if not exists ACT_IDX_JOB_TENANT_ID on ACT_RU_JOB(TENANT_ID_);
 create index if not exists ACT_IDX_JOBDEF_TENANT_ID on ACT_RU_JOBDEF(TENANT_ID_);
-create index if not exists ACT_IDX_METER_LOG on ACT_RU_METER_LOG(NAME_,TIMESTAMP_);
-create index if not exists ACT_IDX_EXT_TASK_TOPIC ON ACT_RU_EXT_TASK(TOPIC_NAME_);
-create index if not exists ACT_IDX_EXT_TASK_TENANT_ID ON ACT_RU_EXT_TASK(TENANT_ID_);
-create index if not exists ACT_IDX_EXT_TASK_PRIORITY ON ACT_RU_EXT_TASK(PRIORITY_);
-create index if not exists ACT_IDX_AUTH_GROUP_ID ON ACT_RU_AUTHORIZATION(GROUP_ID_);
+
+-- new metric milliseconds column
+create index if not exists ACT_IDX_METER_LOG_MS on ACT_RU_METER_LOG(MILLISECONDS_);
+create index if not exists ACT_IDX_METER_LOG_NAME_MS on ACT_RU_METER_LOG(NAME_, MILLISECONDS_);
+create index if not exists ACT_IDX_METER_LOG_REPORT on ACT_RU_METER_LOG(NAME_, REPORTER_, MILLISECONDS_);
+
+-- old metric timestamp column
+create index if not exists ACT_IDX_METER_LOG_TIME on ACT_RU_METER_LOG(TIMESTAMP_);
+create index if not exists ACT_IDX_METER_LOG on ACT_RU_METER_LOG(NAME_, TIMESTAMP_);
+
+create index if not exists ACT_IDX_EXT_TASK_TOPIC on ACT_RU_EXT_TASK(TOPIC_NAME_);
+create index if not exists ACT_IDX_EXT_TASK_TENANT_ID on ACT_RU_EXT_TASK(TENANT_ID_);
+create index if not exists ACT_IDX_EXT_TASK_PRIORITY on ACT_RU_EXT_TASK(PRIORITY_);
+create index if not exists ACT_IDX_AUTH_GROUP_ID on ACT_RU_AUTHORIZATION(GROUP_ID_);
 create index if not exists ACT_IDX_JOB_JOB_DEF_ID on ACT_RU_JOB(JOB_DEF_ID_);
 
 -- indexes for deadlock problems - https://app.camunda.com/jira/browse/CAM-2567 --
@@ -313,6 +323,22 @@ create index if not exists ACT_IDX_INC_PROCDEFID on ACT_RU_INCIDENT(PROC_DEF_ID_
 create index if not exists ACT_IDX_INC_PROCINSTID on ACT_RU_INCIDENT(PROC_INST_ID_);
 create index if not exists ACT_IDX_INC_ROOTCAUSEINCID on ACT_RU_INCIDENT(ROOT_CAUSE_INCIDENT_ID_);
 create index if not exists ACT_IDX_INC_JOB_DEF on ACT_RU_INCIDENT(JOB_DEF_ID_);
+
+-- index for deadlock problem - https://app.camunda.com/jira/browse/CAM-4440 --
+create index ACT_IDX_AUTH_RESOURCE_ID on ACT_RU_AUTHORIZATION(RESOURCE_ID_);
+-- index to prevent deadlock on fk constraint - https://app.camunda.com/jira/browse/CAM-5440 --
+create index ACT_IDX_EXT_TASK_EXEC on ACT_RU_EXT_TASK(EXECUTION_ID_);
+
+-- indexes to improve deployment
+create index ACT_IDX_BYTEARRAY_NAME on ACT_GE_BYTEARRAY(NAME_);
+create index ACT_IDX_DEPLOYMENT_NAME on ACT_RE_DEPLOYMENT(NAME_);
+create index ACT_IDX_DEPLOYMENT_TENANT_ID on ACT_RE_DEPLOYMENT(TENANT_ID_);
+create index ACT_IDX_JOBDEF_PROC_DEF_ID ON ACT_RU_JOBDEF(PROC_DEF_ID_);
+create index ACT_IDX_JOB_HANDLER_TYPE ON ACT_RU_JOB(HANDLER_TYPE_);
+create index ACT_IDX_EVENT_SUBSCR_EVT_NAME ON ACT_RU_EVENT_SUBSCR(EVENT_NAME_);
+create index ACT_IDX_PROCDEF_DEPLOYMENT_ID ON ACT_RE_PROCDEF(DEPLOYMENT_ID_);
+create index ACT_IDX_PROCDEF_TENANT_ID ON ACT_RE_PROCDEF(TENANT_ID_);
+create index ACT_IDX_PROCDEF_VER_TAG ON ACT_RE_PROCDEF(VERSION_TAG_);
 
 alter table ACT_GE_BYTEARRAY
   add constraint foreign key (DEPLOYMENT_ID_)
@@ -455,23 +481,5 @@ create unique index if not exists ACT_UNIQ_AUTH_GROUP on ACT_RU_AUTHORIZATION(TY
 alter table ACT_RU_VARIABLE
   add constraint unique (VAR_SCOPE_,NAME_)
   constraint ACT_UNIQ_VARIABLE;
-
-
-
--- index for deadlock problem - https://app.camunda.com/jira/browse/CAM-4440 --
-create index if not exists ACT_IDX_AUTH_RESOURCE_ID on ACT_RU_AUTHORIZATION(RESOURCE_ID_);
--- index to prevent deadlock on fk constraint - https://app.camunda.com/jira/browse/CAM-5440 --
-create index if not exists ACT_IDX_EXT_TASK_EXEC on ACT_RU_EXT_TASK(EXECUTION_ID_);
-
--- indexes to improve deployment
-create index if not exists ACT_IDX_BYTEARRAY_NAME on ACT_GE_BYTEARRAY(NAME_);
-create index if not exists ACT_IDX_DEPLOYMENT_NAME on ACT_RE_DEPLOYMENT(NAME_);
-create index if not exists ACT_IDX_DEPLOYMENT_TENANT_ID on ACT_RE_DEPLOYMENT(TENANT_ID_);
-create index if not exists ACT_IDX_JOBDEF_PROC_DEF_ID on ACT_RU_JOBDEF(PROC_DEF_ID_);
-create index if not exists ACT_IDX_JOB_HANDLER_TYPE on ACT_RU_JOB(HANDLER_TYPE_);
-create index if not exists ACT_IDX_EVENT_SUBSCR_EVT_NAME on ACT_RU_EVENT_SUBSCR(EVENT_NAME_);
-create index if not exists ACT_IDX_PROCDEF_DEPLOYMENT_ID on ACT_RE_PROCDEF(DEPLOYMENT_ID_);
-create index if not exists ACT_IDX_PROCDEF_TENANT_ID ON ACT_RE_PROCDEF(TENANT_ID_);
-create index if not exists ACT_IDX_PROCDEF_VER_TAG ON ACT_RE_PROCDEF(VERSION_TAG_);
 
 create function if not exists QUARTER(DT date) returning integer with (not variant); return 1 + trunc((month(DT)-1)/3,0); end function;
