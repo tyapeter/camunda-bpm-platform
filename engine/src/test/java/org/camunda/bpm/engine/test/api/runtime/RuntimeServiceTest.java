@@ -66,6 +66,7 @@ import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.runtime.TransitionInstance;
 import org.camunda.bpm.engine.runtime.VariableInstance;
 import org.camunda.bpm.engine.runtime.VariableInstanceQuery;
+import org.camunda.bpm.engine.task.Attachment;
 import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.api.runtime.util.SimpleSerializableBean;
@@ -83,6 +84,9 @@ import org.camunda.bpm.engine.variable.type.ValueType;
  * @author Joram Barrez
  */
 public class RuntimeServiceTest extends PluggableProcessEngineTestCase {
+
+  public static final String TESTING_INSTANCE_DELETION = "testing instance deletion";
+  public static final String A_STREAM = "aStream";
 
   public void testStartProcessInstanceByKeyNullKey() {
     try {
@@ -162,8 +166,7 @@ public class RuntimeServiceTest extends PluggableProcessEngineTestCase {
     ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
     assertEquals(1, runtimeService.createProcessInstanceQuery().processDefinitionKey("oneTaskProcess").count());
 
-    String deleteReason = "testing instance deletion";
-    runtimeService.deleteProcessInstance(processInstance.getId(), deleteReason);
+    runtimeService.deleteProcessInstance(processInstance.getId(), TESTING_INSTANCE_DELETION);
     assertEquals(0, runtimeService.createProcessInstanceQuery().processDefinitionKey("oneTaskProcess").count());
 
     // test that the delete reason of the process instance shows up as delete reason of the task in history
@@ -175,8 +178,20 @@ public class RuntimeServiceTest extends PluggableProcessEngineTestCase {
               .processInstanceId(processInstance.getId())
               .singleResult();
 
-      assertEquals(deleteReason, historicTaskInstance.getDeleteReason());
+      assertEquals(TESTING_INSTANCE_DELETION, historicTaskInstance.getDeleteReason());
     }
+  }
+
+  @Deployment(resources={
+      "org/camunda/bpm/engine/test/api/oneTaskProcess.bpmn20.xml"})
+  public void testDeleteProcessInstances() {
+    ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+    ProcessInstance processInstance2 = runtimeService.startProcessInstanceByKey("oneTaskProcess");
+
+    // if we skip the custom listeners,
+    runtimeService.deleteProcessInstances(Arrays.asList(processInstance.getId(),processInstance2.getId()), null, false, false);
+
+    assertThat(runtimeService.createProcessInstanceQuery().count(),is(0l));
   }
 
   @Deployment
@@ -2276,5 +2291,29 @@ public class RuntimeServiceTest extends PluggableProcessEngineTestCase {
 
     assertEquals(0, runtimeService.createExecutionQuery().count());
 
+  }
+
+  public void testCreateAttachment () {
+    Attachment result = runtimeService.createAttachment("testType", "testProcess", "testName", "aDescription", "aUrl");
+    assertThat(result,is(notNullValue()));
+    taskService.deleteAttachment(result.getId());
+
+    result = runtimeService.createAttachment("testType", "testProcess", "testName", "aDescription", new ByteArrayInputStream(A_STREAM.getBytes()));
+    assertThat(result,is(notNullValue()));
+    taskService.deleteAttachment(result.getId());
+  }
+
+  public void testCreateAttachmentWithoutProcessId () {
+    try {
+      runtimeService.createAttachment("testType", null, "testName", "aDescription", "aUrl");
+    } catch (Exception e) {
+      //expected
+    }
+
+    try {
+      runtimeService.createAttachment("testType", null, "testName", "aDescription", new ByteArrayInputStream(A_STREAM.getBytes()));
+    } catch (Exception e) {
+      //expected
+    }
   }
 }

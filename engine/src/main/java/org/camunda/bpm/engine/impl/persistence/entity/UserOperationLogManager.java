@@ -29,6 +29,7 @@ import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.oplog.UserOperationLogContext;
 import org.camunda.bpm.engine.impl.oplog.UserOperationLogContextEntryBuilder;
 import org.camunda.bpm.engine.impl.persistence.AbstractHistoricManager;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 
 /**
  * Manager for {@link UserOperationLogEntryEventEntity} that also provides a generic and some specific log methods.
@@ -246,6 +247,19 @@ public class UserOperationLogManager extends AbstractHistoricManager {
     }
   }
 
+  public void logAttachmentOperation(String operation, ExecutionEntity processInstance, PropertyChange propertyChange) {
+    if (isUserOperationLogEnabled()) {
+      UserOperationLogContext context = new UserOperationLogContext();
+
+      UserOperationLogContextEntryBuilder entryBuilder =
+          UserOperationLogContextEntryBuilder.entry(operation, EntityTypes.ATTACHMENT)
+              .inContextOf(processInstance, Arrays.asList(propertyChange));
+      context.addEntry(entryBuilder.create());
+
+      fireUserOperationLog(context);
+    }
+  }
+
   public void logVariableOperation(String operation, String executionId, String taskId, PropertyChange propertyChange) {
     if(isUserOperationLogEnabled()) {
 
@@ -302,8 +316,7 @@ public class UserOperationLogManager extends AbstractHistoricManager {
   }
 
   protected boolean writeUserOperationLogOnlyWithLoggedInUser() {
-    ProcessEngineConfigurationImpl configuration = Context.getProcessEngineConfiguration();
-    return configuration.isRestrictUserOperationLogToAuthenticatedUsers();
+    return Context.getCommandContext().isRestrictUserOperationLogToAuthenticatedUsers();
   }
 
   protected boolean isUserOperationLogEnabledOnCommandContext() {

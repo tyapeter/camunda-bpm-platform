@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<datasources xmlns="http://www.jboss.org/ironjacamar/schema">
+    <!-- H2 -->
+    <datasource jndi-name="java:jboss/datasources/ExampleDS" pool-name="ExampleDS" enabled="true" use-java-context="true">
+        <connection-url>jdbc:h2:mem:test;DB_CLOSE_DELAY=-1</connection-url>
+        <driver>h2</driver>
+        <security>
+            <user-name>sa</user-name>
+            <password>sa</password>
+        </security>
+    </datasource>
+    <!-- Informix XA -->
+    <xa-datasource jndi-name="java:jboss/datasources/ProcessEngine" pool-name="ProcessEngine" enabled="true" use-ccm="false">
+        <driver>com.ibm.informix.jdbc</driver>
+        <xa-datasource-property name="IfxIFXHOST">${database.host}</xa-datasource-property>
+        <xa-datasource-property name="PortNumber">${database.port}</xa-datasource-property>
+        <xa-datasource-property name="DatabaseName">${database.name}</xa-datasource-property>
+        <xa-datasource-property name="ServerName">sb2000_net</xa-datasource-property>
+        <xa-datasource-property name="IfxLOBCACHE">-1</xa-datasource-property>
+        <xa-datasource-property name="IfxIFX_ISOLATION_LEVEL">2U</xa-datasource-property>
+        <xa-datasource-property name="IfxDB_LOCALE">en_us.utf8</xa-datasource-property>
+        <xa-datasource-property name="IfxCLIENT_LOCALE">en_us.utf8</xa-datasource-property>
+        <security>
+            <user-name>${database.username}</user-name>
+            <password>${database.password}</password>
+        </security>
+        <new-connection-sql>set lock mode to wait 10</new-connection-sql>
+        <xa-pool>
+            <is-same-rm-override>false</is-same-rm-override>
+            <no-tx-separate-pools>true</no-tx-separate-pools>
+        </xa-pool>
+        <transaction-isolation>TRANSACTION_READ_COMMITTED</transaction-isolation>
+        <validation>
+            <exception-sorter class-name="org.jboss.jca.adapters.jdbc.extensions.informix.InformixExceptionSorter"/>
+        </validation>
+        <statement>
+            <prepared-statement-cache-size>128</prepared-statement-cache-size>
+        </statement>
+    </xa-datasource>
+</datasources>

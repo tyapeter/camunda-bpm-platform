@@ -27,8 +27,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.camunda.bpm.engine.ProcessEngine;
+import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.camunda.bpm.engine.impl.history.HistoryLevel;
+import org.camunda.bpm.engine.impl.history.HistoryLevelFull;
 import org.camunda.bpm.engine.impl.jobexecutor.JobExecutor;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.repository.Deployment;
@@ -96,6 +99,14 @@ public class ProcessEngineTestRule extends TestWatcher {
     return deploy(createDeploymentBuilder(), Collections.<BpmnModelInstance> emptyList(), Arrays.asList(resources));
   }
 
+  public Deployment deploy(DeploymentBuilder deploymentBuilder) {
+    Deployment deployment = deploymentBuilder.deploy();
+
+    processEngineRule.manageDeployment(deployment);
+
+    return deployment;
+  }
+
   public Deployment deploy(BpmnModelInstance bpmnModelInstance, String resource) {
     return deploy(createDeploymentBuilder(), Collections.singletonList(bpmnModelInstance), Collections.singletonList(resource));
   }
@@ -136,11 +147,7 @@ public class ProcessEngineTestRule extends TestWatcher {
       deploymentBuilder.addClasspathResource(resource);
     }
 
-    Deployment deployment = deploymentBuilder.deploy();
-
-    processEngineRule.manageDeployment(deployment);
-
-    return deployment;
+    return deploy(deploymentBuilder);
   }
 
   protected DeploymentBuilder createDeploymentBuilder() {
@@ -263,6 +270,26 @@ public class ProcessEngineTestRule extends TestWatcher {
 
   public void sendSignal(String signalName) {
     processEngine.getRuntimeService().signalEventReceived(signalName);
+  }
+
+  public boolean isHistoryLevelNone() {
+    HistoryLevel historyLevel = processEngineRule.getProcessEngineConfiguration().getHistoryLevel();
+    return HistoryLevel.HISTORY_LEVEL_NONE.equals(historyLevel);
+  }
+
+  public boolean isHistoryLevelActivity() {
+    HistoryLevel historyLevel = processEngineRule.getProcessEngineConfiguration().getHistoryLevel();
+    return HistoryLevel.HISTORY_LEVEL_ACTIVITY.equals(historyLevel);
+  }
+
+  public boolean isHistoryLevelAudit() {
+    HistoryLevel historyLevel = processEngineRule.getProcessEngineConfiguration().getHistoryLevel();
+    return HistoryLevel.HISTORY_LEVEL_AUDIT.equals(historyLevel);
+  }
+
+  public boolean isHistoryLevelFull() {
+    HistoryLevel historyLevel = processEngineRule.getProcessEngineConfiguration().getHistoryLevel();
+    return HistoryLevel.HISTORY_LEVEL_FULL.equals(historyLevel);
   }
 
   protected static class InterruptTask extends TimerTask {

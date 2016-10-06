@@ -27,7 +27,6 @@
     <jersey.version>1.17.1</jersey.version>
   </properties>
 
-
   <dependencies>
     <dependency>
       <groupId>commons-fileupload</groupId>
@@ -53,6 +52,16 @@
       <scope>provided</scope>
     </dependency>
 
+    <!--
+      needed for offline shrinkwrap
+      see src/test/java/org/camunda/bpm/engine/rest/util/container/TomcatServerBootstrap.java
+    -->
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-jaxrs</artifactId>
+      <version>1.6.5</version>
+      <scope>test</scope>
+    </dependency>
 
     <!-- test -->
     <dependency>
@@ -211,6 +220,9 @@
           <classpathDependencyExcludes>
             <classpathDependencyExclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_1.1_spec</classpathDependencyExclude>
           </classpathDependencyExcludes>
+          <systemPropertyVariables>
+            <restEasyVersion>${resteasy.version}</restEasyVersion>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
@@ -253,6 +265,16 @@
         <dependency>
           <groupId>com.sun.jersey</groupId>
           <artifactId>jersey-grizzly2</artifactId>
+          <version>${jersey.version}</version>
+          <scope>test</scope>
+        </dependency>
+        <!--
+          needed for offline shrinkwrap
+          src/test/java-jersey/org/camunda/bpm/engine/rest/util/container/JerseyTomcatServerBootstrap.java
+        -->
+        <dependency>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>jersey-servlet</artifactId>
           <version>${jersey.version}</version>
           <scope>test</scope>
         </dependency>
@@ -396,6 +418,12 @@
           <version>${wink.version}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>1.5.11</version>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -459,6 +487,12 @@
         <dependency>
           <groupId>org.glassfish.jersey.containers</groupId>
           <artifactId>jersey-container-grizzly2-http</artifactId>
+          <version>2.21.1</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.glassfish.jersey.containers</groupId>
+          <artifactId>jersey-container-servlet</artifactId>
           <version>2.21.1</version>
           <scope>test</scope>
         </dependency>

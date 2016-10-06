@@ -16,7 +16,6 @@ package org.camunda.bpm.engine.history;
 
 import java.util.Date;
 
-
 /**
  * Represents one execution of an activity and it's stored permanent for statistics, audit and other business intelligence purposes.
  *
@@ -36,7 +35,14 @@ public interface HistoricActivityInstance {
   /** The display name for the activity */
   String getActivityName();
 
-  /** The XML tag of the activity as in the process file */
+  /**
+   * The activity type of the activity.
+   * Typically the activity type correspond to the XML tag used in the BPMN 2.0 process definition file.
+   *
+   * All activity types are available in {@link org.camunda.bpm.engine.ActivityTypes}
+   *
+   * @see org.camunda.bpm.engine.ActivityTypes
+   */
   String getActivityType();
 
   /** Process definition key reference */

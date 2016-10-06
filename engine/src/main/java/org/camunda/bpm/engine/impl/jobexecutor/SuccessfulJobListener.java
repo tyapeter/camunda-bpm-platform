@@ -12,7 +12,7 @@
  */
 package org.camunda.bpm.engine.impl.jobexecutor;
 
-import org.camunda.bpm.engine.impl.cfg.TransactionListener;
+import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.management.Metrics;
 
@@ -20,10 +20,12 @@ import org.camunda.bpm.engine.management.Metrics;
  * @author Thorben Lindhauer
  *
  */
-public class SuccessfulJobListener implements TransactionListener {
+public class SuccessfulJobListener implements Command<Void> {
 
-  public void execute(CommandContext commandContext) {
+  public Void execute(CommandContext commandContext) {
     logJobSuccess(commandContext);
+
+    return null;
   }
 
   protected void logJobSuccess(CommandContext commandContext) {

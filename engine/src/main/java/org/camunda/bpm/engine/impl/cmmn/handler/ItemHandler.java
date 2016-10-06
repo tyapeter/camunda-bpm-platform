@@ -275,8 +275,6 @@ public abstract class ItemHandler extends CmmnElementHandler<CmmnElement, CmmnAc
     PlanItemControl itemControl = getItemControl(element);
     PlanItemControl defaultControl = getDefaultControl(element);
 
-    ExpressionManager expressionManager = context.getExpressionManager();
-
     RequiredRule requiredRule = null;
     if (itemControl != null) {
       requiredRule = itemControl.getRequiredRule();
@@ -286,15 +284,8 @@ public abstract class ItemHandler extends CmmnElementHandler<CmmnElement, CmmnAc
     }
 
     if (requiredRule != null) {
-      ConditionExpression condition = requiredRule.getCondition();
-      if (condition != null) {
-        String rule = condition.getText();
-        if (rule != null) {
-          Expression requiredRuleExpression = expressionManager.createExpression(rule);
-          CaseControlRule caseRule = new CaseControlRuleImpl(requiredRuleExpression);
-          activity.setProperty(PROPERTY_REQUIRED_RULE, caseRule);
-        }
-      }
+      CaseControlRule caseRule = initializeCaseControlRule(requiredRule.getCondition(), context);
+      activity.setProperty(PROPERTY_REQUIRED_RULE, caseRule);
     }
 
   }
@@ -302,8 +293,6 @@ public abstract class ItemHandler extends CmmnElementHandler<CmmnElement, CmmnAc
   protected void initializeManualActivationRule(CmmnElement element, CmmnActivity activity, CmmnHandlerContext context) {
     PlanItemControl itemControl = getItemControl(element);
     PlanItemControl defaultControl = getDefaultControl(element);
-
-    ExpressionManager expressionManager = context.getExpressionManager();
 
     ManualActivationRule manualActivationRule = null;
     if (itemControl != null) {
@@ -314,15 +303,7 @@ public abstract class ItemHandler extends CmmnElementHandler<CmmnElement, CmmnAc
     }
 
     if (manualActivationRule != null) {
-      ConditionExpression condition = manualActivationRule.getCondition();
-      Expression manualActivationExpression = null;
-      if (condition != null) {
-        String rule = condition.getText();
-        if (rule != null && !rule.isEmpty()) {
-          manualActivationExpression = expressionManager.createExpression(rule);
-        }
-      }
-      CaseControlRule caseRule = new CaseControlRuleImpl(manualActivationExpression);
+      CaseControlRule caseRule = initializeCaseControlRule(manualActivationRule.getCondition(), context);
       activity.setProperty(PROPERTY_MANUAL_ACTIVATION_RULE, caseRule);
     }
 
@@ -331,8 +312,6 @@ public abstract class ItemHandler extends CmmnElementHandler<CmmnElement, CmmnAc
   protected void initializeRepetitionRule(CmmnElement element, CmmnActivity activity, CmmnHandlerContext context) {
     PlanItemControl itemControl = getItemControl(element);
     PlanItemControl defaultControl = getDefaultControl(element);
-
-    ExpressionManager expressionManager = context.getExpressionManager();
 
     RepetitionRule repetitionRule = null;
     if (itemControl != null) {
@@ -344,22 +323,30 @@ public abstract class ItemHandler extends CmmnElementHandler<CmmnElement, CmmnAc
 
     if (repetitionRule != null) {
       ConditionExpression condition = repetitionRule.getCondition();
-      if (condition != null) {
-        String rule = condition.getText();
-        if (rule != null) {
-          Expression repetitionRuleExpression = expressionManager.createExpression(rule);
-          CaseControlRule caseRule = new CaseControlRuleImpl(repetitionRuleExpression);
-          activity.setProperty(PROPERTY_REPETITION_RULE, caseRule);
+      CaseControlRule caseRule = initializeCaseControlRule(condition, context);
+      activity.setProperty(PROPERTY_REPETITION_RULE, caseRule);
 
-          List<String> events = Arrays.asList(TERMINATE, COMPLETE);
-          String repeatOnStandardEvent = repetitionRule.getCamundaRepeatOnStandardEvent();
-          if (repeatOnStandardEvent != null && !repeatOnStandardEvent.isEmpty()) {
-            events = Arrays.asList(repeatOnStandardEvent);
-          }
-          activity.getProperties().set(CmmnProperties.REPEAT_ON_STANDARD_EVENTS, events);
-        }
+      List<String> events = Arrays.asList(TERMINATE, COMPLETE);
+      String repeatOnStandardEvent = repetitionRule.getCamundaRepeatOnStandardEvent();
+      if (repeatOnStandardEvent != null && !repeatOnStandardEvent.isEmpty()) {
+        events = Arrays.asList(repeatOnStandardEvent);
+      }
+      activity.getProperties().set(CmmnProperties.REPEAT_ON_STANDARD_EVENTS, events);
+    }
+  }
+
+  protected CaseControlRule initializeCaseControlRule(ConditionExpression condition, CmmnHandlerContext context) {
+    Expression expression = null;
+
+    if (condition != null) {
+      String rule = condition.getText();
+      if (rule != null && !rule.isEmpty()) {
+        ExpressionManager expressionManager = context.getExpressionManager();
+        expression = expressionManager.createExpression(rule);
       }
     }
+
+    return new CaseControlRuleImpl(expression);
   }
 
   protected void initializeCaseExecutionListeners(CmmnElement element, CmmnActivity activity, CmmnHandlerContext context) {

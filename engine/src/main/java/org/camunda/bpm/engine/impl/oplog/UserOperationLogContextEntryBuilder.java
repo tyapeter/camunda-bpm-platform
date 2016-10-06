@@ -26,6 +26,7 @@ import org.camunda.bpm.engine.impl.persistence.entity.ProcessDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyChange;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.repository.ResourceDefinitionEntity;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
 
 public class UserOperationLogContextEntryBuilder {
 
@@ -95,8 +96,7 @@ public class UserOperationLogContextEntryBuilder {
     if (definition != null) {
       entry.setProcessDefinitionKey(definition.getKey());
       entry.setDeploymentId(definition.getDeploymentId());
-    }
-    else if (task.getCaseDefinitionId() != null) {
+    } else if (task.getCaseDefinitionId() != null) {
       definition = task.getCaseDefinition();
       entry.setDeploymentId(definition.getDeploymentId());
     }
@@ -108,6 +108,28 @@ public class UserOperationLogContextEntryBuilder {
     entry.setCaseInstanceId(task.getCaseInstanceId());
     entry.setCaseExecutionId(task.getCaseExecutionId());
     entry.setTaskId(task.getId());
+
+    return this;
+  }
+
+  public UserOperationLogContextEntryBuilder inContextOf(ExecutionEntity processInstance, List<PropertyChange> propertyChanges) {
+
+    if (propertyChanges == null || propertyChanges.isEmpty()) {
+      if (OPERATION_TYPE_CREATE.equals(entry.getOperationType())) {
+        propertyChanges = Arrays.asList(PropertyChange.EMPTY_CHANGE);
+      }
+    }
+    entry.setPropertyChanges(propertyChanges);
+    entry.setProcessInstanceId(processInstance.getProcessInstanceId());
+    entry.setProcessDefinitionId(processInstance.getProcessDefinitionId());
+    entry.setExecutionId(processInstance.getId());
+    entry.setCaseInstanceId(processInstance.getCaseInstanceId());
+
+    ResourceDefinitionEntity definition = processInstance.getProcessDefinition();
+    if (definition != null) {
+      entry.setProcessDefinitionKey(definition.getKey());
+      entry.setDeploymentId(definition.getDeploymentId());
+    }
 
     return this;
   }

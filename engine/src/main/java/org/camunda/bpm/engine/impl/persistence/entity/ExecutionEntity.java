@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.camunda.bpm.engine.ProcessEngineServices;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
@@ -39,6 +38,7 @@ import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.core.instance.CoreExecution;
 import org.camunda.bpm.engine.impl.core.operation.CoreAtomicOperation;
 import org.camunda.bpm.engine.impl.core.variable.CoreVariableInstance;
+import org.camunda.bpm.engine.impl.core.variable.event.VariableEvent;
 import org.camunda.bpm.engine.impl.core.variable.scope.VariableCollectionProvider;
 import org.camunda.bpm.engine.impl.core.variable.scope.VariableInstanceFactory;
 import org.camunda.bpm.engine.impl.core.variable.scope.VariableInstanceLifecycleListener;
@@ -49,7 +49,8 @@ import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.EnginePersistenceLogger;
 import org.camunda.bpm.engine.impl.db.HasDbReferences;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
-import org.camunda.bpm.engine.impl.event.CompensationEventHandler;
+import org.camunda.bpm.engine.impl.event.ConditionalVariableEventPayload;
+import org.camunda.bpm.engine.impl.event.EventType;
 import org.camunda.bpm.engine.impl.history.HistoryLevel;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
 import org.camunda.bpm.engine.impl.history.event.HistoryEventProcessor;
@@ -72,6 +73,8 @@ import org.camunda.bpm.engine.impl.pvm.runtime.ProcessInstanceStartContext;
 import org.camunda.bpm.engine.impl.pvm.runtime.PvmExecutionImpl;
 import org.camunda.bpm.engine.impl.pvm.runtime.operation.FoxAtomicOperationDeleteCascadeFireActivityEnd;
 import org.camunda.bpm.engine.impl.pvm.runtime.operation.PvmAtomicOperation;
+import org.camunda.bpm.engine.impl.tree.ExecutionTopDownWalker;
+import org.camunda.bpm.engine.impl.tree.TreeVisitor;
 import org.camunda.bpm.engine.impl.util.BitMaskUtil;
 import org.camunda.bpm.engine.impl.util.CollectionUtil;
 import org.camunda.bpm.engine.impl.variable.VariableDeclaration;
@@ -392,7 +395,9 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
 
     // create event subscriptions for the current scope
     for (EventSubscriptionDeclaration declaration : EventSubscriptionDeclaration.getDeclarationsForScope(scope).values()) {
-      declaration.createSubscription(this);
+      if(!declaration.isStartEvent()) {
+        declaration.createSubscriptionForExecution(this);
+      }
     }
   }
 
@@ -1007,7 +1012,7 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
     // remove event subscriptions which are not compensate event subscriptions
     List<EventSubscriptionEntity> eventSubscriptions = getEventSubscriptions();
     for (EventSubscriptionEntity eventSubscriptionEntity : eventSubscriptions) {
-      if (!CompensationEventHandler.EVENT_HANDLER_TYPE.equals(eventSubscriptionEntity.getEventType())) {
+      if (!EventType.COMPENSATE.name().equals(eventSubscriptionEntity.getEventType())) {
         eventSubscriptionEntity.delete();
       }
     }
@@ -1475,26 +1480,25 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
     return new ArrayList<EventSubscriptionEntity>(getEventSubscriptionsInternal());
   }
 
-  public List<CompensateEventSubscriptionEntity> getCompensateEventSubscriptions() {
+  public List<EventSubscriptionEntity> getCompensateEventSubscriptions() {
     List<EventSubscriptionEntity> eventSubscriptions = getEventSubscriptionsInternal();
-    List<CompensateEventSubscriptionEntity> result = new ArrayList<CompensateEventSubscriptionEntity>(eventSubscriptions.size());
+    List<EventSubscriptionEntity> result = new ArrayList<EventSubscriptionEntity>(eventSubscriptions.size());
     for (EventSubscriptionEntity eventSubscriptionEntity : eventSubscriptions) {
-      if (eventSubscriptionEntity instanceof CompensateEventSubscriptionEntity) {
-        result.add((CompensateEventSubscriptionEntity) eventSubscriptionEntity);
+      if (eventSubscriptionEntity.isSubscriptionForEventType(EventType.COMPENSATE)) {
+        result.add((EventSubscriptionEntity) eventSubscriptionEntity);
       }
     }
     return result;
   }
 
-  public List<CompensateEventSubscriptionEntity> getCompensateEventSubscriptions(String activityId) {
+  public List<EventSubscriptionEntity> getCompensateEventSubscriptions(String activityId) {
     List<EventSubscriptionEntity> eventSubscriptions = getEventSubscriptionsInternal();
-    List<CompensateEventSubscriptionEntity> result = new ArrayList<CompensateEventSubscriptionEntity>(eventSubscriptions.size());
+    List<EventSubscriptionEntity> result = new ArrayList<EventSubscriptionEntity>(eventSubscriptions.size());
     for (EventSubscriptionEntity eventSubscriptionEntity : eventSubscriptions) {
-      if (eventSubscriptionEntity instanceof CompensateEventSubscriptionEntity) {
-        if (activityId.equals(eventSubscriptionEntity.getActivityId())) {
-          result.add((CompensateEventSubscriptionEntity) eventSubscriptionEntity);
+      if (eventSubscriptionEntity.isSubscriptionForEventType(EventType.COMPENSATE)
+              && activityId.equals(eventSubscriptionEntity.getActivityId())) {
+          result.add((EventSubscriptionEntity) eventSubscriptionEntity);
         }
-      }
     }
     return result;
   }
@@ -1665,7 +1669,7 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
       listeners.add((VariableInstanceLifecycleListener) VariableInstanceHistoryListener.INSTANCE);
     }
 
-    listeners.add((VariableInstanceLifecycleListener) VariableListenerInvocationListener.INSTANCE);
+    listeners.add((VariableInstanceLifecycleListener) new VariableListenerInvocationListener(this));
 
     listeners.addAll((List) registeredVariableListeners);
 
@@ -1697,6 +1701,34 @@ public class ExecutionEntity extends PvmExecutionImpl implements Execution, Proc
       variableStore.addVariable(variable);
     }
   }
+
+  public void handleConditionalEventOnVariableChange(ConditionalVariableEventPayload conditionalEventPayload) {
+    List<EventSubscriptionEntity> subScriptions = getEventSubscriptions();
+    for (EventSubscriptionEntity subscription : subScriptions) {
+      if (EventType.CONDITONAL.name().equals(subscription.getEventType())) {
+        subscription.processEventSync(conditionalEventPayload);
+      }
+    }
+  }
+
+  @Override
+  public void dispatchEvent(VariableEvent variableEvent) {
+    final List<ExecutionEntity> execs = new ArrayList<ExecutionEntity>();
+    new ExecutionTopDownWalker(this).addPreVisitor(new TreeVisitor<ExecutionEntity>() {
+      @Override
+      public void visit(ExecutionEntity obj) {
+        if (!obj.getEventSubscriptions().isEmpty()) {
+          execs.add(obj);
+        }
+      }
+    }).walkUntil();
+    for (ExecutionEntity execution : execs) {
+      ConditionalVariableEventPayload conditionalEventPayload = new ConditionalVariableEventPayload(variableEvent, this);
+      execution.handleConditionalEventOnVariableChange(conditionalEventPayload);
+    }
+  }
+
+
 
   // getters and setters //////////////////////////////////////////////////////
 

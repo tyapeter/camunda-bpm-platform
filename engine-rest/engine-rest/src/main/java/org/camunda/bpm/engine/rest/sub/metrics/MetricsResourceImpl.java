@@ -12,8 +12,8 @@
  */
 package org.camunda.bpm.engine.rest.sub.metrics;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Date;
-
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 
@@ -22,7 +22,6 @@ import org.camunda.bpm.engine.management.MetricsQuery;
 import org.camunda.bpm.engine.rest.dto.converter.DateConverter;
 import org.camunda.bpm.engine.rest.dto.metrics.MetricsResultDto;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Daniel Meyer
@@ -40,6 +39,7 @@ public class MetricsResourceImpl implements MetricsResource {
     this.objectMapper = objectMapper;
   }
 
+  @Override
   public MetricsResultDto sum(UriInfo uriInfo) {
     MetricsQuery query = processEngine.getManagementService()
       .createMetricsQuery()

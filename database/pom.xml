@@ -87,7 +87,7 @@
       </dependency>
       <dependency>
         <groupId>com.ibm.informix.jdbc</groupId>
-        <artifactId>ifxjdbc</artifactId>
+        <artifactId>ifxjdbc_all</artifactId>
         <version>${version.informix}</version>
       </dependency>
     </dependencies>
@@ -142,7 +142,7 @@
             </dependency>
             <dependency>
               <groupId>com.ibm.informix.jdbc</groupId>
-              <artifactId>ifxjdbc</artifactId>
+              <artifactId>ifxjdbc_all</artifactId>
               <version>${version.informix}</version>
             </dependency>
           </dependencies>
@@ -424,7 +424,7 @@
       <dependencies>
         <dependency>
           <groupId>com.ibm.informix.jdbc</groupId>
-          <artifactId>ifxjdbc</artifactId>
+          <artifactId>ifxjdbc_all</artifactId>
           <scope>test</scope>
         </dependency>
       </dependencies>

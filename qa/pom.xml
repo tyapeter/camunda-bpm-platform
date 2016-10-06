@@ -65,7 +65,9 @@
         <module>integration-tests-webapps</module>
         <module>integration-tests-engine</module>
         <module>test-db-upgrade</module>
+        <module>test-db-util</module>
         <module>test-db-instance-migration</module>
+        <module>test-db-rolling-update</module>
         <module>test-old-engine</module>
       </modules>
     </profile>
@@ -143,7 +145,16 @@
     <profile>
       <id>instance-migration</id>
       <modules>
+        <module>test-db-util</module>
         <module>test-db-instance-migration</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>rolling-update</id>
+      <modules>
+        <module>test-db-util</module>
+        <module>test-db-rolling-update</module>
       </modules>
     </profile>
 

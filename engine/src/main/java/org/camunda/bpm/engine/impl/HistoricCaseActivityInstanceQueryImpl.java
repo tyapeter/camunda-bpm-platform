@@ -40,11 +40,11 @@ public class HistoricCaseActivityInstanceQueryImpl extends AbstractQuery<Histori
 
   private static final long serialVersionUID = 1L;
 
-  protected String caseActivityInstanceId;
+  protected String[] caseActivityInstanceIds;
+  protected String[] caseActivityIds;
+
   protected String caseInstanceId;
   protected String caseDefinitionId;
-  protected String caseExecutionId;
-  protected String caseActivityId;
   protected String caseActivityName;
   protected String caseActivityType;
   protected Date createdBefore;
@@ -79,7 +79,12 @@ public class HistoricCaseActivityInstanceQueryImpl extends AbstractQuery<Histori
 
   public HistoricCaseActivityInstanceQuery caseActivityInstanceId(String caseActivityInstanceId) {
     ensureNotNull(NotValidException.class, "caseActivityInstanceId", caseActivityInstanceId);
-    this.caseActivityInstanceId = caseActivityInstanceId;
+    return caseActivityInstanceIdIn(caseActivityInstanceId);
+  }
+
+  public HistoricCaseActivityInstanceQuery caseActivityInstanceIdIn(String... caseActivityInstanceIds) {
+    ensureNotNull(NotValidException.class, "caseActivityInstanceIds", (Object[]) caseActivityInstanceIds);
+    this.caseActivityInstanceIds = caseActivityInstanceIds;
     return this;
   }
 
@@ -97,13 +102,17 @@ public class HistoricCaseActivityInstanceQueryImpl extends AbstractQuery<Histori
 
   public HistoricCaseActivityInstanceQuery caseExecutionId(String caseExecutionId) {
     ensureNotNull(NotValidException.class, "caseExecutionId", caseExecutionId);
-    this.caseActivityInstanceId = caseExecutionId;
-    return this;
+    return caseActivityInstanceIdIn(caseExecutionId);
   }
 
   public HistoricCaseActivityInstanceQuery caseActivityId(String caseActivityId) {
     ensureNotNull(NotValidException.class, "caseActivityId", caseActivityId);
-    this.caseActivityId = caseActivityId;
+    return caseActivityIdIn(caseActivityId);
+  }
+
+  public HistoricCaseActivityInstanceQuery caseActivityIdIn(String... caseActivityIds) {
+    ensureNotNull(NotValidException.class, "caseActivityIds", (Object[]) caseActivityIds);
+    this.caseActivityIds = caseActivityIds;
     return this;
   }
 
@@ -271,8 +280,8 @@ public class HistoricCaseActivityInstanceQueryImpl extends AbstractQuery<Histori
 
   // getter
 
-  public String getCaseActivityInstanceId() {
-    return caseActivityInstanceId;
+  public String[] getCaseActivityInstanceIds() {
+    return caseActivityInstanceIds;
   }
 
   public String getCaseInstanceId() {
@@ -283,8 +292,8 @@ public class HistoricCaseActivityInstanceQueryImpl extends AbstractQuery<Histori
     return caseDefinitionId;
   }
 
-  public String getCaseActivityId() {
-    return caseActivityId;
+  public String[] getCaseActivityIds() {
+    return caseActivityIds;
   }
 
   public String getCaseActivityName() {

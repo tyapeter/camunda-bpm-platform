@@ -31,5 +31,4 @@ public interface MetricsResource {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/sum")
   MetricsResultDto sum(@Context UriInfo uriInfo);
-
 }

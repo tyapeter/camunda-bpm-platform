@@ -28,6 +28,9 @@ public interface HistoricCaseActivityInstanceQuery extends Query<HistoricCaseAct
   /** Only select historic case activity instances with the given id (primary key within history tables). */
   HistoricCaseActivityInstanceQuery caseActivityInstanceId(String caseActivityInstanceId);
 
+  /** Only select historic case activity instances with one of the given case activity instance ids. */
+  HistoricCaseActivityInstanceQuery caseActivityInstanceIdIn(String... caseActivityInstanceIds);
+
   /** Only select historic case activity instances for the given case execution */
   HistoricCaseActivityInstanceQuery caseExecutionId(String caseExecutionId);
 
@@ -39,6 +42,9 @@ public interface HistoricCaseActivityInstanceQuery extends Query<HistoricCaseAct
 
   /** Only select historic case activity instances for the given case activity (id from CMMN 1.0 XML) */
   HistoricCaseActivityInstanceQuery caseActivityId(String caseActivityId);
+
+  /** Only select historic case activity instances with one of the given case activity ids. */
+  HistoricCaseActivityInstanceQuery caseActivityIdIn(String... caseActivityIds);
 
   /** Only select historic case activity instances for activities with the given name */
   HistoricCaseActivityInstanceQuery caseActivityName(String caseActivityName);

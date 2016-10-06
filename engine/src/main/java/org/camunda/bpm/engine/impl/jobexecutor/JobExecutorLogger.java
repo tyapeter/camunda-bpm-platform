@@ -31,7 +31,7 @@ public class JobExecutorLogger extends ProcessEngineLogger {
         "001", "Acquired job with id '{}' not found.", jobId);
   }
 
-  public void exceptionWhileExecutingJob(JobEntity job, RuntimeException exception) {
+  public void exceptionWhileExecutingJob(JobEntity job, Throwable exception) {
     logWarn(
         "002", "Exception while executing job {}: ", job, exception);
   }
@@ -151,4 +151,22 @@ public class JobExecutorLogger extends ProcessEngineLogger {
     logDebug(
         "024", "Failed job with id '{}' not found.", jobId);
   }
+
+  public ProcessEngineException wrapJobExecutionFailure(JobFailureCollector jobFailureCollector, Throwable cause) {
+    JobEntity job = jobFailureCollector.getJob();
+    if (job != null) {
+      return new ProcessEngineException(exceptionMessage(
+        "025", "Exception while executing job {}: ", jobFailureCollector.getJob()), cause);
+    }
+    else {
+      return new ProcessEngineException(exceptionMessage(
+         "025", "Exception while executing job {}: ", jobFailureCollector.getJobId()), cause);
+    }
+  }
+
+  public ProcessEngineException jobNotFoundException(String jobId) {
+    return new ProcessEngineException(exceptionMessage(
+        "026", "No job found with id '{}'", jobId));
+  }
+
 }

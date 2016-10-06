@@ -15,6 +15,9 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.PomEquippedResolveStage;
+import org.jboss.shrinkwrap.resolver.api.maven.ScopeType;
+import org.jboss.shrinkwrap.resolver.api.maven.coordinate.MavenDependencies;
+
 
 public abstract class TomcatServerBootstrap extends EmbeddedServerBootstrap {
 
@@ -41,12 +44,14 @@ public abstract class TomcatServerBootstrap extends EmbeddedServerBootstrap {
     String contextPath = "/" + getContextPath();
 
     PomEquippedResolveStage resolver = Maven.configureResolver()
-      .useLegacyLocalRepo(true).loadPomFromFile("pom.xml");
+      .useLegacyLocalRepo(true).workOffline().loadPomFromFile("pom.xml");
 
     WebArchive wa = ShrinkWrap.create(WebArchive.class, "rest-test.war").setWebXML(webXmlPath)
         .addAsLibraries(resolver.resolve("org.codehaus.jackson:jackson-jaxrs:1.6.5").withTransitivity().asFile())
-        .addAsLibraries(resolver.resolve("org.camunda.bpm:camunda-engine").withTransitivity().asFile())
-        .addAsLibraries(resolver.resolve("org.mockito:mockito-core").withTransitivity().asFile())
+        .addAsLibraries(resolver.addDependencies(
+            MavenDependencies.createDependency("org.mockito:mockito-core", ScopeType.TEST, false,
+            MavenDependencies.createExclusion("org.hamcrest:hamcrest-core"))).resolve()
+              .withTransitivity().asFile())
 
         .addAsServiceProvider(ProcessEngineProvider.class, MockedProcessEngineProvider.class)
         .add(new ClassLoaderAsset("runtime/tomcat/context.xml"), "META-INF/context.xml")

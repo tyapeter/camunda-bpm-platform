@@ -13,7 +13,9 @@
 
 package org.camunda.bpm.engine.test.api.repository;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +60,8 @@ import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.bpmn.tasklistener.util.RecorderTaskListener;
 import org.camunda.bpm.engine.test.util.TestExecutionListener;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
 /**
  * @author Frederik Heremans
@@ -78,6 +82,50 @@ public class RepositoryServiceTest extends PluggableProcessEngineTestCase {
         return null;
       }
     });
+  }
+
+  private void checkDeployedBytes(InputStream deployedResource, byte[] utf8Bytes) throws IOException {
+    byte[] deployedBytes = new byte[utf8Bytes.length];
+    deployedResource.read(deployedBytes);
+
+    for (int i = 0; i < utf8Bytes.length; i++) {
+      assertEquals(utf8Bytes[i], deployedBytes[i]);
+    }
+  }
+
+  public void testUTF8DeploymentMethod() throws IOException {
+    //given utf8 charset
+    Charset utf8Charset = Charset.forName("UTF-8");
+    Charset defaultCharset = processEngineConfiguration.getDefaultCharset();
+    processEngineConfiguration.setDefaultCharset(utf8Charset);
+
+    //and model instance with umlauts
+    String umlautsString = "äöüÄÖÜß";
+    String resourceName = "deployment.bpmn";
+    BpmnModelInstance instance = Bpmn.createExecutableProcess("umlautsProcess").startEvent(umlautsString).done();
+    String instanceAsString = Bpmn.convertToString(instance);
+
+    //when instance is deployed via addString method
+    org.camunda.bpm.engine.repository.Deployment deployment = repositoryService.createDeployment()
+                                                                               .addString(resourceName, instanceAsString)
+                                                                               .deploy();
+
+    //then bytes are saved in utf-8 format
+    InputStream inputStream = repositoryService.getResourceAsStream(deployment.getId(), resourceName);
+    byte[] utf8Bytes = instanceAsString.getBytes(utf8Charset);
+    checkDeployedBytes(inputStream, utf8Bytes);
+    repositoryService.deleteDeployment(deployment.getId());
+
+
+    //when model instance is deployed via addModelInstance method
+    deployment = repositoryService.createDeployment().addModelInstance(resourceName, instance).deploy();
+
+    //then also the bytes are saved in utf-8 format
+    inputStream = repositoryService.getResourceAsStream(deployment.getId(), resourceName);
+    checkDeployedBytes(inputStream, utf8Bytes);
+
+    repositoryService.deleteDeployment(deployment.getId());
+    processEngineConfiguration.setDefaultCharset(defaultCharset);
   }
 
   @Deployment(resources = {
@@ -218,19 +266,19 @@ public class RepositoryServiceTest extends PluggableProcessEngineTestCase {
     DeploymentCache deploymentCache = processEngineConfiguration.getDeploymentCache();
 
     // ensure definitions and models are part of the cache
-    assertTrue(deploymentCache.getProcessDefinitionCache().containsKey(processDefinitionId));
-    assertTrue(deploymentCache.getBpmnModelInstanceCache().containsKey(processDefinitionId));
-    assertTrue(deploymentCache.getCaseDefinitionCache().containsKey(caseDefinitionId));
-    assertTrue(deploymentCache.getCmmnModelInstanceCache().containsKey(caseDefinitionId));
+    assertNotNull(deploymentCache.getProcessDefinitionCache().get(processDefinitionId));
+    assertNotNull(deploymentCache.getBpmnModelInstanceCache().get(processDefinitionId));
+    assertNotNull(deploymentCache.getCaseDefinitionCache().get(caseDefinitionId));
+    assertNotNull(deploymentCache.getCmmnModelInstanceCache().get(caseDefinitionId));
 
     // when the deployment is deleted
     repositoryService.deleteDeployment(deploymentId, true);
 
     // then the definitions and models are removed from the cache
-    assertFalse(deploymentCache.getProcessDefinitionCache().containsKey(processDefinitionId));
-    assertFalse(deploymentCache.getBpmnModelInstanceCache().containsKey(processDefinitionId));
-    assertFalse(deploymentCache.getCaseDefinitionCache().containsKey(caseDefinitionId));
-    assertFalse(deploymentCache.getCmmnModelInstanceCache().containsKey(caseDefinitionId));
+    assertNull(deploymentCache.getProcessDefinitionCache().get(processDefinitionId));
+    assertNull(deploymentCache.getBpmnModelInstanceCache().get(processDefinitionId));
+    assertNull(deploymentCache.getCaseDefinitionCache().get(caseDefinitionId));
+    assertNull(deploymentCache.getCmmnModelInstanceCache().get(caseDefinitionId));
   }
 
   public void testFindDeploymentResourceNamesNullDeploymentId() {

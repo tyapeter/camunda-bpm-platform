@@ -18,26 +18,22 @@ import java.io.Serializable;
 import java.util.Collections;
 
 import org.camunda.bpm.engine.IdentityService;
-import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.impl.ProcessEngineLogger;
 import org.camunda.bpm.engine.impl.cfg.CommandChecker;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.cfg.TransactionState;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
-import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
-import org.camunda.bpm.engine.impl.jobexecutor.FailedJobListener;
 import org.camunda.bpm.engine.impl.jobexecutor.JobExecutorContext;
 import org.camunda.bpm.engine.impl.jobexecutor.JobExecutorLogger;
-import org.camunda.bpm.engine.impl.jobexecutor.SuccessfulJobListener;
+import org.camunda.bpm.engine.impl.jobexecutor.JobFailureCollector;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 
 /**
  * @author Tom Baeyens
  * @author Daniel Meyer
  */
-public class ExecuteJobsCmd implements Command<Object>, Serializable {
+public class ExecuteJobsCmd implements Command<Void>, Serializable {
 
   private static final long serialVersionUID = 1L;
 
@@ -45,23 +41,24 @@ public class ExecuteJobsCmd implements Command<Object>, Serializable {
 
   protected String jobId;
 
-  public ExecuteJobsCmd(String jobId) {
+  protected JobFailureCollector jobFailureCollector;
+
+  public ExecuteJobsCmd(String jobId, JobFailureCollector jobFailureCollector) {
     this.jobId = jobId;
+    this.jobFailureCollector = jobFailureCollector;
   }
 
-  public Object execute(CommandContext commandContext) {
+  public Void execute(CommandContext commandContext) {
     ensureNotNull("jobId", jobId);
 
-    JobEntity job = commandContext.getDbEntityManager().selectById(JobEntity.class, jobId);
+    final JobEntity job = commandContext.getDbEntityManager().selectById(JobEntity.class, jobId);
 
     final ProcessEngineConfigurationImpl processEngineConfiguration = Context.getProcessEngineConfiguration();
-    final CommandExecutor commandExecutor = processEngineConfiguration.getCommandExecutorTxRequiresNew();
     final IdentityService identityService = processEngineConfiguration.getIdentityService();
 
     final JobExecutorContext jobExecutorContext = Context.getJobExecutorContext();
 
     if (job == null) {
-
       if (jobExecutorContext != null) {
         // CAM-1842
         // Job was acquired but does not exist anymore. This is not a problem.
@@ -71,17 +68,19 @@ public class ExecuteJobsCmd implements Command<Object>, Serializable {
         return null;
 
       } else {
-        throw new ProcessEngineException("No job found with id '" + jobId + "'");
-
+        throw LOG.jobNotFoundException(jobId);
       }
-
     }
+
+    jobFailureCollector.setJob(job);
 
     if (jobExecutorContext == null) { // if null, then we are not called by the job executor
       for(CommandChecker checker : commandContext.getProcessEngineConfiguration().getCommandCheckers()) {
         checker.checkUpdateJob(job);
       }
     } else {
+      jobExecutorContext.setCurrentJob(job);
+
       // if the job is called by the job executor then set the tenant id of the job
       // as authenticated tenant to enable tenant checks
       String tenantId = job.getTenantId();
@@ -90,60 +89,24 @@ public class ExecuteJobsCmd implements Command<Object>, Serializable {
       }
     }
 
-    // set the given job to executing
-    job.setExecuting(true);
-
-    // the failed job listener is responsible for decrementing the retries and logging the exception to the DB.
-    FailedJobListener failedJobListener = createFailedJobListener(commandExecutor);
-
-    // the listener is ALWAYS added to the transaction as SYNC on ROLLBACK. If the transaction does not rollback, it is ignored.
-    commandContext.getTransactionContext().addTransactionListener(
-        TransactionState.ROLLED_BACK,
-        failedJobListener);
-
-    // register as command context close lister to intercept exceptions on flush
-    commandContext.registerCommandContextListener(failedJobListener);
-
-    // register a listener in case job is executed successfully
-    SuccessfulJobListener successListener = createSuccessfulJobListener(commandExecutor);
-    commandContext.getTransactionContext().addTransactionListener(
-        TransactionState.COMMITTED,
-        successListener);
-
-    if (jobExecutorContext != null) { // if null, then we are not called by the job executor
-      jobExecutorContext.setCurrentJob(job);
-    }
-
     try {
+
+      // register as command context close lister to intercept exceptions on flush
+      commandContext.registerCommandContextListener(jobFailureCollector);
+
+      commandContext.setCurrentJob(job);
+
       job.execute(commandContext);
-      return null;
+
     }
-    catch (RuntimeException exception) {
-
-      LOG.exceptionWhileExecutingJob(job, exception);
-
-      // log the exception in the job
-      failedJobListener.setException(exception);
-
-      // throw the original exception to indicate the ExecuteJobCmd failed
-      throw exception;
-
-    } finally {
+    finally {
       if (jobExecutorContext != null) {
         jobExecutorContext.setCurrentJob(null);
-
         identityService.clearAuthentication();
       }
     }
 
-  }
-
-  protected FailedJobListener createFailedJobListener(CommandExecutor commandExecutor) {
-    return new FailedJobListener(commandExecutor, jobId);
-  }
-
-  protected SuccessfulJobListener createSuccessfulJobListener(CommandExecutor commandExecutor) {
-    return new SuccessfulJobListener();
+    return null;
   }
 
 }

@@ -27,6 +27,7 @@ import org.camunda.bpm.application.impl.ServletProcessApplication;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.authorization.Groups;
+import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.repository.DeploymentBuilder;
@@ -40,7 +41,7 @@ import org.camunda.bpm.engine.task.Task;
  */
 @ProcessApplication
 public class InvoiceProcessApplication extends ServletProcessApplication {
-  
+
   private static final Logger LOGGER = Logger.getLogger(InvoiceProcessApplication.class.getName());
 
   /**
@@ -49,10 +50,18 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
    */
   @PostDeploy
   public void startFirstProcess(ProcessEngine processEngine) {
-
     createUsers(processEngine);
+
+    //enable metric reporting
+    ProcessEngineConfigurationImpl processEngineConfiguration = (ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration();
+    processEngineConfiguration.setDbMetricsReporterActivate(true);
+    processEngineConfiguration.getDbMetricsReporter().setReporterId("REPORTER");
+
     startProcessInstances(processEngine, "invoice", 1);
     startProcessInstances(processEngine, "invoice", null);
+
+    //disable reporting
+    processEngineConfiguration.setDbMetricsReporterActivate(false);
   }
 
   @Override
@@ -71,6 +80,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
         repositoryService.createDeployment(this.getReference())
           .addInputStream("invoice.v1.bpmn", classLoader.getResourceAsStream("invoice.v1.bpmn"))
           .addInputStream("assign-approver-groups.dmn", classLoader.getResourceAsStream("assign-approver-groups.dmn"))
+          .addInputStream("review-invoice.cmmn", classLoader.getResourceAsStream("review-invoice.cmmn"))
           .deploy();
       }
     }
@@ -82,6 +92,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
 
   private void startProcessInstances(ProcessEngine processEngine, String processDefinitionKey, Integer version) {
 
+    ProcessEngineConfigurationImpl processEngineConfiguration = (ProcessEngineConfigurationImpl) processEngine.getProcessEngineConfiguration();
     ProcessDefinitionQuery processDefinitionQuery = processEngine
       .getRepositoryService()
       .createProcessDefinitionQuery()
@@ -97,9 +108,9 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
     ProcessDefinition processDefinition = processDefinitionQuery.singleResult();
 
     InputStream invoiceInputStream = InvoiceProcessApplication.class.getClassLoader().getResourceAsStream("invoice.pdf");
-    
+
     long numberOfRunningProcessInstances = processEngine.getRuntimeService().createProcessInstanceQuery().processDefinitionId(processDefinition.getId()).count();
-    
+
     if (numberOfRunningProcessInstances == 0) { // start three process instances
 
       LOGGER.info("Start 3 instances of " + processDefinition.getName() + ", version " + processDefinition.getVersion());
@@ -116,6 +127,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
 
       IoUtil.closeSilently(invoiceInputStream);
       invoiceInputStream = InvoiceProcessApplication.class.getClassLoader().getResourceAsStream("invoice.pdf");
+      processEngineConfiguration.getDbMetricsReporter().reportNow();
 
       // process instance 2
       try {
@@ -133,6 +145,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
                 .mimeType("application/pdf")
                 .create()));
 
+        processEngineConfiguration.getDbMetricsReporter().reportNow();
         calendar.add(Calendar.DAY_OF_MONTH, 14);
         ClockUtil.setCurrentTime(calendar.getTime());
 
@@ -142,6 +155,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
         processEngine.getTaskService().complete(task.getId(), createVariables().putValue("approved", true));
       }
       finally{
+        processEngineConfiguration.getDbMetricsReporter().reportNow();
         ClockUtil.reset();
         processEngine.getIdentityService().clearAuthentication();
       }
@@ -165,6 +179,7 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
                 .mimeType("application/pdf")
                 .create()));
 
+        processEngineConfiguration.getDbMetricsReporter().reportNow();
         calendar.add(Calendar.DAY_OF_MONTH, 5);
         ClockUtil.setCurrentTime(calendar.getTime());
 
@@ -174,12 +189,13 @@ public class InvoiceProcessApplication extends ServletProcessApplication {
         processEngine.getTaskService().complete(task.getId(), createVariables().putValue("approved", false));
       }
       finally{
+        processEngineConfiguration.getDbMetricsReporter().reportNow();
         ClockUtil.reset();
         processEngine.getIdentityService().clearAuthentication();
       }
     } else {
-      LOGGER.info("No new instances of " + processDefinition.getName() 
-          + " version " + processDefinition.getVersion() 
+      LOGGER.info("No new instances of " + processDefinition.getName()
+          + " version " + processDefinition.getVersion()
           + " started, there are " + numberOfRunningProcessInstances + " instances running");
     }
   }

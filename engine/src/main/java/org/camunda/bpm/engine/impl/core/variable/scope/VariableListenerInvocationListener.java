@@ -22,21 +22,24 @@ import org.camunda.bpm.engine.impl.persistence.entity.VariableInstanceEntity;
  */
 public class VariableListenerInvocationListener implements VariableInstanceLifecycleListener<VariableInstanceEntity> {
 
-  public static final VariableListenerInvocationListener INSTANCE = new VariableListenerInvocationListener();
+  protected final AbstractVariableScope targetScope;
+
+  public VariableListenerInvocationListener(AbstractVariableScope targetScope) {
+    this.targetScope = targetScope;
+  }
 
   @Override
   public void onCreate(VariableInstanceEntity variable, AbstractVariableScope sourceScope) {
-    sourceScope.dispatchEvent(new VariableEvent(variable, VariableListener.CREATE, sourceScope));
+    targetScope.dispatchEvent(new VariableEvent(variable, VariableListener.CREATE, sourceScope));
   }
 
   @Override
   public void onUpdate(VariableInstanceEntity variable, AbstractVariableScope sourceScope) {
-    sourceScope.dispatchEvent(new VariableEvent(variable, VariableListener.UPDATE, sourceScope));
+    targetScope.dispatchEvent(new VariableEvent(variable, VariableListener.UPDATE, sourceScope));
   }
 
   @Override
   public void onDelete(VariableInstanceEntity variable, AbstractVariableScope sourceScope) {
-    sourceScope.dispatchEvent(new VariableEvent(variable, VariableListener.DELETE, sourceScope));
+    targetScope.dispatchEvent(new VariableEvent(variable, VariableListener.DELETE, sourceScope));
   }
-
 }

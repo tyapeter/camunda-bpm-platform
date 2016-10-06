@@ -16,14 +16,19 @@ package org.camunda.bpm.engine.impl.cmd;
 import java.io.InputStream;
 
 import org.camunda.bpm.engine.history.UserOperationLogEntry;
+import org.camunda.bpm.engine.impl.ProcessInstanceQueryImpl;
 import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.persistence.entity.AttachmentEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.PropertyChange;
 import org.camunda.bpm.engine.impl.persistence.entity.TaskEntity;
 import org.camunda.bpm.engine.impl.util.IoUtil;
+import org.camunda.bpm.engine.runtime.Execution;
+import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.runtime.ProcessInstanceQuery;
 import org.camunda.bpm.engine.task.Attachment;
 
 import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
@@ -43,6 +48,7 @@ public class CreateAttachmentCmd implements Command<Attachment> {
   protected InputStream content;
   protected String url;
   private TaskEntity task;
+  protected ExecutionEntity processInstance;
 
   public CreateAttachmentCmd(String attachmentType, String taskId, String processInstanceId, String attachmentName, String attachmentDescription, InputStream content, String url) {
     this.attachmentType = attachmentType;
@@ -56,11 +62,14 @@ public class CreateAttachmentCmd implements Command<Attachment> {
 
   @Override
   public Attachment execute(CommandContext commandContext) {
-    ensureNotNull("taskId", taskId);
-
-    task = commandContext
-      .getTaskManager()
-      .findTaskById(taskId);
+    if (taskId != null) {
+      task = commandContext
+          .getTaskManager()
+          .findTaskById(taskId);
+    } else {
+      ensureNotNull("taskId or processInstanceId has to be provided", this.processInstanceId);
+      processInstance = (ExecutionEntity) new ProcessInstanceQueryImpl().processInstanceId(processInstanceId).singleResult();
+    }
 
     AttachmentEntity attachment = new AttachmentEntity();
     attachment.setName(attachmentName);
@@ -82,8 +91,13 @@ public class CreateAttachmentCmd implements Command<Attachment> {
 
     PropertyChange propertyChange = new PropertyChange("name", null, attachmentName);
 
-    commandContext.getOperationLogManager()
-      .logAttachmentOperation(UserOperationLogEntry.OPERATION_TYPE_ADD_ATTACHMENT, task, propertyChange);
+    if (task != null) {
+      commandContext.getOperationLogManager()
+          .logAttachmentOperation(UserOperationLogEntry.OPERATION_TYPE_ADD_ATTACHMENT, task, propertyChange);
+    } else if (processInstance != null) {
+      commandContext.getOperationLogManager()
+          .logAttachmentOperation(UserOperationLogEntry.OPERATION_TYPE_ADD_ATTACHMENT, processInstance, propertyChange);
+    }
 
     return attachment;
   }

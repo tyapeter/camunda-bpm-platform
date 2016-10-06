@@ -24,6 +24,7 @@ import org.camunda.bpm.engine.ManagementService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.batch.Batch;
+import org.camunda.bpm.engine.batch.history.HistoricBatch;
 import org.camunda.bpm.engine.history.UserOperationLogEntry;
 import org.camunda.bpm.engine.history.UserOperationLogQuery;
 import org.camunda.bpm.engine.migration.MigrationPlan;
@@ -36,11 +37,7 @@ import org.camunda.bpm.engine.test.api.runtime.migration.models.ProcessModels;
 import org.camunda.bpm.engine.test.util.ProcessEngineBootstrapRule;
 import org.camunda.bpm.engine.test.util.ProcessEngineTestRule;
 import org.camunda.bpm.engine.test.util.ProvidedProcessEngineRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.RuleChain;
 
 /**
@@ -79,8 +76,14 @@ public class LegacyUserOperationLogTest {
 
   @After
   public void removeBatch() {
+    Batch batch = managementService.createBatchQuery().singleResult();
     if (batch != null) {
       managementService.deleteBatch(batch.getId(), true);
+    }
+
+    HistoricBatch historicBatch = historyService.createHistoricBatchQuery().singleResult();
+    if (historicBatch != null) {
+      historyService.deleteHistoricBatch(historicBatch.getId());
     }
   }
 
@@ -145,6 +148,25 @@ public class LegacyUserOperationLogTest {
     assertEquals(2, userOperationLogQuery().count());
     assertEquals(1, userOperationLogQuery().operationType(UserOperationLogEntry.OPERATION_TYPE_SET_VARIABLE).count());
     assertEquals(1, userOperationLogQuery().operationType(UserOperationLogEntry.OPERATION_TYPE_CREATE).count());
+  }
+
+  @Test
+  public void testDontWriteDuplicateLogOnBatchDeletionJobExecution() {
+    ProcessDefinition definition = testHelper.deployAndGetDefinition(ProcessModels.ONE_TASK_PROCESS);
+    ProcessInstance processInstance = runtimeService.startProcessInstanceById(definition.getId());
+    batch = runtimeService.deleteProcessInstancesAsync(
+        Arrays.asList(processInstance.getId()), null, "test reason");
+
+    Job seedJob = managementService
+        .createJobQuery()
+        .singleResult();
+    managementService.executeJob(seedJob.getId());
+
+    for (Job pending : managementService.createJobQuery().list()) {
+      managementService.executeJob(pending.getId());
+    }
+
+    assertEquals(4, userOperationLogQuery().count());
   }
 
   @Test

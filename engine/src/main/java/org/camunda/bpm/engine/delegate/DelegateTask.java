@@ -185,4 +185,10 @@ public interface DelegateTask extends VariableScope, BpmnModelExecutionContext, 
    */
   String getTenantId();
 
+  /**
+   * set status to complete.
+   *
+   * @throws IllegalStateException if performed on completion or deletion
+   */
+  void complete();
 }
